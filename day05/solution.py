@@ -1,3 +1,4 @@
+import copy
 import re
 from collections import namedtuple
 from pprint import pprint
@@ -59,7 +60,7 @@ def crate_lines_to_board(crate_lines):
 
 def read_file(inputfile):
     
-    Move = namedtuple('Move', ['pos_from', 'pos_to'])
+    Move = namedtuple('Move', ['num_crates', 'pos_from', 'pos_to'])
     parser_rawmove = re.compile(r"move (\d+) from (\d+) to (\d+)")
 
     crate_lines = []
@@ -75,38 +76,70 @@ def read_file(inputfile):
             elif not done_with_crate_board:
                 crate_lines.append(line.replace('\n', ''))
             else:
-                _num, _from_, _to = map(int, parser_rawmove.search(line).groups())
-                # turn instructions that move multiple crates into multiple instructions that each move one crate
-                move_list += [Move(_from_, _to) for _ in range(_num)]
+                _num, _from, _to = map(int, parser_rawmove.search(line).groups())
+                move_list.append(Move(_num, _from, _to))
 
     return crate_board, move_list
 
-def part_one(crate_board, move_list):
-    print('Starting position:')
-    print_crate_board(crate_board)
-
+def apply_move_list_and_print_solution(crate_board, move_list, crane_move_fn, printmoves):
+    if printmoves:
+        print('Starting position:')
+        print_crate_board(crate_board)
     # make all encoded moves
-    for (pos_from, pos_to) in move_list:
+    for (num_crates, pos_from, pos_to) in move_list:
         idx_from = pos_from - 1
         idx_to   = pos_to   - 1
-        crate = crate_board[idx_from].pop()
-        crate_board[idx_to].append(crate)
-        print(f'--- from {pos_from} to {pos_to}')
-        print_crate_board(crate_board)
-
+        crane_move_fn(crate_board, num_crates, idx_from, idx_to)
+        if printmoves:
+            print(f"--- from {pos_from} to {pos_to}, {num_crates} crate{'s' if num_crates > 1 else ''}")
+            print_crate_board(crate_board)
     # finally, read out the top of each stack!
     print(f"Final answer: {''.join(stack[-1] for stack in crate_board)}")
 
+def part_one(crate_board, move_list, printmoves):
+    def cratemover_9000(crate_board, num_crates, idx_from, idx_to):
+        for _ in range(num_crates):
+            crate = crate_board[idx_from].pop()
+            crate_board[idx_to].append(crate)
+    print('part one')
+    apply_move_list_and_print_solution(crate_board, move_list, cratemover_9000, printmoves)
+
+def part_two(crate_board, move_list, printmoves):
+    def cratemover_9001(crate_board, num_crates, idx_from, idx_to):
+        crane_arm_stack = []
+        for _ in range(num_crates):
+            crate = crate_board[idx_from].pop()
+            crane_arm_stack.append(crate)
+        for _ in range(num_crates):
+            crate = crane_arm_stack.pop()
+            crate_board[idx_to].append(crate)
+    print('part two')
+    apply_move_list_and_print_solution(crate_board, move_list, cratemover_9001, printmoves)
+
 if __name__ == '__main__':
-    
     # need to open file and parse into crate gameboard and list of moves.
     for inputfile in ['example.txt', 'input.txt']:
+        print(f'--- {inputfile}')
+        printmoves = inputfile == 'example.txt'
         crate_board, move_list = read_file(inputfile)
-        
-        # pprint(move_list)
-        # print('---')
-        # pprint(crate_board)
-        # print('---')
-        # print_crate_board(crate_board)
+        # need to deepcopy bc all the operations rely on mutability of lists (no return values)
+        part_one(copy.deepcopy(crate_board), move_list, printmoves)
+        part_two(copy.deepcopy(crate_board), move_list, printmoves)
 
-        part_one(crate_board, move_list)
+# '''
+# Notes  (after finishing part_one and reading over part_two requirements)
+# An assumption I made during part 1 needed to be undone!
+#     During coding for part one, I interpreted moves that involved multiple crates as a series of individual moves.
+#     However, part two changed the move mechanic to allow movement of stacks of crates (FIFO-style) vs individual crates (LIFO-style).
+
+# To undo this, needed to make changes to the Move tuple (re-added num crates field) and left interpretation of moves
+#     to each of the parts.
+
+#     Now, the part_one() routine is free to interpret Moves with num_crates > 1 as a series of individual moves,
+#     while part_two() can interpret Moves with num_crates > 1 as a single move that preserves order.
+
+
+# Notes (after finishing both parts)
+# I refactored the code to take common operations from parts 1/2 and put them into common function, apply_move_list_and_print_solution().
+# The only difference between parts one/two is how the crane works, so I made that its own function to be passed into the common move applier.
+# '''
