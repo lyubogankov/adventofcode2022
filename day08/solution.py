@@ -39,22 +39,46 @@ class Tree:
         self.visible_from_right = visible_from_right
     
     def __str__(self):
-        color = None
-        if self.visible_from_top:
-            color = RED
-        elif self.visible_from_left:
-            color = YELLOW
-        elif self.visible_from_right:
-            color = MAGENTA
-        elif self.visible_from_bot:
-            color = GREEN
-        return f'{color}{self.height}{RESET}' if color else f'{self.height}'
+        return f'{self.height}'
 
-def print_tree_grid(tree_grid):
+def print_tree_grid(tree_grid, color_top_vis=False, color_bot_vis=False, color_l_vis=False, color_r_vis=False, hide_invisible=False):
     for tree_row in tree_grid:
         for tree in tree_row:
-            print(str(tree), end='')
+            tree_str = str(tree)
+
+            color = None
+            if color_top_vis and tree.visible_from_top:
+                color = RED
+            elif color_bot_vis and tree.visible_from_bot:
+                color = RED   # GREEN
+            elif color_l_vis and tree.visible_from_left:
+                color = RED   # YELLOW
+            elif color_r_vis and tree.visible_from_right:
+                color = RED   # MAGENTA
+            elif hide_invisible \
+                    and not tree.visible_from_top \
+                    and not tree.visible_from_bot \
+                    and not tree.visible_from_left \
+                    and not tree.visible_from_right:
+                color = BLACK
+            if color:
+                tree_str = f'{color}{tree_str}{RESET}'
+
+            print(tree_str, end='')
         print('\n', end='')
+
+def print_tree_grid_visibility_from_all_sides(tree_grid, hide_invisible):
+    print('\nFrom top:')
+    print_tree_grid(tree_grid, color_top_vis=True)
+    print('\nFrom left:')
+    print_tree_grid(tree_grid, color_l_vis=True)
+    print('\nFrom right:')
+    print_tree_grid(tree_grid, color_r_vis=True)
+    print('\nFrom bottom:')
+    print_tree_grid(tree_grid, color_bot_vis=True)
+    print('\nAll sides:')
+    print_tree_grid(tree_grid, color_top_vis=True, color_l_vis=True, color_r_vis=True, color_bot_vis=True, hide_invisible=hide_invisible)
+    print('')
 
 def parse_file_into_tree_grid(inputfile):
     with open(inputfile, 'r') as _inputfile:
@@ -82,7 +106,7 @@ def parse_file_into_tree_grid(inputfile):
     return tree_grid
 
 # part one
-def count_visible_trees(tree_grid):
+def count_visible_trees_old(tree_grid):
     
     # first, iterate over the inner trees in the grid to see which ones are visible and which aren't.
     
@@ -138,6 +162,58 @@ def count_visible_trees(tree_grid):
 
     return visible, tree_grid
 
+def count_visible_trees(tree_grid):
+
+    # assumption - all rows have same len (it's a perfect rectangle)
+    num_rows = len(tree_grid)
+    num_cols = len(tree_grid[0])
+
+    # top -> bottom annotation
+    top_row = tree_grid[0]
+    trees_to_check = tree_grid[1:]
+    min_visible_heights_from_top = [tree.height for tree in top_row]
+    for tree_row in trees_to_check:
+        for col, tree in enumerate(tree_row):
+            if tree.height > min_visible_heights_from_top[col]:
+                min_visible_heights_from_top[col] = tree.height
+                tree.visible_from_top = True
+
+    # bottom -> top annotation
+    bot_row = tree_grid[-1]
+    trees_to_check = tree_grid[num_rows-2::-1]  # iterating in reverse, skipping bottom row
+    min_visible_heights_from_bot = [tree.height for tree in bot_row]
+    for tree_row in trees_to_check:
+        for col, tree in enumerate(tree_row):
+            if tree.height > min_visible_heights_from_bot[col]:
+                min_visible_heights_from_bot[col] = tree.height
+                tree.visible_from_bot = True
+
+    # left -> right annotation
+    min_visible_heights_from_left = [tree_row[0].height for tree_row in tree_grid]  # iterate rows, take col 0 (leftmost)
+    for row, tree_row in enumerate(tree_grid):
+        # skip the first column, since that's the leftmost
+        for tree in tree_row[1:]:
+            if tree.height > min_visible_heights_from_left[row]:
+                min_visible_heights_from_left[row] = tree.height
+                tree.visible_from_left = True
+
+    # right -> left annotation
+    min_visible_heights_from_right = [tree_row[-1].height for tree_row in tree_grid]  # iterate rows, take rightmost col
+    for row, tree_row in enumerate(tree_grid):
+        for tree in tree_row[num_cols-2::-1]:
+            if tree.height > min_visible_heights_from_right[row]:
+                min_visible_heights_from_right[row] = tree.height
+                tree.visible_from_right = True
+
+    # now, count how many trees are visible from any angle!
+    visible = 0
+    for tree_row in tree_grid:
+        for tree in tree_row:
+            if tree.visible_from_top or tree.visible_from_bot or tree.visible_from_left or tree.visible_from_right:
+                visible += 1
+
+    return visible, tree_grid
+
 if __name__ == '__main__':
     for inputfile in ['example.txt', 'input.txt']:
         print(f'--- {inputfile}', '-'*(90-len(inputfile)))
@@ -146,8 +222,13 @@ if __name__ == '__main__':
         print('\nOriginal grid:')
         print_tree_grid(tree_grid)
 
+        _num_v_trees, _mod_tree_grid          = count_visible_trees_old(copy.deepcopy(tree_grid))
+        # print('\nAnnotated grid:')
+        # print_tree_grid_visibility_from_all_sides(_mod_tree_grid)
+
         num_visible_trees, modified_tree_grid = count_visible_trees(copy.deepcopy(tree_grid)) # part one
         print('\nAnnotated grid:')
-        print_tree_grid(modified_tree_grid)
+        print_tree_grid_visibility_from_all_sides(modified_tree_grid, hide_invisible=inputfile=='input.txt')
 
         print(f'\nPart one: visible trees = {num_visible_trees} / {len(modified_tree_grid)*len(modified_tree_grid[0])}')
+        print(f'Part one old v trees =    {_num_v_trees} / {len(modified_tree_grid)*len(modified_tree_grid[0])}')
