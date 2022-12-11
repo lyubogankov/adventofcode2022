@@ -1,5 +1,5 @@
 '''
-Brainstorming
+Brainstorming prior to starting
 
 Step 1: turn the input file into a directory tree structure.
     Two types of entities in the tree:
@@ -34,6 +34,26 @@ class Directory:
     def __str__(self):
         return f"{self.name} (dir)"
     
+    # Wanted to implement this after the fact.
+    # What if we constrained solution to not allow Directory to have member variable contained_size?
+    # If we really cared about memory, then storing contained_size would be a no-go since it's not
+    #   information that we couldn't calculate on the fly (unlike the other parameters).
+    def calc_contained_size(self):
+        # I originally used a match/case statement, as follows:
+        #       match type(item):
+        #           case File: ...
+        #           case Directory: ...
+        # However, got an error! 'Capture makes remaining patterns unreachable.'
+        # https://stackoverflow.com/a/67525259
+        # ^ Raymond Hettinger has some suggestions but I like if/else better than those.
+        contained_size = 0
+        for item in self.contents:
+            if type(item) == File:
+                contained_size += item.size
+            elif type(item) == Directory:
+                contained_size += item.calc_contained_size()
+        return contained_size
+
     def print_contents(self):
         for item in self.contents:
             print(str(item))
@@ -68,15 +88,21 @@ class File:
         return f"{self.name} (file, size={self.size})"
 
 def parse_command_log_into_dir_tree_v2(inputfile):
-    '''This rewrite is brought to you by Raymond Hettinger.  https://stackoverflow.com/a/72538070'''
-
+    '''This rewrite is brought to you by Raymond Hettinger.  https://stackoverflow.com/a/72538070
+    It's almost exactly the same in terms of LOC, but a different approach.
+    Using one big regex expression with named groups instead of three, and match/case instead of if/else.
+    '''
     with open(inputfile, 'r') as _inputfile:
         contents = _inputfile.read()
 
+    # When in VERBOSE mode, whitespace is ignored.
+    #   I used [ ] to match spaces (char class of just spaces).  
+    #   I like it better than escaping the whitespace ('\ 'vs '[ ]')
+    #   Yes, it's one extra character, but I like how it looks.
     pattern = re.compile(r"""
-          (?:\$[ ]cd[ ])(?P<cd_dir>\S+)                      # $ cd dirname          -> dirname
-        | (?:dir[ ])(?P<ls_dir>\S+)                          # dir dirname           -> dirname
-        | (?P<ls_file_size>\d+)(?:[ ])(?P<ls_file_name>\S+)  # filesize filename.ext -> filesize filename&ext
+          \$[ ]cd[ ](?P<cd_dir>\S+)                      # $ cd dirname          -> dirname
+        | dir[ ](?P<ls_dir>\S+)                          # dir dirname           -> dirname
+        | (?P<ls_file_size>\d+)[ ](?P<ls_file_name>\S+)  # filesize filename.ext -> filesize filename&ext
     """,
     re.VERBOSE)
 
@@ -123,8 +149,8 @@ def parse_command_log_into_dir_tree_v2(inputfile):
                     current_dir = newdir
     return root
 
-
 def parse_command_log_into_dir_tree(inputfile):
+    '''First implimentation of file parser using three separate regex expressions and if/else.'''
     with open(inputfile, 'r') as _inputfile:
         contents = _inputfile.read()
 
@@ -200,10 +226,20 @@ def part_two(root):
     return min(dir.contained_size for dir in dirs_above_size)
 
 
+def test_calc_contained_size(root):
+    '''Testing out the two implementations, storing vs calculating contained_size'''
+    assert root.contained_size == root.calc_contained_size()
+    for item in root.contents:
+        if type(item) == Directory:
+            test_calc_contained_size(item)
+
 if __name__ == '__main__':
-    for inputfile in ['example.txt']: #, 'input.txt']:
+    for inputfile in ['example.txt', 'input.txt']:
         print('---', inputfile, '-'*(40-len(inputfile)))
         dir_tree = parse_command_log_into_dir_tree(inputfile)
-        dir_tree.print_tree()
+        # dir_tree.print_tree()
         print(f'\tpart one: {part_one(dir_tree)}')
         print(f'\tpart two: {part_two(dir_tree)}')
+
+        # # testing out Directory.calc_contained_size() -- it worked!
+        # test_calc_contained_size(dir_tree)
