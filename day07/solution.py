@@ -67,6 +67,63 @@ class File:
     def __str__(self):
         return f"{self.name} (file, size={self.size})"
 
+def parse_command_log_into_dir_tree_v2(inputfile):
+    '''This rewrite is brought to you by Raymond Hettinger.  https://stackoverflow.com/a/72538070'''
+
+    with open(inputfile, 'r') as _inputfile:
+        contents = _inputfile.read()
+
+    pattern = re.compile(r"""
+          (?:\$[ ]cd[ ])(?P<cd_dir>\S+)                      # $ cd dirname          -> dirname
+        | (?:dir[ ])(?P<ls_dir>\S+)                          # dir dirname           -> dirname
+        | (?P<ls_file_size>\d+)(?:[ ])(?P<ls_file_name>\S+)  # filesize filename.ext -> filesize filename&ext
+    """,
+    re.VERBOSE)
+
+    root = Directory(name='/')  # special case -- this is the root
+    current_dir = root
+
+    # skip last element -- file ends with a newline, so it's an extra empty string.
+    for line in contents.split('\n')[:-1]:
+        mo = pattern.fullmatch(line)
+        # skip when no match
+        if not mo:
+            continue
+        match mo.lastgroup:
+            # log a directory into the dir tree
+            case 'ls_dir':
+                dirname = mo.group('ls_dir')
+                Directory(name=dirname, parentdir=current_dir)
+            # log a file into the dir tree
+            case 'ls_file_name':
+                filename = mo.group('ls_file_name')
+                filesize = mo.group('ls_file_size')
+                File(name=filename, size=int(filesize), parentdir=current_dir)
+            # cd -- need to change current_dir pointer, and potentially create new dir
+            case 'cd_dir':
+                dirname = mo.group('cd_dir')
+                # special case -- go directly to the root directory
+                if dirname == '/':
+                    current_dir = root
+                    continue
+                # move out one level, if we're not already at root
+                if dirname == '..':
+                    if current_dir != root:
+                        current_dir = current_dir.parentdir
+                    continue
+                # move in one level - may need to create new Dir
+                for item in current_dir.contents:
+                    # it already exists!  set current_dir pointer to the existing Dir.
+                    if type(item) == Directory and item.name == dirname:
+                        current_dir = item
+                        break
+                else:
+                    # if we get here, Dir doesn't exist.  Need to make it!
+                    newdir = Directory(name=dirname, parentdir=current_dir)
+                    current_dir = newdir
+    return root
+
+
 def parse_command_log_into_dir_tree(inputfile):
     with open(inputfile, 'r') as _inputfile:
         contents = _inputfile.read()
@@ -79,28 +136,22 @@ def parse_command_log_into_dir_tree(inputfile):
     current_dir = root
 
     # skip last element -- file ends with a newline, so it's an extra empty string.
-    # TODO I think I could do this with a match statement -- try it!
     for line in contents.split('\n')[:-1]:
-        
         # ls command - we don't care about command itself, just its output!
         if line == '$ ls':
             continue
-
         # cd command
         elif (m := cd_parser.match(line)):
             dirname = m.groups()[0]
-            
             # special case -- go directly to the root directory
             if dirname == '/':
                 current_dir = root
                 continue
-
             # move out one level, if we're not already at root
             if dirname == '..':
                 if current_dir != root:
                     current_dir = current_dir.parentdir
                 continue
-
             # move in one level - may need to create new Dir
             for item in current_dir.contents:
                 # it already exists!  set current_dir pointer to the existing Dir.
@@ -111,17 +162,14 @@ def parse_command_log_into_dir_tree(inputfile):
                 # if we get here, Dir doesn't exist.  Need to make it!
                 newdir = Directory(name=dirname, parentdir=current_dir)
                 current_dir = newdir
-
         # output from ls command -- dir (create new dir!)
         elif (ls := ls_dir_parser.match(line)):
             dirname = ls.groups()[0]
             Directory(name=dirname, parentdir=current_dir)
-
         # output from ls command -- file (create new file!)
         elif (ls := ls_file_parser.match(line)):
             filesize, filename = ls.groups()
             File(name=filename, size=int(filesize), parentdir=current_dir)
-
     return root
 
 
@@ -153,9 +201,9 @@ def part_two(root):
 
 
 if __name__ == '__main__':
-    for inputfile in ['example.txt', 'input.txt']:
+    for inputfile in ['example.txt']: #, 'input.txt']:
         print('---', inputfile, '-'*(40-len(inputfile)))
         dir_tree = parse_command_log_into_dir_tree(inputfile)
-        # dir_tree.print_tree()
+        dir_tree.print_tree()
         print(f'\tpart one: {part_one(dir_tree)}')
         print(f'\tpart two: {part_two(dir_tree)}')
