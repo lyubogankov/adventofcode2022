@@ -1,7 +1,7 @@
 '''
 Core data structure -- "tree grid", aka 2-dimensional list of lists
-    Outside list indices = columns.  At each index is a list.
-    Inner list indices = rows.  At each index is a Tree object.
+    Outside list indices = rows.  At each index is a list.
+    Inner list indices = cols.  At each index is a Tree object.
 
     tree_grid = [
         [Tree(r0 c0), Tree(r0 c1), Tree(r0 c2), ... Tree(r0 cN)],
@@ -31,12 +31,16 @@ class Tree:
             visible_from_top=False,
             visible_from_bot=False,
             visible_from_left=False,
-            visible_from_right=False):
-        self.height             = height
+            visible_from_right=False,
+            visible_from_max_scenic_score_tree=False):
+        self.height = height
+        # for part 1
         self.visible_from_top   = visible_from_top
         self.visible_from_bot   = visible_from_bot
         self.visible_from_left  = visible_from_left
         self.visible_from_right = visible_from_right
+        # for part 2
+        self.visible_from_max_scenic_score_tree = visible_from_max_scenic_score_tree
     
     def __str__(self):
         return f'{self.height}'
@@ -55,6 +59,8 @@ def print_tree_grid(tree_grid, color_top_vis=False, color_bot_vis=False, color_l
                 color = RED   # YELLOW
             elif color_r_vis and tree.visible_from_right:
                 color = RED   # MAGENTA
+            elif tree.visible_from_max_scenic_score_tree:
+                color = RED
             elif hide_invisible \
                     and not tree.visible_from_top \
                     and not tree.visible_from_bot \
@@ -76,9 +82,13 @@ def print_tree_grid_visibility_from_all_sides(tree_grid, hide_invisible):
     print_tree_grid(tree_grid, color_r_vis=True)
     print('\nFrom bottom:')
     print_tree_grid(tree_grid, color_bot_vis=True)
+    
+    print_tree_grid_visibility_total(tree_grid, hide_invisible)  # print overlay of all sides
+    print('')
+
+def print_tree_grid_visibility_total(tree_grid, hide_invisible):
     print('\nAll sides:')
     print_tree_grid(tree_grid, color_top_vis=True, color_l_vis=True, color_r_vis=True, color_bot_vis=True, hide_invisible=hide_invisible)
-    print('')
 
 def parse_file_into_tree_grid(inputfile):
     with open(inputfile, 'r') as _inputfile:
@@ -89,84 +99,27 @@ def parse_file_into_tree_grid(inputfile):
     num_cols = len(tree_rows[0])
     
     tree_grid = []
-    for row, raw_tree_row in enumerate(tree_rows):
+    for raw_tree_row in tree_rows:
         tree_row = []
-        for col, tree_height in enumerate(raw_tree_row):
-            # initialize tree -- set outside edges as visible already
-            tree_row.append(
-                Tree(
-                    height = tree_height,
-                    visible_from_top=(row == 0),
-                    visible_from_bot=(row == num_rows-1),
-                    visible_from_left=(col == 0),
-                    visible_from_right=(col == num_cols-1)
-                )
-            )
+        for tree_height in raw_tree_row:
+            tree_row.append(Tree(height=tree_height))
         tree_grid.append(tree_row)
     return tree_grid
 
 # part one
-def count_visible_trees_old(tree_grid):
-    
-    # first, iterate over the inner trees in the grid to see which ones are visible and which aren't.
-    
-    # will do x4 passes: t->b, b->t, l->r, r->l and mark trees as visible or not.
-    exclude_outer_cols = exclude_outer_rows = slice(1, -1)
-
-    # t <-> b
-    TOP_TO_BOT = 1
-    BOT_TO_TOP = 0
-    for direction in [TOP_TO_BOT, BOT_TO_TOP]:
-        # initialize starting row of heights based on outermost trees
-        outside_row = tree_grid[0 if direction else -1]
-        min_visible_heights_from_dir = [tree.height for tree in outside_row[exclude_outer_cols]]
-
-        # create list of trees that we need to check
-        if direction:
-            trees_for_visibility_check = tree_grid[1:]  # skip first row, take all other rows
-        else:
-            trees_for_visibility_check = reversed(tree_grid[:-1]) # skip last row, and go back -> front
-
-        for tree_row in trees_for_visibility_check:
-            for col, tree in enumerate(tree_row[exclude_outer_cols]):
-                if tree.height > min_visible_heights_from_dir[col]:
-                    min_visible_heights_from_dir[col] = tree.height
-                    if direction:
-                        tree.visible_from_top = True
-                    else:
-                        tree.visible_from_bot = True
-    # l <-> r
-    L_TO_R = 1
-    R_TO_L = 0
-    for direction in [L_TO_R, R_TO_L]:
-        outside_col_idx = 0 if direction else len(tree_grid[0])-1
-        min_visible_heights_from_dir = [tree_row[outside_col_idx].height for tree_row in tree_grid[exclude_outer_rows]]
-
-        for row, tree_row in enumerate(tree_grid[exclude_outer_rows]):
-            for col in range(1, len(tree_grid)-1) if direction else reversed(range(0, len(tree_grid)-2)):
-                tree = tree_row[col]
-
-                if tree.height > min_visible_heights_from_dir[row]:
-                    min_visible_heights_from_dir[row] = tree.height
-                    if direction:
-                        tree.visible_from_left = True
-                    else:
-                        tree.visible_from_right = True
-
-    # then, loop over all the trees and see whether they are visible or not!
-    visible = 0
-    for tree_row in tree_grid:
-        for tree in tree_row:
-            if tree.visible_from_top or tree.visible_from_bot or tree.visible_from_left or tree.visible_from_right:
-                visible += 1
-
-    return visible, tree_grid
-
 def count_visible_trees(tree_grid):
+    '''TODO: combine x4 annotation passes into one loop!'''
 
     # assumption - all rows have same len (it's a perfect rectangle)
     num_rows = len(tree_grid)
     num_cols = len(tree_grid[0])
+
+    # annotate all outside trees
+    for tree in tree_grid[ 0]: tree.visible_from_top = True
+    for tree in tree_grid[-1]: tree.visible_from_bot = True
+    for tree_row in tree_grid:
+        tree_row[ 0].visible_from_left = True
+        tree_row[-1].visible_from_right = True
 
     # top -> bottom annotation
     top_row = tree_grid[0]
@@ -214,6 +167,81 @@ def count_visible_trees(tree_grid):
 
     return visible, tree_grid
 
+# part two
+def calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=False, print=False):
+    '''TODO: combine n/s and e/w into a single unified block!'''
+
+    num_rows = len(tree_grid)
+    num_cols = len(tree_grid[0])  # assuming rectangular grid, aka all rows have same len
+    
+    # this is the tree from which we want to calculate the visibility score
+    tree = tree_grid[row_idx][col_idx]
+
+    scenic_score = 1
+
+    # north/south
+    for look_dir, row_condition, row_slice in [('north', row_idx > 0,          slice(row_idx-1, None, -1)), 
+                                               ('south', row_idx < num_rows-1, slice(row_idx+1, None,  1))]:
+        if print: print(f'        looking {look_dir}: ', end='')
+        visible_trees = 0
+        if row_condition:
+            for tree_row in tree_grid[row_slice]:
+                comp_tree = tree_row[col_idx]
+                visible_trees += 1
+                if print: print(f'{comp_tree.height} ', end='')
+                if annotate_visibility:
+                    comp_tree.visible_from_max_scenic_score_tree = True
+                if comp_tree.height >= tree.height:
+                    break
+        scenic_score *= visible_trees   
+        if print: print(f' vt {visible_trees}')
+        if scenic_score == 0:
+            return scenic_score
+
+    # east/west
+    for look_dir, col_condition, col_slice in [('east', col_idx < num_cols - 1, slice(col_idx+1, None,  1)),
+                                               ('west', col_idx > 0,            slice(col_idx-1, None, -1))]:
+        # looking east (right)
+        if print: print(f'        looking {look_dir}: ', end='')
+        visible_trees = 0
+        if col_condition:
+            for comp_tree in tree_grid[row_idx][col_slice]:
+                visible_trees += 1
+                if print: print(f'{comp_tree.height} ', end='')
+                if annotate_visibility:
+                    comp_tree.visible_from_max_scenic_score_tree = True
+                if comp_tree.height >= tree.height:
+                    break
+        scenic_score *= visible_trees
+        if print: print(f' vt {visible_trees}')
+        if scenic_score == 0:
+            return scenic_score
+
+    return scenic_score
+
+def find_tree_with_highest_scenic_score(tree_grid, print=False):
+    
+    num_rows = len(tree_grid)
+    num_cols = len(tree_grid[0])  # assuming rectangular grid, aka all rows have same len
+
+    # find tree with highest scenic score
+    max_scenic_score = 0
+    max_scenic_score_tree_row = max_scenic_score_tree_col = -1
+    for row_idx in range(num_rows):
+        for col_idx in range(num_cols):
+            if print: print(f'    ({row_idx}, {col_idx}) {tree_grid[row_idx][col_idx].height}')
+            score = calculate_scenic_score(tree_grid, row_idx, col_idx, print=print)
+            if print: print(f'        scenic score: {score}')
+            if score > max_scenic_score:
+                max_scenic_score = score
+                max_scenic_score_tree_row = row_idx
+                max_scenic_score_tree_col = col_idx
+
+    # after we're done -- do some coloring for printout!  Toggle visibility value for printout.
+    _ = calculate_scenic_score(tree_grid, max_scenic_score_tree_row, max_scenic_score_tree_col, annotate_visibility=True, print=print)
+            
+    return max_scenic_score, tree_grid
+
 if __name__ == '__main__':
     for inputfile in ['example.txt', 'input.txt']:
         print(f'--- {inputfile}', '-'*(90-len(inputfile)))
@@ -222,13 +250,14 @@ if __name__ == '__main__':
         print('\nOriginal grid:')
         print_tree_grid(tree_grid)
 
-        _num_v_trees, _mod_tree_grid          = count_visible_trees_old(copy.deepcopy(tree_grid))
-        # print('\nAnnotated grid:')
-        # print_tree_grid_visibility_from_all_sides(_mod_tree_grid)
-
-        num_visible_trees, modified_tree_grid = count_visible_trees(copy.deepcopy(tree_grid)) # part one
+        # part one
+        num_visible_trees, modified_tree_grid_p1 = count_visible_trees(copy.deepcopy(tree_grid))
         print('\nAnnotated grid:')
-        print_tree_grid_visibility_from_all_sides(modified_tree_grid, hide_invisible=inputfile=='input.txt')
+        print_tree_grid_visibility_from_all_sides(modified_tree_grid_p1, hide_invisible=inputfile=='input.txt')
+        print(f'\nPart one: visible trees = {num_visible_trees} / {len(modified_tree_grid_p1)*len(modified_tree_grid_p1[0])}')
 
-        print(f'\nPart one: visible trees = {num_visible_trees} / {len(modified_tree_grid)*len(modified_tree_grid[0])}')
-        print(f'Part one old v trees =    {_num_v_trees} / {len(modified_tree_grid)*len(modified_tree_grid[0])}')
+        # part two
+        max_scenic_score, modified_tree_grid_p2 = find_tree_with_highest_scenic_score(copy.deepcopy(tree_grid))
+        print('\nAnnotated grid:')
+        print_tree_grid_visibility_total(modified_tree_grid_p2, hide_invisible=False)
+        print(f'\nPart two: max scenic score = {max_scenic_score}')
