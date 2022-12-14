@@ -12,6 +12,8 @@ Core data structure -- "tree grid", aka 2-dimensional list of lists
     ]
 '''
 import copy
+import time
+from pprint import pprint
 
 # color codes for printing in terminal (https://stackoverflow.com/a/54955094)
 BLACK = '\033[30m'
@@ -66,15 +68,18 @@ def print_tree_grid(tree_grid, color_top_vis=False, color_bot_vis=False, color_l
                 color = RED   # YELLOW
             elif color_r_vis and tree.visible_from_right:
                 color = RED   # MAGENTA
-            # part two
-            elif tree.visible_from_max_scenic_score_tree:
-                color = RED
             # general
             elif hide_invisible and not tree.is_visible_from_outside():
                 color = BLACK
+            # part two
+            if tree.visible_from_max_scenic_score_tree:
+                if hide_invisible:
+                    color = WHITE
+                else:
+                    color = RED
+
             if color:
                 tree_str = f'{color}{tree_str}{RESET}'
-
             print(tree_str, end='')
         print('\n', end='')
 
@@ -115,6 +120,15 @@ def count_visible_trees(tree_grid):
     # assumption - all rows have same len (it's a perfect rectangle)
     num_rows = len(tree_grid)
     num_cols = len(tree_grid[0])
+
+    # directional_passes = [
+    #      # dir,   # eval - border trees   # row slice   # col slice
+    #     ('north', 'row_idx > 0',          slice(), slice()),  # bottom -> top
+    #     ('south', 'row_idx < num_rows-1', slice(), slice()),  # top -> bottom
+    #     ('east',  'col_idx < num_cols-1', slice(), slice()),  # right -> left
+    #     ('west',  'col_idx > 0',          slice(), slice())   # left -> right
+    # ]
+
 
     # annotate all outside trees
     for tree in tree_grid[ 0]: tree.visible_from_top = True
@@ -169,8 +183,8 @@ def count_visible_trees(tree_grid):
 
     return visible, tree_grid
 
-# part two
-def calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=False, print=False):
+# part two helper functions
+def calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=False, _print=False):
     '''
     
     Originally had two loops - one for north/south iteration (iterate rows, constant col),
@@ -196,14 +210,14 @@ def calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=Fals
     ]
 
     for look_dir, not_border_tree_condition, row_slice, col_slice in directional_passes:
-        if print: print(f'        looking {look_dir}: ', end='')
+        if _print: print(f'        looking {look_dir}: ', end='')
         visible_trees = 0
         if not_border_tree_condition:
             breakout = False
             for tree_row in tree_grid[row_slice]:
                 for comp_tree in tree_row[col_slice]:
                     visible_trees += 1
-                    if print: print(f'{comp_tree.height} ', end='')
+                    if _print: print(f'{comp_tree.height} ', end='')
                     if annotate_visibility:
                         comp_tree.visible_from_max_scenic_score_tree = True
                     if comp_tree.height >= tree.height:
@@ -212,37 +226,75 @@ def calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=Fals
                 if breakout:
                     break
         scenic_score *= visible_trees   
-        if print: print(f' vt {visible_trees}')
+        if _print: print(f' vt {visible_trees}')
         if scenic_score == 0:
             return scenic_score
 
     return scenic_score
 
-def find_tree_with_highest_scenic_score(tree_grid, print=False):
+def calc_scenic_score_of_all_trees(tree_grid, _print=False):
+    '''Loop over all trees and calculate scenic_score for each.  Store results in list and sort list by scenic_score!
     
+    Turned this into its own function.  The work was already being done to find the max, might as well keep it!
+    '''
+
     num_rows = len(tree_grid)
     num_cols = len(tree_grid[0])  # assuming rectangular grid, aka all rows have same len
 
     # find tree with highest scenic score
-    max_scenic_score = 0
-    max_scenic_score_tree_row = max_scenic_score_tree_col = -1
+    scenic_scores = []
     for row_idx in range(num_rows):
         for col_idx in range(num_cols):
-            if print: print(f'    ({row_idx}, {col_idx}) {tree_grid[row_idx][col_idx].height}')
-            score = calculate_scenic_score(tree_grid, row_idx, col_idx, print=print)
-            if print: print(f'        scenic score: {score}')
-            if score > max_scenic_score:
-                max_scenic_score = score
-                max_scenic_score_tree_row = row_idx
-                max_scenic_score_tree_col = col_idx
+            if _print: print(f'    ({row_idx}, {col_idx}) {tree_grid[row_idx][col_idx].height}')
+            score = calculate_scenic_score(tree_grid, row_idx, col_idx, _print=_print)
+            if _print: print(f'        scenic score: {score}')
+            scenic_scores.append((score, (row_idx, col_idx)))
+    scenic_scores.sort(key=lambda x: x[0], reverse=True)  # sort biggest -> smallest scenic score
+    return scenic_scores
+
+# part two answer function
+def find_tree_with_highest_scenic_score(tree_grid, _print=False):
+    '''Simplified - now piggy-backs off of function that calculates scenic score of all trees!
+    '''
+
+    scenic_scores = calc_scenic_score_of_all_trees(tree_grid, _print)
+    max_scenic_score, (max_scenic_score_tree_row, max_scenic_score_tree_col) = scenic_scores[0]
 
     # after we're done -- do some coloring for printout!  Toggle visibility value for printout.
-    _ = calculate_scenic_score(tree_grid, max_scenic_score_tree_row, max_scenic_score_tree_col, annotate_visibility=True, print=print)
+    _ = calculate_scenic_score(tree_grid, max_scenic_score_tree_row, max_scenic_score_tree_col, annotate_visibility=True, _print=_print)
             
     return max_scenic_score, tree_grid
 
+# extra credit / for fun
+def find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print=False):
+    scenic_scores = calc_scenic_score_of_all_trees(tree_grid, _print)
+    not_visible_from_outside = []
+    for score, (row_idx, col_idx) in scenic_scores:
+        tree = tree_grid[row_idx][col_idx]
+        if not tree.is_visible_from_outside():
+            not_visible_from_outside.append((score, (row_idx, col_idx)))
+    return not_visible_from_outside  # scenic_scores already sorted biggest -> smallest
+
+def print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid, up_to_num_trees, _print=False, sleep_period_s=1):
+    not_visible_from_outside = find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print)
+    
+    total_invisible_trees = len(not_visible_from_outside)
+    num_trees = min(up_to_num_trees, total_invisible_trees)
+    
+    for i, (score, (row_idx, col_idx)) in enumerate(not_visible_from_outside[:num_trees]):
+        temp_tree_grid = copy.deepcopy(tree_grid)
+        _ = calculate_scenic_score(temp_tree_grid, row_idx, col_idx, annotate_visibility=True, _print=_print)
+        print(f'--- {i+1} / {up_to_num_trees}: {score}')
+        print_tree_grid_visibility_total(temp_tree_grid, hide_invisible=True)
+        time.sleep(sleep_period_s)  # sleep for "animation" effect in terminal
+
+def find_not_visible_from_outside_tree_with_highest_scenic_score(tree_grid, _print=False):
+    score, (row_idx, col_idx) = find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print)[0]  # just take largest score
+    _ = calculate_scenic_score(tree_grid, row_idx, col_idx, annotate_visibility=True, _print=_print)
+    return score, tree_grid
+
 if __name__ == '__main__':
-    for inputfile in ['example.txt', 'input.txt']:
+    for inputfile in ['input.txt']: # 'example.txt', 'input.txt']:
         print(f'--- {inputfile}', '-'*(90-len(inputfile)))
         tree_grid = parse_file_into_tree_grid(inputfile)
         
@@ -260,3 +312,12 @@ if __name__ == '__main__':
         print('\nAnnotated grid:')
         print_tree_grid_visibility_total(modified_tree_grid_p2, hide_invisible=False)
         print(f'\nPart two: max scenic score = {max_scenic_score}')
+
+        # # extra credit -- what is the tree that is not visible from outside with highest scenic score?  Score = 3300
+        # scenic_score, modified_tree_grid_p3 = find_not_visible_from_outside_tree_with_highest_scenic_score(tree_grid=modified_tree_grid_p1)
+        # print('\nAnnotated grid:')
+        # print_tree_grid_visibility_total(modified_tree_grid_p3, hide_invisible=inputfile=='input.txt')
+        # print(f'\nScenic score = {scenic_score}')
+
+        # also for fun -- print out the top "n" highest-scenic-scoring trees that are not visible from outside
+        print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid=modified_tree_grid_p1, up_to_num_trees=100, sleep_period_s=0.3)
