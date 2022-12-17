@@ -162,39 +162,6 @@ def update_dynamic_grid(h, grid):
     grid.botr.y = min(grid.botr.y, h.y)  # -y
     return grid
 
-def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
-    '''Start point will be the bottom left corner of the grid.'''
-
-    # initial condition
-    h = Point_2D(start_point.x, start_point.y)
-    t = Point_2D(start_point.x, start_point.y)
-    if fixed_grid:
-        # the grid will not grow.
-        # I won't check whether moves will send H/T outside of the grid, though,
-        #   I'm assuming that the moves account for this  (like example.txt -- that's why I'm doing this.)
-        grid = fixed_grid
-    else:
-        # the grid will grow dynamically from a 1x1 square.
-        grid = Grid(
-            topl=Point_2D(x=start_point.x, y=start_point.y),
-            botr=Point_2D(x=start_point.x, y=start_point.y)
-        )
-
-    if _print:
-        print('Initial state:')
-        print_current_grid_state(h, t, grid, start_point)
-    for move in move_list:
-        if _print:
-            print(f'== {move.name} {move.repetitions} ==')
-        for _ in range(move.repetitions):
-            h, t = update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
-            if not fixed_grid:
-                grid = update_dynamic_grid(h, grid)
-            if _print and print_atomic_moves:
-                print_current_grid_state(h, t, grid, start_point)
-        if _print and not print_atomic_moves:
-            print_current_grid_state(h, t, grid, start_point)
-
 def simulate_rope_partone(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
     '''Start point will be the bottom left corner of the grid.'''
 
@@ -241,13 +208,18 @@ if __name__ == '__main__':
         botr=Point_2D(x=5, y=0)
     )
 
-    for inputfile in ['example.txt']: #, 'input.txt']:
+    for inputfile in ['example.txt', 'input.txt']:
+        example = inputfile == 'example.txt'
+
         move_list = read_input_file_into_move_list(inputfile)
-        #simulate_rope(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
-        #simulate_rope(move_list, fixed_grid=None, _print=True, print_atomic_moves=True)
-        t_move_set, t_move_str = simulate_rope_partone(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
+        t_move_set, t_move_str = simulate_rope_partone(
+            move_list,
+            fixed_grid=fixed_grid if example else None,
+            _print=example,
+            print_atomic_moves=example
+        )
         print(f'Number of unique spots T has visited: {len(t_move_set)}')
-        print(t_move_str, end='\n\n')
+        # print(t_move_str, end='\n\n')
         
 
 '''
