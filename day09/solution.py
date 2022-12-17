@@ -2,6 +2,9 @@ from collections import namedtuple
 from pprint import pprint
 import hashlib
 
+# colors
+RED = '\033[31m'
+RESET = '\033[0m'
 
 # reading text file -> set of moves
 
@@ -107,10 +110,8 @@ def generate_print_grid_string(items, grid):
     print_grid_string = ''     
     for row_idx in reversed(range(grid.botr.y, grid.topl.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
         for col_idx in range(grid.topl.x, grid.botr.x+1):
-            # print(f'x={col_idx}, y={row_idx}')
             nextchar = '.'
             while curr_item < len(items) and items[curr_item].point.x == col_idx and items[curr_item].point.y == row_idx:
-                # print(f'\t{curr_item}, {items[curr_item]}, {items[curr_item].printchar}')
                 nextchar = items[curr_item].printchar
                 curr_item += 1
             print_grid_string += nextchar
@@ -128,9 +129,10 @@ def print_current_grid_state(h_point, t_point, grid, start_point):
     print(generate_current_grid_state_string(h_point, t_point, grid, start_point), end='\n\n')
 
 # printer for part one
-def generate_unique_t_locations_string(t_locations_set, grid, start_point):
+def generate_unique_t_locations_string(t_locations_set, grid, start_point, color_s=False):
+    startpt_printchar = f'{RED}s{RESET}' if color_s else 's'
     return  generate_print_grid_string(
-                items=[PrintItem('#', point) for point in t_locations_set] + [PrintItem('s', start_point)],
+                items=[PrintItem('#', point) for point in t_locations_set] + [PrintItem(startpt_printchar, start_point)],
                 grid=grid
             )
 def print_unique_t_locations(t_locations_set, grid, start_point):
@@ -162,7 +164,9 @@ def update_dynamic_grid(h, grid):
     grid.botr.y = min(grid.botr.y, h.y)  # -y
     return grid
 
-def simulate_rope_partone(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
+def simulate_rope_partone(
+        move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0),
+        _print=False, print_atomic_moves=False, color_start_point=True):
     '''Start point will be the bottom left corner of the grid.'''
 
     # initial condition
@@ -199,7 +203,7 @@ def simulate_rope_partone(move_list, fixed_grid=None, start_point=Point_2D(x=0, 
         if _print and not print_atomic_moves:
             print_current_grid_state(h, t, grid, start_point)
 
-    return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point)
+    return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
 
 if __name__ == '__main__':
 
@@ -216,10 +220,11 @@ if __name__ == '__main__':
             move_list,
             fixed_grid=fixed_grid if example else None,
             _print=example,
-            print_atomic_moves=example
+            print_atomic_moves=example,
+            color_start_point=True
         )
         print(f'Number of unique spots T has visited: {len(t_move_set)}')
-        # print(t_move_str, end='\n\n')
+        print(t_move_str, end='\n\n')
         
 
 '''
