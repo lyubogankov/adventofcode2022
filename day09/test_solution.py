@@ -194,11 +194,21 @@ s.....'''
         )
         for (label, move), outcome_str in zip(atomic_move_list, atomic_move_outcomes):
             h, t = solution.update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
+            current_grid_str = solution.generate_current_grid_state_string(h, t, grid, start_point=Point_2D(x=0, y=0))
             with self.subTest(i=label):
-                self.assertEqual(
-                    solution.generate_current_grid_state_string(h, t, grid, start_point=Point_2D(x=0, y=0)),
-                    outcome_str
-                )
+                self.assertEqual(current_grid_str, outcome_str)
+
+    def test_part_one(self):
+        outcome_str = \
+'''..##..
+...##.
+.####.
+....#.
+s###..'''
+        move_list = solution.read_input_file_into_move_list(self.examplefile)
+        t_move_set, t_move_str = solution.simulate_rope_partone(move_list)
+        self.assertEqual(len(t_move_set), 13)
+        self.assertEqual(t_move_str, outcome_str)
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=1) # default verbosity

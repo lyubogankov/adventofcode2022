@@ -1,5 +1,6 @@
 from collections import namedtuple
 from pprint import pprint
+import hashlib
 
 
 # reading text file -> set of moves
@@ -40,6 +41,12 @@ class Point_2D:
             return self.x == other.x and self.y == other.y
         else:
             return False
+
+    # https://stackoverflow.com/a/1608882 -- if I implement __eq__, I also need to implement __hash__
+    # https://stackoverflow.com/a/2909119 -- solution for implementing hash.  Rely on hash of tuple!
+    def __hash__(self):
+        key = (self.x, self.y)
+        return hash(key)
 
 class Move:
     '''Making this a class instead of a namedtuple so I can do equality check during testing!'''
@@ -84,13 +91,11 @@ def read_input_file_into_move_list(inputfile):
 ### printing
 
 # generic printer
-def generate_print_grid_string(items, grid, start_point):
+def generate_print_grid_string(items, grid):
     '''Creates string to be printed from list of items, note that items are applied FIFO (so they can override each other).
     Wrote separately from print function so I can do unit tests against this function.
     '''
-    # in the examples, 's' is always shown, so we should print that out as well.
-    items = [PrintItem('s', start_point)] + items
-    
+
     # sort the items by x (row), then y (col) -- reverse order of loops below (y (row) = outer, x (col) = inner)
     #   This gives us items ordered by row, then within each row by col, the same order in which the loops iterate.
     #   That allows the character replacement to work!
@@ -116,22 +121,19 @@ def generate_print_grid_string(items, grid, start_point):
 # general printer, for showing changes to grid state
 def generate_current_grid_state_string(h_point, t_point, grid, start_point):
     return  generate_print_grid_string(
-                items=[PrintItem('T', t_point), PrintItem('H', h_point)],
-                grid=grid,
-                start_point=start_point
+                items=[PrintItem('s', start_point), PrintItem('T', t_point), PrintItem('H', h_point)],
+                grid=grid
             )
 def print_current_grid_state(h_point, t_point, grid, start_point):
-    # print_grid(items=[PrintItem('T', t_point), PrintItem('H', h_point)], grid=grid, start_point=start_point)
     print(generate_current_grid_state_string(h_point, t_point, grid, start_point), end='\n\n')
 
 # printer for part one
 def generate_unique_t_locations_string(t_locations_set, grid, start_point):
     return  generate_print_grid_string(
-                items=[PrintItem('#', point) for point in t_locations_set],
-                grid=grid,
-                start_point=start_point
+                items=[PrintItem('#', point) for point in t_locations_set] + [PrintItem('s', start_point)],
+                grid=grid
             )
-def print_unique_T_locations(t_locations_set, grid, start_point):
+def print_unique_t_locations(t_locations_set, grid, start_point):
     print(generate_unique_t_locations_string(t_locations_set, grid, start_point), end='\n\n')
 
 ### rope simulation
@@ -193,6 +195,45 @@ def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _p
         if _print and not print_atomic_moves:
             print_current_grid_state(h, t, grid, start_point)
 
+def simulate_rope_partone(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
+    '''Start point will be the bottom left corner of the grid.'''
+
+    # initial condition
+    h = Point_2D(start_point.x, start_point.y)
+    t = Point_2D(start_point.x, start_point.y)
+    if fixed_grid:
+        # the grid will not grow.
+        # I won't check whether moves will send H/T outside of the grid, though,
+        #   I'm assuming that the moves account for this  (like example.txt -- that's why I'm doing this.)
+        grid = fixed_grid
+    else:
+        # the grid will grow dynamically from a 1x1 square.
+        grid = Grid(
+            topl=Point_2D(x=start_point.x, y=start_point.y),
+            botr=Point_2D(x=start_point.x, y=start_point.y)
+        )
+
+    # special part one bit
+    t_move_set = {start_point}
+
+    if _print:
+        print('Initial state:')
+        print_current_grid_state(h, t, grid, start_point)
+    for move in move_list:
+        if _print:
+            print(f'== {move.name} {move.repetitions} ==')
+        for _ in range(move.repetitions):
+            h, t = update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
+            if not fixed_grid:
+                grid = update_dynamic_grid(h, grid)
+            t_move_set.add(t)
+            if _print and print_atomic_moves:
+                print_current_grid_state(h, t, grid, start_point)
+        if _print and not print_atomic_moves:
+            print_current_grid_state(h, t, grid, start_point)
+
+    return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point)
+
 if __name__ == '__main__':
 
     fixed_grid = Grid(
@@ -203,8 +244,11 @@ if __name__ == '__main__':
     for inputfile in ['example.txt']: #, 'input.txt']:
         move_list = read_input_file_into_move_list(inputfile)
         #simulate_rope(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
-        simulate_rope(move_list, fixed_grid=None, _print=True, print_atomic_moves=True)
-
+        #simulate_rope(move_list, fixed_grid=None, _print=True, print_atomic_moves=True)
+        t_move_set, t_move_str = simulate_rope_partone(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
+        print(f'Number of unique spots T has visited: {len(t_move_set)}')
+        print(t_move_str, end='\n\n')
+        
 
 '''
 TODO
