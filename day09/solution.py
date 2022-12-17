@@ -41,7 +41,7 @@ class Point_2D:
         else:
             return False
 
-Grid = namedtuple('Grid', ['topl_point', 'botr_point'])
+Grid = namedtuple('Grid', ['topl', 'botr'])
 PrintItem = namedtuple('PrintItem', ['printchar', 'point'])
 Move = namedtuple('Move', ['transform', 'repetitions', 'name'])
 moves = {
@@ -77,8 +77,8 @@ def generate_print_grid_string(items, grid):
 
     # generate each row at a time.  if our current coord matches an item, print its string, and get new item from list, otherwise point = .
     print_grid_string = ''     
-    for row_idx in reversed(range(grid.botr_point.y, grid.topl_point.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
-        for col_idx in range(grid.topl_point.x, grid.botr_point.x+1):
+    for row_idx in reversed(range(grid.botr.y, grid.topl.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
+        for col_idx in range(grid.topl.x, grid.botr.x+1):
             # print(f'x={col_idx}, y={row_idx}')
             nextchar = '.'
             while curr_item < len(items) and items[curr_item].point.x == col_idx and items[curr_item].point.y == row_idx:
@@ -121,6 +121,13 @@ def update_h_and_t_pos(h_initial, t_initial, h_atomic_move):
 
     return h_updated, t_updated
 
+def update_dynamic_grid(h, grid):
+    grid.botr.x = max(grid.botr.x, h.x)  # +x
+    grid.topl.x = min(grid.topl.x, h.x)  # -x
+    grid.topl.y = max(grid.topl.y, h.y)  # +y
+    grid.botr.y = min(grid.botr.y, h.y)  # -y
+    return grid
+
 def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
     '''Start point will be the bottom left corner of the grid.'''
 
@@ -130,14 +137,13 @@ def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _p
     if fixed_grid:
         # the grid will not grow.
         # I won't check whether moves will send H/T outside of the grid, though,
-        #   I'm assuming that the moves account for this
-        #   (like example.txt -- that's why I'm doing this.)
+        #   I'm assuming that the moves account for this  (like example.txt -- that's why I'm doing this.)
         grid = fixed_grid
     else:
         # the grid will grow dynamically from a 1x1 square.
         grid = Grid(
-            topl_point=Point_2D(x=start_point.x, y=start_point.y),
-            botr_point=Point_2D(x=start_point.x, y=start_point.y)
+            topl=Point_2D(x=start_point.x, y=start_point.y),
+            botr=Point_2D(x=start_point.x, y=start_point.y)
         )
 
     if _print:
@@ -148,29 +154,27 @@ def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _p
             print(f'== {move.name} {move.repetitions} ==')
         for _ in range(move.repetitions):
             h, t = update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
-            # update non-fixed grid
-
+            if not fixed_grid:
+                grid = update_dynamic_grid(h, grid)
             if _print and print_atomic_moves:
                 print_current_grid_state(h, t, grid)
         if _print and not print_atomic_moves:
-            print(f'After {move.name} {move.repetitions}')
             print_current_grid_state(h, t, grid)
 
 if __name__ == '__main__':
 
     fixed_grid = Grid(
-        topl_point=Point_2D(x=0, y=4),
-        botr_point=Point_2D(x=5, y=0)
+        topl=Point_2D(x=0, y=4),
+        botr=Point_2D(x=5, y=0)
     )
 
     for inputfile in ['example.txt']: #, 'input.txt']:
         move_list = read_input_file_into_move_list(inputfile)
-        simulate_rope(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
+        #simulate_rope(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
+        simulate_rope(move_list, fixed_grid=None, _print=True, print_atomic_moves=True)
+
 
 '''
 TODO
-2. add non-fixed grid mode (for printing input.txt)
-*3. refactor to make simulate_atomic_rope_move() its own function that returns new pos of h/t
-        make the grid update its own function that takes in h/t/grid and returns new grid (if needed, otherwise same grid)
 4. create unit tests for generate_print_str based on example.txt
 '''
