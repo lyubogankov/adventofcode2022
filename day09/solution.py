@@ -34,6 +34,13 @@ class Point_2D:
         point1.y += point2.y
         return point1
 
+    # heavily inspired by https://stackoverflow.com/q/390250
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.x == other.x and self.y == other.y
+        else:
+            return False
+
 Grid = namedtuple('Grid', ['topl_point', 'botr_point'])
 PrintItem = namedtuple('PrintItem', ['printchar', 'point'])
 Move = namedtuple('Move', ['transform', 'repetitions', 'name'])
@@ -54,26 +61,22 @@ def read_input_file_into_move_list(inputfile):
         move_list.append(Move(transform=moves[direction], repetitions=int(num_steps), name=direction))
     return move_list
 
-### simulation
+### printing
 
 # generic printer
 def generate_print_grid_string(items, grid):
     '''Creates string to be printed from list of items, note that items are applied FIFO (so they can override each other).
     Wrote separately from print function so I can do unit tests against this function.
     '''
-    # sort the items by x (row), then y (col)
-    # items.sort(key=lambda item: (item.point.x, item.point.y))
+    # sort the items by x (row), then y (col) -- reverse order of loops below (y (row) = outer, x (col) = inner)
+    #   This gives us items ordered by row, then within each row by col, the same order in which the loops iterate.
+    #   That allows the character replacement to work!
     items.sort(key=lambda item: item.point.x)
-    items.sort(key=lambda item: item.point.y, reverse=True)
-    
-    # print('--- Sorted items:')
-    # pprint(items)
-    
+    items.sort(key=lambda item: item.point.y, reverse=True)  
     curr_item = 0
 
     # generate each row at a time.  if our current coord matches an item, print its string, and get new item from list, otherwise point = .
     print_grid_string = ''     
-    
     for row_idx in reversed(range(grid.botr_point.y, grid.topl_point.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
         for col_idx in range(grid.topl_point.x, grid.botr_point.x+1):
             # print(f'x={col_idx}, y={row_idx}')
@@ -84,9 +87,7 @@ def generate_print_grid_string(items, grid):
                 curr_item += 1
             print_grid_string += nextchar
         print_grid_string += '\n'
-
     return print_grid_string
-
 # convinience function
 def print_grid(*args, **kwargs): print(generate_print_grid_string(*args, **kwargs))
 
@@ -98,7 +99,29 @@ def print_current_grid_state(h_point, t_point, grid):
 def print_unique_T_locations(t_locations_set, grid):
     print_grid(items=[PrintItem('#', point) for point in t_locations_set], grid=grid)
 
-def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False):
+### rope simulation
+
+# def simulate_atomic_rope_move(h_initial, t_initial, move, non_fixed_grid=None, _print=False):
+
+def update_h_and_t_pos(h_initial, t_initial, h_atomic_move):
+
+    ### update H
+    h_updated = h_initial + h_atomic_move.transform
+
+    ### update T
+    # case one: is T within one square of H?  if so, no need to move it.
+    if abs(h_updated.x - t_initial.x) <= 1 and abs(h_updated.y - t_initial.y) <= 1:
+        t_updated = t_initial
+    # case two: H starts in same x (or y) as T (not both) and moves further away in x (or y) dir
+    elif (t_initial.x == h_initial.x == h_updated.x) or (t_initial.y == h_initial.y == h_updated.y):
+        t_updated = t_initial + h_atomic_move.transform
+    # case three: H starts diagonal to T and moves away.  T has to move diagonally to keep up (aka take H's original spot)
+    else:
+        t_updated = h_initial
+
+    return h_updated, t_updated
+
+def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _print=False, print_atomic_moves=False):
     '''Start point will be the bottom left corner of the grid.'''
 
     # initial condition
@@ -121,20 +144,17 @@ def simulate_rope(move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), _p
         print('Initial state:')
         print_current_grid_state(h, t, grid)
     for move in move_list:
-        print(f'== {move.name} {move.repetitions} ==')
+        if _print:
+            print(f'== {move.name} {move.repetitions} ==')
         for _ in range(move.repetitions):
-            # update h
-            old_h = Point_2D(x=h.x, y=h.y)
-            h += move.transform
-            # update t
+            h, t = update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
+            # update non-fixed grid
 
-            if _print:
-                print('current h:', str(h))
+            if _print and print_atomic_moves:
                 print_current_grid_state(h, t, grid)
-        # if _print:
-        #     print(f'After {move.name} {move.repetitions}')
-        #     print('current h:', str(h))
-        #     print_current_grid_state(h, t, grid)
+        if _print and not print_atomic_moves:
+            print(f'After {move.name} {move.repetitions}')
+            print_current_grid_state(h, t, grid)
 
 if __name__ == '__main__':
 
@@ -145,4 +165,12 @@ if __name__ == '__main__':
 
     for inputfile in ['example.txt']: #, 'input.txt']:
         move_list = read_input_file_into_move_list(inputfile)
-        simulate_rope(move_list, fixed_grid=fixed_grid, _print=True)
+        simulate_rope(move_list, fixed_grid=fixed_grid, _print=True, print_atomic_moves=True)
+
+'''
+TODO
+2. add non-fixed grid mode (for printing input.txt)
+*3. refactor to make simulate_atomic_rope_move() its own function that returns new pos of h/t
+        make the grid update its own function that takes in h/t/grid and returns new grid (if needed, otherwise same grid)
+4. create unit tests for generate_print_str based on example.txt
+'''
