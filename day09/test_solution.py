@@ -193,8 +193,8 @@ s.....'''
             botr=Point_2D(x=5, y=0)
         )
         for (label, move), outcome_str in zip(atomic_move_list, atomic_move_outcomes):
-            h, t = solution.update_h_and_t_pos(h_initial=h, t_initial=t, h_atomic_move=move)
-            current_grid_str = solution.generate_current_grid_state_string(h, t, grid, start_point=Point_2D(x=0, y=0))
+            h, t, _ = solution.update_adjacent_knot_pos(lead_old=h, follow_old=t, lead_atomic_move=move)
+            current_grid_str = solution.generate_current_grid_state_string(knots=[h, t], grid=grid, start_point=Point_2D(x=0, y=0))
             with self.subTest(i=label):
                 self.assertEqual(current_grid_str, outcome_str)
 
