@@ -113,11 +113,11 @@ def read_input_file_into_move_list(inputfile):
 ### printing
 
 # generic printer
-def generate_print_grid_string(items, grid, animationmode=False):
+def generate_print_grid_string(items, grid, animation_framedelay=None):
     '''Creates string to be printed from list of items, note that items are applied FIFO (so they can override each other).
     Wrote separately from print function so I can do unit tests against this function.
 
-    Animationmode = don't print as many dots, only do it for the border.
+    animation_framedelay = don't print as many dots, only do it for the border.
     '''
 
     # sort the items by x (row), then y (col) -- reverse order of loops below (y (row) = outer, x (col) = inner)
@@ -132,7 +132,7 @@ def generate_print_grid_string(items, grid, animationmode=False):
     for row_idx in reversed(range(grid.botr.y, grid.topl.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
         for col_idx in range(grid.topl.x, grid.botr.x+1):
             nextchar = '.'
-            if animationmode and grid.topl.x < col_idx < grid.botr.x and grid.botr.y < row_idx < grid.topl.y:
+            if animation_framedelay and grid.topl.x < col_idx < grid.botr.x and grid.botr.y < row_idx < grid.topl.y:
                 nextchar = ' '
             while curr_item < len(items) and items[curr_item].point.x == col_idx and items[curr_item].point.y == row_idx:
                 nextchar = items[curr_item].printchar
@@ -143,8 +143,8 @@ def generate_print_grid_string(items, grid, animationmode=False):
     return print_grid_string
 
 # part one printer, for showing changes to grid state
-def generate_current_grid_state_string(knots, grid, start_point, animationmode=False, color_indices=[]):
-    startpt_printchar = f'{RED}s{RESET}' if animationmode else 's'
+def generate_current_grid_state_string(knots, grid, start_point, animation_framedelay=None, color_indices=[]):
+    startpt_printchar = f'{RED}s{RESET}' if animation_framedelay else 's'
     items = [PrintItem(startpt_printchar, start_point)]
     if len(knots) == 2:
         h_point, t_point = knots
@@ -157,7 +157,7 @@ def generate_current_grid_state_string(knots, grid, start_point, animationmode=F
             printstr += str(i) if i > 0 else 'H'
             printstr += RESET if i in color_indices else ''
             items.append(PrintItem(printstr, point))
-    return  generate_print_grid_string(items=items, grid=grid, animationmode=animationmode )
+    return  generate_print_grid_string(items=items, grid=grid, animation_framedelay=animation_framedelay )
 def print_current_grid_state(*args, **kwargs):
     print(generate_current_grid_state_string(*args, **kwargs), end='\n\n')
 
@@ -182,10 +182,18 @@ def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
     # case one: is L within one square of F?  if so, no need to move it.
     if abs(lead_new.x - follow_old.x) <= 1 and abs(lead_new.y - follow_old.y) <= 1:
         follow_new = follow_old
-    # case two (special multiknot case):  Lead makes diagonal move, follow has to make same move.
+    # case two (special multiknot case):  Lead makes diagonal move.
     #   Had to introduce this during part two, my sim wasn't matching the example output!
     elif abs(transform.x) > 0 and abs(transform.y) > 0:
-        follow_new = follow_old + transform
+        # 2a: Ran into this with example_two.
+        #     Can't blindly apply diagonal move, goal is to get knots to be in same row or col?
+        if lead_new.x == follow_old.x:
+            follow_new = follow_old + Point_2D(x=0, y=transform.y)
+        elif lead_new.y == follow_old.y:
+            follow_new = follow_old + Point_2D(x=transform.x, y=0)
+        # 2b: What I had previously - apply same diagonal move
+        else:
+            follow_new = follow_old + transform
     # case three: L starts in same x (or y) as F (not both) and moves further away in x (or y) dir
     elif (follow_old.x == lead_old.x == lead_new.x) or (follow_old.y == lead_old.y == lead_new.y):
         follow_new = follow_old + transform
@@ -208,9 +216,9 @@ def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
 def update_lead_knot_pos(old_pos, atomic_move):
     return old_pos + atomic_move.transform
 
-def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False):
+def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False, animation_framedelay=None):
     if print_atomic_moves:
-        print('-'*15, f'rep {rep+1} / {lead_move.repetitions}')
+        print('-'*(grid.botr.x + 3), f'rep {rep+1} / {lead_move.repetitions}')
 
     # update position of all knots (0 happens outside of the loop)
     _move = lead_move
@@ -237,6 +245,12 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
             print(_move.transform)
             print_knots = updated_knots + knots[len(updated_knots):]
             print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1])
+            if animation_framedelay and not _break:
+                os.system('clear') # linux only :/
+            print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1], animation_framedelay=animation_framedelay)
+            if animation_framedelay and not _break:
+                time.sleep(animation_framedelay)
+        
         # want to print the first move that doesn't move, then break.
         if _break:
             break
@@ -245,7 +259,7 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
 def simulate_rope(
         move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), num_knots=10,
         print_after_move=False, print_after_full_rope_update=False, print_atomic_moves=False,
-        color_start_point=False, animationmode=False):
+        color_start_point=False, animation_framedelay=None):
     '''Start point will be the bottom left corner of the grid.'''
 
     _print = print_after_move or print_after_full_rope_update or print_atomic_moves
@@ -265,23 +279,23 @@ def simulate_rope(
 
     if _print:
         print('Initial state:')
-        print_current_grid_state(knots, grid, start_point, animationmode)
+        print_current_grid_state(knots, grid, start_point, animation_framedelay)
     for move in move_list:
         if _print:
-            print(f'== {move.name} {move.repetitions} ==\n')
+            print(f"{'='*(grid.botr.x + 15) if print_atomic_moves else ''}== {move.name} {move.repetitions} ==\n")
         for rep in range(move.repetitions):           
-            knots = update_all_knot_pos(knots, move, grid, start_point, rep)
+            knots = update_all_knot_pos(knots, move, grid, start_point, rep, print_atomic_moves, animation_framedelay)
             # head = first knot, tail = last knot
             if not fixed_grid:
                 grid = update_dynamic_grid(knots[0], grid)
             t_move_set.add(knots[-1])
 
             if print_after_full_rope_update:
-                if animationmode:
+                if animation_framedelay:
                         os.system('clear') # linux only :/
-                print_current_grid_state(knots, grid, start_point, animationmode)
-                if animationmode:
-                        time.sleep(0.1)
+                print_current_grid_state(knots, grid, start_point, animation_framedelay)
+                if animation_framedelay:
+                        time.sleep(animation_framedelay)
         if print_after_move:
             print_current_grid_state(knots=knots, grid=grid, start_point=start_point)
 
@@ -319,6 +333,7 @@ if __name__ == '__main__':
 
     # part 2
     for inputfile in ['example.txt', 'example_two.txt']: #, 'input.txt']:
+    # for inputfile in ['example_two.txt']:
         exampleone = inputfile == 'example.txt'
         exampletwo = inputfile == 'example_two.txt'
         example = exampleone or exampletwo
@@ -344,6 +359,9 @@ if __name__ == '__main__':
             color_start_point=True
         )
 
+        print(f'Number of unique spots T has visited: {len(t_move_set)}')
+        print(t_move_str, end='\n\n')
+
     # # animation
     # '''TODO
     # create GIF out of individual frames for example / input.txt
@@ -362,8 +380,18 @@ if __name__ == '__main__':
     #         _print=True,
     #         print_atomic_moves=True,
     #         color_start_point=True,
-    #         animationmode=True
+    #         animation_framedelay=True
     #     )
 
     #     # print('.'*364)
     #     # _ = input('change your resolution.  ENTER when done.')
+
+'''
+Big takeaway from Day09:
+
+I read over the specification text and implemented my rope-knot-movement simulation rules.
+However, seeing the worked examples vs the output of my sim contradicted my understanding of the spec several times!
+
+The worked examples (especially watching adjacent knots move one-by-one) helped my enhance my
+    understanding of the spec and arrive at the correct answer.
+'''

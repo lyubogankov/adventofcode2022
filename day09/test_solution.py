@@ -23,16 +23,16 @@ class TestDay09(unittest.TestCase):
             with self.subTest(i=line):
                 self.assertEqual(str(move), line)
 
-    @staticmethod
-    def verify_atomic_move_rope_sim_n_knots(tester, num_knots, grid, exfile, per_move_outcomes, mode, start_point=Point_2D(x=0, y=0)):
+    # helper function
+    def verify_atomic_move_rope_sim_n_knots(self, num_knots, grid, exfile, per_move_outcomes, mode, start_point=Point_2D(x=0, y=0)):
         '''The move/outcome answers come directly from adventofcode problem description (oracle)
         
         mode = 'atomic' or 'nonatomic'
             atomic    = each move has repetitions = 1
             nonatomic = move can have repetitions > 1
         ''' 
-        old_tester_maxdiff = tester.maxDiff
-        tester.maxDiff = None
+        old_maxdiff = self.maxDiff
+        self.maxDiff = None
 
         atomic = mode == 'atomic'
         nonatomic = mode == 'nonatomic'
@@ -48,7 +48,7 @@ class TestDay09(unittest.TestCase):
                     move_and_label_list.append((f'(move {i}/{len(_move_list)}) {move.name} {j}/{move.repetitions}', atomic_move))
         elif nonatomic:
             move_and_label_list = [(f'(move {i}/{len(_move_list)}) {str(move)}', move) for i, move in enumerate(_move_list)]
-        tester.assertEqual(len(move_and_label_list), len(per_move_outcomes))
+        self.assertEqual(len(move_and_label_list), len(per_move_outcomes))
 
         for (label, move), outcome_str in zip(move_and_label_list, per_move_outcomes):
             # if atomic -- repetitions = 1.  nonatomic - no such guarantee, but we're checking at the end.
@@ -57,14 +57,14 @@ class TestDay09(unittest.TestCase):
                 current_grid_str = solution.generate_current_grid_state_string(knots, grid, start_point)
                 # test after every move repetition for atomic mode (ex1)
                 if atomic:
-                    with tester.subTest(i=label):
-                        tester.assertEqual(current_grid_str, outcome_str)
+                    with self.subTest(i=label):
+                        self.assertEqual(current_grid_str, outcome_str)
             # test after all move repetitions for nonatomic mode (ex2)
             if nonatomic:
-                with tester.subTest(i=label):
-                    tester.assertEqual(current_grid_str, outcome_str)
+                with self.subTest(i=label):
+                    self.assertEqual(current_grid_str, outcome_str)
 
-        tester.maxDiff = old_tester_maxdiff
+        self.maxDiff = old_maxdiff
 
     def test_atomic_move_rope_simulation_2knots(self):
         atomic_move_outcomes = [
@@ -223,8 +223,8 @@ s.....'''
         # initial condition
         grid = Grid.create_grid_with_dimensions(width=6, height=5)
         # run the sim!
-        TestDay09.verify_atomic_move_rope_sim_n_knots(
-            tester=self, grid=grid, exfile=self.examplefile, per_move_outcomes=atomic_move_outcomes, num_knots=2, mode='atomic')
+        self.verify_atomic_move_rope_sim_n_knots(
+            grid=grid, exfile=self.examplefile, per_move_outcomes=atomic_move_outcomes, num_knots=2, mode='atomic')
 
     def test_move_rope_simulation_10knots(self):
         with self.subTest(i=self.examplefile):
@@ -383,8 +383,8 @@ H123..
             ]
             grid = Grid.create_grid_with_dimensions(width=6, height=5)
             # run the sim!
-            TestDay09.verify_atomic_move_rope_sim_n_knots(
-                tester=self, grid=grid, exfile=self.examplefile, per_move_outcomes=atomic_move_outcomes, num_knots=10, mode='atomic')
+            self.verify_atomic_move_rope_sim_n_knots(
+                grid=grid, exfile=self.examplefile, per_move_outcomes=atomic_move_outcomes, num_knots=10, mode='atomic')
         with self.subTest(i=self.exampletwofile):
             move_outcomes = [
 # R 5
@@ -573,10 +573,17 @@ H123456789................''',
             ]
             grid = Grid.create_grid_with_dimensions(width=26, height=21)
             # run the sim!
-            TestDay09.verify_atomic_move_rope_sim_n_knots(
-                tester=self, num_knots = 10, grid=grid, exfile=self.exampletwofile, per_move_outcomes=move_outcomes,
+            self.verify_atomic_move_rope_sim_n_knots(
+                num_knots = 10, grid=grid, exfile=self.exampletwofile, per_move_outcomes=move_outcomes,
                 start_point=Point_2D(x=11, y=5), mode='nonatomic'
             )
+
+    # helper function
+    def verify_t_move_set(self, move_list, num_knots, expected_num_set_elem, outcome_str=None):
+        t_move_set, t_move_str = solution.simulate_rope(move_list, num_knots=num_knots)
+        self.assertEqual(len(t_move_set), expected_num_set_elem)
+        if outcome_str:
+            self.assertEqual(t_move_str, outcome_str)
 
     def test_part_one(self):
         outcome_str = \
@@ -585,13 +592,49 @@ H123456789................''',
 .####.
 ....#.
 s###..'''
-        move_list = solution.read_input_file_into_move_list(self.examplefile)
-        t_move_set, t_move_str = solution.simulate_rope(move_list, num_knots=2)
-        self.assertEqual(len(t_move_set), 13)
-        self.assertEqual(t_move_str, outcome_str)
+        self.verify_t_move_set(
+            move_list=solution.read_input_file_into_move_list(self.examplefile),
+            num_knots=2,
+            expected_num_set_elem=13,
+            outcome_str=outcome_str
+        )
 
-    def test_part_two(self):
-        pass
+    def test_part_two_ex1(self):
+        self.verify_t_move_set(
+            move_list=solution.read_input_file_into_move_list(self.examplefile),
+            num_knots=10,
+            expected_num_set_elem=1
+        )
+
+    def test_part_two_ex2(self):
+        outcome_str = \
+'''..........................
+..........................
+..........................
+..........................
+..........................
+..........................
+..........................
+..........................
+..........................
+#.........................
+#.............###.........
+#............#...#........
+.#..........#.....#.......
+..#..........#.....#......
+...#........#.......#.....
+....#......s.........#....
+.....#..............#.....
+......#............#......
+.......#..........#.......
+........#........#........
+.........########.........'''
+        self.verify_t_move_set(
+            move_list=solution.read_input_file_into_move_list(self.exampletwofile),
+            num_knots=10,
+            expected_num_set_elem=36,
+            outcome_str=outcome_str
+        )
 
 if __name__ == '__main__':
     unittest.main(verbosity=1) # default verbosity
