@@ -315,52 +315,44 @@ if __name__ == '__main__':
     fixed_grid_exampletwo = Grid.create_grid_with_dimensions(width= 26, height= 21)
     fixed_grid_input      = Grid.create_grid_with_dimensions(width=364, height=268)
 
-    # # part 1
-    # for inputfile in ['example.txt']: #, 'input.txt']:
-    #     example = inputfile == 'example.txt'
+    # for inputfile, num_knots in [
+    #         ('example.txt',  2),                          ('input.txt',  2),   # part one
+    #         ('example.txt', 10), ('example_two.txt', 10), ('input.txt', 10)]:  # part two
+
+    #     if num_knots == 2:
+    #         print('-'*90, 'PART ONE')
+    #     elif num_knots == 10:
+    #         print('-'*90, 'PART TWO')
+
+    #     exampleone = inputfile == 'example.txt'
+    #     exampletwo = inputfile == 'example_two.txt'
+    #     example = exampleone or exampletwo
+        
+    #     if exampleone:
+    #         fixed_grid = fixed_grid_example
+    #         start_point = Point_2D(x=0, y=0)
+    #     elif exampletwo:
+    #         fixed_grid = fixed_grid_exampletwo
+    #         start_point = Point_2D(x=11, y=5)
+    #     else:
+    #         fixed_grid = None
 
     #     move_list = read_input_file_into_move_list(inputfile)
+
     #     t_move_set, t_move_str = simulate_rope(
     #         move_list,
-    #         fixed_grid=fixed_grid_example if example else None,
-    #         _print=example,
-    #         print_atomic_moves=example,
+    #         fixed_grid=fixed_grid,
+    #         start_point=start_point,
+    #         num_knots=num_knots,
+    #         print_after_move=exampletwo,
+    #         print_after_full_rope_update=exampleone,
+    #         print_atomic_moves=False,
     #         color_start_point=True
     #     )
+
     #     print(f'Number of unique spots T has visited: {len(t_move_set)}')
     #     print(t_move_str, end='\n\n')
-        
 
-    # part 2
-    for inputfile in ['example.txt', 'example_two.txt']: #, 'input.txt']:
-    # for inputfile in ['example_two.txt']:
-        exampleone = inputfile == 'example.txt'
-        exampletwo = inputfile == 'example_two.txt'
-        example = exampleone or exampletwo
-        
-        if exampleone:
-            fixed_grid = fixed_grid_example
-            start_point = Point_2D(x=0, y=0)
-        elif exampletwo:
-            fixed_grid = fixed_grid_exampletwo
-            start_point = Point_2D(x=11, y=5)
-        else:
-            fixed_grid = None
-
-        move_list = read_input_file_into_move_list(inputfile)
-
-        t_move_set, t_move_str = simulate_rope(
-            move_list,
-            fixed_grid=fixed_grid,
-            start_point=start_point,
-            print_after_move=exampletwo,
-            print_after_full_rope_update=exampleone,
-            print_atomic_moves=False,
-            color_start_point=True
-        )
-
-        print(f'Number of unique spots T has visited: {len(t_move_set)}')
-        print(t_move_str, end='\n\n')
 
     # # animation
     # '''TODO
@@ -385,6 +377,32 @@ if __name__ == '__main__':
 
     #     # print('.'*364)
     #     # _ = input('change your resolution.  ENTER when done.')
+
+    # part two animation
+    for inputfile in ['example.txt', 'example_two.txt']:
+        exampleone = inputfile == 'example.txt'
+        exampletwo = inputfile == 'example_two.txt'
+        example = exampleone or exampletwo
+
+        move_list = read_input_file_into_move_list(inputfile)
+
+        if exampleone:
+            fixed_grid = fixed_grid_example
+            start_pt = Point_2D(x=0, y=0)
+        elif exampletwo:
+            fixed_grid = fixed_grid_exampletwo
+            start_pt = Point_2D(x=11, y=5)
+
+        _, _ = simulate_rope(
+            move_list,
+            fixed_grid=fixed_grid,
+            start_point=start_pt,
+            num_knots=10,
+            print_atomic_moves=True,
+            animation_framedelay=0.1
+        )
+
+
 
 '''
 Big takeaway from Day09:
