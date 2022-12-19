@@ -79,7 +79,19 @@ class Move:
             return [move]
         return [Move(move.transform, 1, move.name) for _ in range(move.repetitions)]
 
-Grid = namedtuple('Grid', ['topl', 'botr'])
+# Grid = namedtuple('Grid', ['topl', 'botr'])
+class Grid:
+    '''Made this into a class so I can make the create_grid_with_dimensions() method'''
+    def __init__(self, topl, botr):
+        self.topl = topl
+        self.botr = botr
+    @staticmethod
+    def create_grid_with_dimensions(width, height, botl=Point_2D(x=0, y=0)):
+        return Grid(
+            topl=Point_2D(x=botl.x,             y=botl.y + (height-1)),
+            botr=Point_2D(x=botl.x + (width-1), y=botl.y             )
+        )
+
 PrintItem = namedtuple('PrintItem', ['printchar', 'point'])
 moves = {
     'U' : Point_2D(x= 0, y= 1),
@@ -145,8 +157,6 @@ def generate_current_grid_state_string(knots, grid, start_point, animationmode=F
             printstr += str(i) if i > 0 else 'H'
             printstr += RESET if i in color_indices else ''
             items.append(PrintItem(printstr, point))
-        # items += [PrintItem(str(len(knots)-(i+1)), point) for i, point in enumerate(reversed(knots[1:]))]
-        # items += [PrintItem('H', knots[0])]
     return  generate_print_grid_string(items=items, grid=grid, animationmode=animationmode )
 def print_current_grid_state(*args, **kwargs):
     print(generate_current_grid_state_string(*args, **kwargs), end='\n\n')
@@ -162,7 +172,7 @@ def print_unique_t_locations(*args, **kwargs):
     print(generate_unique_t_locations_string(*args, **kwargs), end='\n\n')
 
 ### rope simulation
-def update_adjacent_knot_pos(lead_old, follow_old, lead_atomic_move):
+def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
     transform = lead_atomic_move.transform
 
     ### update leader
@@ -193,67 +203,49 @@ def update_adjacent_knot_pos(lead_old, follow_old, lead_atomic_move):
     follow_atomic_transform = follow_new - follow_old
     follow_atomic_move = Move(transform=follow_atomic_transform, repetitions=1, name='')
 
-    return lead_new, follow_new, follow_atomic_move
+    return follow_new, follow_atomic_move
 
 def update_lead_knot_pos(old_pos, atomic_move):
     return old_pos + atomic_move.transform
 
-def update_dynamic_grid(h, grid):
-    grid.botr.x = max(grid.botr.x, h.x)  # +x
-    grid.topl.x = min(grid.topl.x, h.x)  # -x
-    grid.topl.y = max(grid.topl.y, h.y)  # +y
-    grid.botr.y = min(grid.botr.y, h.y)  # -y
-    return grid
+def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False):
+    if print_atomic_moves:
+        print('-'*15, f'rep {rep+1} / {lead_move.repetitions}')
 
-def simulate_rope_partone(
-        move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0),
-        _print=False, print_atomic_moves=False, color_start_point=False, animationmode=False):
-    '''Start point will be the bottom left corner of the grid.'''
+    # update position of all knots (0 happens outside of the loop)
+    _move = lead_move
+    updated_knots = [update_lead_knot_pos(knots[0], _move)]
+    if print_atomic_moves:
+        print(_move.transform)
+        print_knots = updated_knots + knots[1:]                
+        print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[0])
+    # the 'tails' happen within the loop
+    _break = False
+    for i, (lead_old, follow_old) in enumerate(zip(knots, knots[1:])):                
+        follow_new, follow_move = update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move=_move)
+        _move = follow_move  # the follow_move of nth adjacent pair is the lead_move of (n+1)th pair
+        updated_knots.append(follow_new)
 
-    # initial condition
-    h = Point_2D(start_point.x, start_point.y)
-    t = Point_2D(start_point.x, start_point.y)
-    if fixed_grid:
-        # the grid will not grow.
-        # I won't check whether moves will send H/T outside of the grid, though,
-        #   I'm assuming that the moves account for this  (like example.txt -- that's why I'm doing this.)
-        grid = fixed_grid
-    else:
-        # the grid will grow dynamically from a 1x1 square.
-        grid = Grid(
-            topl=Point_2D(x=start_point.x, y=start_point.y),
-            botr=Point_2D(x=start_point.x, y=start_point.y)
-        )
+        # if the later knots aren't moving, we're done!
+        if updated_knots[-1] == knots[len(updated_knots)-1]:
+            updated_knots += knots[len(updated_knots):]  # make sure the remaining knots get transferred
+            _break = True
+            if i > len(updated_knots):
+                break
+        # print change to board
+        if print_atomic_moves:
+            print(_move.transform)
+            print_knots = updated_knots + knots[len(updated_knots):]
+            print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1])
+        # want to print the first move that doesn't move, then break.
+        if _break:
+            break
+    return updated_knots
 
-    # special part one bit
-    t_move_set = {start_point}
-
-    if _print:
-        print('Initial state:')
-        print_current_grid_state(knots=[h, t], grid=grid, start_point=start_point, animationmode=animationmode)
-    for move in move_list:
-        if _print:
-            print(f'== {move.name} {move.repetitions} ==\n')
-        for _ in range(move.repetitions):
-            h, t, _ = update_adjacent_knot_pos(lead_old=h, follow_old=t, lead_atomic_move=move)
-            if not fixed_grid:
-                grid = update_dynamic_grid(h, grid)
-            t_move_set.add(t)
-            if _print and print_atomic_moves:
-                if animationmode:
-                    os.system('clear') # linux only :/
-                print_current_grid_state(knots=[h, t], grid=grid, start_point=start_point, animationmode=animationmode)
-                if animationmode:
-                    time.sleep(0.1)
-        if _print and not print_atomic_moves:
-            print_current_grid_state(knots=[h, t], grid=grid, start_point=start_point)
-
-    return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
-
-def simulate_rope_parttwo(
+def simulate_rope(
         move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), num_knots=10,
         print_after_move=False, print_after_full_rope_update=False, print_atomic_moves=False,
-        color_start_point=True, animationmode=False):
+        color_start_point=False, animationmode=False):
     '''Start point will be the bottom left corner of the grid.'''
 
     _print = print_after_move or print_after_full_rope_update or print_atomic_moves
@@ -266,10 +258,7 @@ def simulate_rope_parttwo(
         grid = fixed_grid
     else:
         # the grid will grow dynamically from a 1x1 square.
-        grid = Grid(
-            topl=Point_2D(x=start_point.x, y=start_point.y),
-            botr=Point_2D(x=start_point.x, y=start_point.y)
-        )
+        grid = Grid.create_grid_with_dimensions(width=1, height=1)
     knots = [Point_2D(x=start_point.x, y=start_point.y) for _ in range(num_knots)]  # the numbering is done in the print function.
 
     t_move_set = {start_point}
@@ -280,41 +269,8 @@ def simulate_rope_parttwo(
     for move in move_list:
         if _print:
             print(f'== {move.name} {move.repetitions} ==\n')
-        for rep in range(move.repetitions):
-
-            if print_atomic_moves:
-                print('-'*15, f'rep {rep+1} / {move.repetitions}')
-
-            # update position of all knots (0 happens outside of the loop)
-            _move = move
-            updated_knots = [update_lead_knot_pos(knots[0], _move)]
-            if print_atomic_moves:
-                print(_move.transform)
-                print_knots = updated_knots + knots[1:]                
-                print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[0])
-            # the 'tails' happen within the loop
-            _break = False
-            for i, (lead_old, follow_old) in enumerate(zip(knots, knots[1:])):                
-                _, follow_new, follow_move = update_adjacent_knot_pos(lead_old, follow_old, lead_atomic_move=_move)
-                _move = follow_move  # the follow_move of nth adjacent pair is the lead_move of (n+1)th pair
-                updated_knots.append(follow_new)
-
-                # if the later knots aren't moving, we're done!
-                if updated_knots[-1] == knots[len(updated_knots)-1]:
-                    updated_knots += knots[len(updated_knots):]  # make sure the remaining knots get transferred
-                    _break = True
-                    if i > len(updated_knots):
-                        break
-                # print change to board
-                if print_atomic_moves:
-                    print(_move.transform)
-                    print_knots = updated_knots + knots[len(updated_knots):]
-                    print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1])
-                # want to print the first move that doesn't move, then break.
-                if _break:
-                    break                
-            knots = updated_knots
-
+        for rep in range(move.repetitions):           
+            knots = update_all_knot_pos(knots, move, grid, start_point, rep)
             # head = first knot, tail = last knot
             if not fixed_grid:
                 grid = update_dynamic_grid(knots[0], grid)
@@ -331,27 +287,26 @@ def simulate_rope_parttwo(
 
     return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
 
+def update_dynamic_grid(h, grid):
+    grid.botr.x = max(grid.botr.x, h.x)  # +x
+    grid.topl.x = min(grid.topl.x, h.x)  # -x
+    grid.topl.y = max(grid.topl.y, h.y)  # +y
+    grid.botr.y = min(grid.botr.y, h.y)  # -y
+    return grid
+
+
 if __name__ == '__main__':
 
-    fixed_grid_example = Grid(
-        topl=Point_2D(x=0, y=4),
-        botr=Point_2D(x=5, y=0)
-    )
-    fixed_grid_exampletwo = Grid(
-        topl=Point_2D(x=0, y=25),
-        botr=Point_2D(x=20, y=0)
-    )
-    fixed_grid_input = Grid(
-        topl=Point_2D(x=0, y=267),
-        botr=Point_2D(x=363, y=0)
-    )
+    fixed_grid_example    = Grid.create_grid_with_dimensions(width=  6, height=  5)
+    fixed_grid_exampletwo = Grid.create_grid_with_dimensions(width= 26, height= 21)
+    fixed_grid_input      = Grid.create_grid_with_dimensions(width=364, height=268)
 
     # # part 1
     # for inputfile in ['example.txt']: #, 'input.txt']:
     #     example = inputfile == 'example.txt'
 
     #     move_list = read_input_file_into_move_list(inputfile)
-    #     t_move_set, t_move_str = simulate_rope_partone(
+    #     t_move_set, t_move_str = simulate_rope(
     #         move_list,
     #         fixed_grid=fixed_grid_example if example else None,
     #         _print=example,
@@ -363,26 +318,30 @@ if __name__ == '__main__':
         
 
     # part 2
-    for inputfile in ['example.txt']: #, 'example_two.txt']: #, 'input.txt']:
+    for inputfile in ['example.txt', 'example_two.txt']: #, 'input.txt']:
         exampleone = inputfile == 'example.txt'
         exampletwo = inputfile == 'example_two.txt'
         example = exampleone or exampletwo
         
         if exampleone:
             fixed_grid = fixed_grid_example
+            start_point = Point_2D(x=0, y=0)
         elif exampletwo:
             fixed_grid = fixed_grid_exampletwo
+            start_point = Point_2D(x=11, y=5)
         else:
             fixed_grid = None
 
         move_list = read_input_file_into_move_list(inputfile)
 
-        t_move_set, t_move_str = simulate_rope_parttwo(
+        t_move_set, t_move_str = simulate_rope(
             move_list,
             fixed_grid=fixed_grid,
-            print_after_move=False,
-            print_after_full_rope_update=True,
-            print_atomic_moves=False
+            start_point=start_point,
+            print_after_move=exampletwo,
+            print_after_full_rope_update=exampleone,
+            print_atomic_moves=False,
+            color_start_point=True
         )
 
     # # animation
@@ -396,7 +355,7 @@ if __name__ == '__main__':
     #     example = inputfile == 'example.txt'
 
     #     move_list = read_input_file_into_move_list(inputfile)
-    #     t_move_set, t_move_str = simulate_rope_partone(
+    #     t_move_set, t_move_str = simulate_rope(
     #         move_list,
     #         fixed_grid=fixed_grid_example if example else fixed_grid_input,
     #         start_point=Point_2D(0, 0) if example else Point_2D(299, 220),
