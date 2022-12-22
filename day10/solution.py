@@ -99,4 +99,17 @@ Potential switchups that might occur for part two:
 - more than one CPU, instructions get mapped to different CPUs based on some rule
 
 Tried to parameterize the sim funciton to be able to address these if they come up!
+
+I was able to check my output using a simple spreadsheet:
+
+--------------+--------------------------+----------------------------------
+col A         | col B                    | col C
+(instruction) | (post-instr cycle count) | (post-instruction X register val)
+--------------+--------------------------+----------------------------------
+                 0                          1                               row 1
+addx 1           2                          2                               row 2
+noop             3                          2                               row 3
+...              ...                        ...
+                =IF(LEFT(A2, 4)="addx", B1+2, B1+1)
+                                           =IF(LEFT(A2, 4)="addx", C1+RIGHT(A2, LEN(A2)-5), C1)
 '''
