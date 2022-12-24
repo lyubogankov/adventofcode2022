@@ -1,5 +1,6 @@
 # from dataclasses import dataclass
 # import typing
+from collections import deque  # using instead of list -- O(1) vs O(n) left side pop!
 import copy
 import re
 
@@ -102,7 +103,7 @@ def parse_input_file_into_monkey_list(inputfile, _print=False):
             case 'monkey_idx':
                 monkey_idx = int(mo.group('monkey_idx'))
             case 'items_csv':
-                items = [Item(int(x)) for x in mo.group('items_csv').split(',')]
+                items = deque(Item(int(x)) for x in mo.group('items_csv').split(','))
             case 'operation':
                 op, val = mo.group('operation').split(' ')
                 if op == '*' and val == 'old':
@@ -141,7 +142,7 @@ def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, wor
         
         while len(monkey.items) > 0:
             # inspect next item
-            item = monkey.items.pop(0)   # pop from front
+            item = monkey.items.popleft()
             monkey.items_inspected += 1  # for part one question
             if generate_round_detail_str:
                 round_detail_str += f'  Monkey inspects an item with a worry level of {item.worrylevel}.\n'
@@ -213,3 +214,11 @@ if __name__ == '__main__':
     monkeys = parse_input_file_into_monkey_list('example.txt')
     print('Part one:', calculate_monkey_business(monkeys, num_rounds=20,     worryfatigue=False))
     print('Part two:', calculate_monkey_business(monkeys, num_rounds=10_000, worryfatigue=True ))
+
+'''
+Part 2 requires 10_000 rounds of monkey in the middle... my implementation is way too slow!
+
+Optimizations:
+1. per-monkey items stored in deque instead of list, since I am popping from the front.  O(1) vs O(n) - didn't really help though :(
+2. 
+'''

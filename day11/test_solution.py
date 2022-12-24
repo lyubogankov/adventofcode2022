@@ -302,6 +302,7 @@ Monkey 3 inspected items 52013 times.
         for round in [1, 20] + list(range(1_000, 10_001, 1_000)):
             gen_items_inspected += f'== After round {round} == \n'
             gen_items_inspected += solution.calculate_monkey_business(monkeys, num_rounds=(round-rounds_played), generate_items_inspected_str=True, worryfatigue=True)
+            print('\n... done with round', round)
             if round < 10_000:
                 gen_items_inspected += '\n'
         self.assertEqual(answer_items_inspected, gen_items_inspected)
