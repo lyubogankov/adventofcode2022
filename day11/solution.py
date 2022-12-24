@@ -132,7 +132,7 @@ def parse_input_file_into_monkey_list(inputfile, _print=False):
     return monkeys
 
 ### monkey in the middle - part one
-def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, _print=False):
+def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, worryfatigue=False):
     round_detail_str = ''
 
     for monkey in monkeys:
@@ -141,7 +141,8 @@ def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, _pr
         
         while len(monkey.items) > 0:
             # inspect next item
-            item = monkey.items.pop(0)  # pop from front
+            item = monkey.items.pop(0)   # pop from front
+            monkey.items_inspected += 1  # for part one question
             if generate_round_detail_str:
                 round_detail_str += f'  Monkey inspects an item with a worry level of {item.worrylevel}.\n'
             
@@ -159,10 +160,11 @@ def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, _pr
                         val_str = 'itself'
                 round_detail_str += f'    Worry level {op_str} by {val_str} to {modified_item.worrylevel}.\n'
             
-            # viewer is releived when item is not broken
-            modified_item.item_still_intact_worry_reduction()
-            if generate_round_detail_str:
-                round_detail_str += f'    Monkey gets bored with item. Worry level is divided by {Item.UNDAMAGED_ITEM_WORRY_REDUCTION_FACTOR} to {modified_item.worrylevel}.\n'
+            # viewer is releived when item is not broken (modified for part two)
+            if not worryfatigue:
+                modified_item.item_still_intact_worry_reduction()
+                if generate_round_detail_str:
+                    round_detail_str += f'    Monkey gets bored with item. Worry level is divided by {Item.UNDAMAGED_ITEM_WORRY_REDUCTION_FACTOR} to {modified_item.worrylevel}.\n'
             
             # divisibility test, to determine which target monkey
             divisible = modified_item.worrylevel % monkey.divis_const == 0
@@ -179,15 +181,35 @@ def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, _pr
         return round_detail_str
     return monkeys
 
-def part_one(monkeys, _print=False):
-    pass
+def play_n_rounds(monkeys, num_rounds=20, start_round=1, generate_after_round_str=False, worryfatigue=False):
+    '''
+    start_round is used just for test printing - it doesn't actually matter what round we're on, 
+    num_rounds is what affects the outcome.
+    '''
+    end_round_exclusive = start_round + num_rounds   # we start at 1 - round 1 is *first* round
+    
+    after_round_status_strings = []
+    for round in range(start_round, end_round_exclusive):
+        monkeys = play_round_of_monkey_in_middle(monkeys, worryfatigue=worryfatigue)
+        if generate_after_round_str:
+            after_round_str = f'After round {round}, the monkeys are holding items with these worry levels:\n'
+            for monkey in monkeys:
+                itemstr = ', '.join([str(item) for item in monkey.items])
+                after_round_str += f'Monkey {monkey.monkeyidx}: {itemstr}\n'
+            after_round_status_strings.append(after_round_str)
+    
+    if generate_after_round_str:
+        return after_round_status_strings
+    return monkeys    
+
+def calculate_monkey_business(monkeys, num_rounds, generate_items_inspected_str=False, worryfatigue=False):
+    monkeys = play_n_rounds(monkeys, num_rounds=num_rounds, worryfatigue=worryfatigue)
+    if generate_items_inspected_str:
+        return '\n'.join([f'Monkey {m.monkeyidx} inspected items {m.items_inspected} times.' for m in monkeys])
+    monkeys.sort(key=lambda m: m.items_inspected, reverse=True)
+    return monkeys[0].items_inspected * monkeys[1].items_inspected
 
 if __name__ == '__main__':
     monkeys = parse_input_file_into_monkey_list('example.txt')
-    print(play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=True))
-
-'''
-How to use monkey:
-
-new_item = m.operation_fn(item, m.operation_const)
-'''
+    print('Part one:', calculate_monkey_business(monkeys, num_rounds=20,     worryfatigue=False))
+    print('Part two:', calculate_monkey_business(monkeys, num_rounds=10_000, worryfatigue=True ))
