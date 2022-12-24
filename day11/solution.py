@@ -1,8 +1,9 @@
 # from dataclasses import dataclass
 # import typing
+import copy
 import re
 
-# parse text file -> input
+### parse text file -> input
 class Item:
     UNDAMAGED_ITEM_WORRY_REDUCTION_FACTOR = 3
 
@@ -48,6 +49,7 @@ class Monkey:
         self.divis_const           = divis_const
         self.divis_throw_target    = divis_throw_target
         self.nondivis_throw_target = nondivis_throw_target
+        self.items_inspected       = 0  # counter for part one
 
     def __str__(self):
         item_str = ', '.join([str(item) for item in self.items])
@@ -129,8 +131,60 @@ def parse_input_file_into_monkey_list(inputfile, _print=False):
 
     return monkeys
 
-if __name__ == '__main__':
+### monkey in the middle - part one
+def play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=False, _print=False):
+    round_detail_str = ''
+
+    for monkey in monkeys:
+        if generate_round_detail_str:
+            round_detail_str += f'Monkey {monkey.monkeyidx}:\n'
+        
+        while len(monkey.items) > 0:
+            # inspect next item
+            item = monkey.items.pop(0)  # pop from front
+            if generate_round_detail_str:
+                round_detail_str += f'  Monkey inspects an item with a worry level of {item.worrylevel}.\n'
+            
+            # viewer worries about item
+            modified_item = monkey.operation_fn(item, monkey.operation_const)
+            if generate_round_detail_str:
+                val_str = monkey.operation_const
+                match monkey.operation_fn_str:
+                    case '+':
+                        op_str = 'increases'
+                    case '*':
+                        op_str = 'is multiplied'
+                    case '^':
+                        op_str = 'is multiplied'
+                        val_str = 'itself'
+                round_detail_str += f'    Worry level {op_str} by {val_str} to {modified_item.worrylevel}.\n'
+            
+            # viewer is releived when item is not broken
+            modified_item.item_still_intact_worry_reduction()
+            if generate_round_detail_str:
+                round_detail_str += f'    Monkey gets bored with item. Worry level is divided by {Item.UNDAMAGED_ITEM_WORRY_REDUCTION_FACTOR} to {modified_item.worrylevel}.\n'
+            
+            # divisibility test, to determine which target monkey
+            divisible = modified_item.worrylevel % monkey.divis_const == 0
+            if generate_round_detail_str:
+                round_detail_str += f"    Current worry level is{'' if divisible else ' not'} divisible by {monkey.divis_const}.\n"
+            
+            # throw to next monkey
+            target = monkey.divis_throw_target if divisible else monkey.nondivis_throw_target
+            monkeys[target].items.append(modified_item)
+            if generate_round_detail_str:
+                round_detail_str += f'    Item with worry level {modified_item.worrylevel} is thrown to monkey {target}.\n'
+
+    if generate_round_detail_str:
+        return round_detail_str
+    return monkeys
+
+def part_one(monkeys, _print=False):
     pass
+
+if __name__ == '__main__':
+    monkeys = parse_input_file_into_monkey_list('example.txt')
+    print(play_round_of_monkey_in_middle(monkeys, generate_round_detail_str=True))
 
 '''
 How to use monkey:
