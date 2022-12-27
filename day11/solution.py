@@ -220,5 +220,4 @@ Part 2 requires 10_000 rounds of monkey in the middle... my implementation is wa
 
 Optimizations:
 1. per-monkey items stored in deque instead of list, since I am popping from the front.  O(1) vs O(n) - didn't really help though :(
-2. 
 '''
