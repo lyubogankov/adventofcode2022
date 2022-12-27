@@ -165,12 +165,13 @@ def play_round_of_monkey_in_middle(items, monkeys,
                 print(f"  Releived that nothing broke:  {current_items}")
         # try to reduce the worry levels by LCM of all monkey divis constants to keep numbers down
         else:
-            _divis_array = current_item_worrylvls % monkey_divis_lcm
-            for j, modresult in enumerate(_divis_array):
-                if modresult == 0:
-                    current_items[j][Item.WORRYLVL] //= monkey_divis_lcm
-                    if _print:
-                        print(f'  MONKEY LCM REDUCTION, WOOHOO')
+            current_item_worrylvls %= monkey_divis_lcm
+            # _divis_array = current_item_worrylvls % monkey_divis_lcm
+            # for j, modresult in enumerate(_divis_array):
+            #     if modresult == 0:
+            #         current_items[j][Item.WORRYLVL] //= monkey_divis_lcm
+            #         if _print:
+            #             print(f'  MONKEY LCM REDUCTION, WOOHOO')
 
         # apply divisibility test
         divis_array = current_item_worrylvls % monkey.divis_const
@@ -243,12 +244,14 @@ def calculate_monkey_business(monkeys):
     return monkeys[0].items_inspected * monkeys[1].items_inspected
 
 if __name__ == '__main__':
-    items, monkeys = parse_input_file_into_items_and_monkey_list('example.txt')
+    items, monkeys = parse_input_file_into_items_and_monkey_list('input.txt')
     # play_round_of_monkey_in_middle(items, monkeys, _print=True)
-    print(
-        '\n'.join(play_n_rounds(items, monkeys, num_rounds=20, gen_after_round_str=True, worryfatigue=True, _print=True))
-    )
+    # print(
+    #     '\n'.join(play_n_rounds(items, monkeys, num_rounds=20, gen_after_round_str=True, worryfatigue=True, _print=True))
+    # )
+    _, monkeys = play_n_rounds(items, monkeys, num_rounds=10_000, worryfatigue=True)
     print(generate_items_inspected_str(monkeys))
+    print(calculate_monkey_business(monkeys))
 
 '''
 Idea so far: have a numpy array that represents the items.

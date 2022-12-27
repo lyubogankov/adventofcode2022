@@ -136,8 +136,7 @@ Monkey 3:
                               + after_round_strs[19]
         self.assertEqual(answer_after_round_str, gen_after_round_str)
 
-    def test_item_inspection_counts(self):
-        # part one
+    def test_item_inspection_counts_part_one(self):
         answer_items_inspected = '''Monkey 0 inspected items 101 times.
 Monkey 1 inspected items 95 times.
 Monkey 2 inspected items 7 times.
@@ -149,94 +148,89 @@ Monkey 3 inspected items 105 times.'''
         gen_items_inspected = solution_np.generate_items_inspected_str(monkeys)
         self.assertEqual(answer_items_inspected, gen_items_inspected)
 
-
-        # part two
-        answer_items_inspected = '''== After round 1 ==
+    def test_item_inspection_counts_part_two(self):
+        answer_items_inspected = ['''== After round 1 ==
 Monkey 0 inspected items 2 times.
 Monkey 1 inspected items 4 times.
 Monkey 2 inspected items 3 times.
-Monkey 3 inspected items 6 times.
+Monkey 3 inspected items 6 times.''',
 
-== After round 20 ==
+'''== After round 20 ==
 Monkey 0 inspected items 99 times.
 Monkey 1 inspected items 97 times.
 Monkey 2 inspected items 8 times.
-Monkey 3 inspected items 103 times.
+Monkey 3 inspected items 103 times.''',
 
-== After round 1000 ==
+'''== After round 1000 ==
 Monkey 0 inspected items 5204 times.
 Monkey 1 inspected items 4792 times.
 Monkey 2 inspected items 199 times.
-Monkey 3 inspected items 5192 times.
+Monkey 3 inspected items 5192 times.''',
 
-== After round 2000 ==
+'''== After round 2000 ==
 Monkey 0 inspected items 10419 times.
 Monkey 1 inspected items 9577 times.
 Monkey 2 inspected items 392 times.
-Monkey 3 inspected items 10391 times.
+Monkey 3 inspected items 10391 times.''',
 
-== After round 3000 ==
+'''== After round 3000 ==
 Monkey 0 inspected items 15638 times.
 Monkey 1 inspected items 14358 times.
 Monkey 2 inspected items 587 times.
-Monkey 3 inspected items 15593 times.
+Monkey 3 inspected items 15593 times.''',
 
-== After round 4000 ==
+'''== After round 4000 ==
 Monkey 0 inspected items 20858 times.
 Monkey 1 inspected items 19138 times.
 Monkey 2 inspected items 780 times.
-Monkey 3 inspected items 20797 times.
+Monkey 3 inspected items 20797 times.''',
 
-== After round 5000 ==
+'''== After round 5000 ==
 Monkey 0 inspected items 26075 times.
 Monkey 1 inspected items 23921 times.
 Monkey 2 inspected items 974 times.
-Monkey 3 inspected items 26000 times.
+Monkey 3 inspected items 26000 times.''',
 
-== After round 6000 ==
+'''== After round 6000 ==
 Monkey 0 inspected items 31294 times.
 Monkey 1 inspected items 28702 times.
 Monkey 2 inspected items 1165 times.
-Monkey 3 inspected items 31204 times.
+Monkey 3 inspected items 31204 times.''',
 
-== After round 7000 ==
+'''== After round 7000 ==
 Monkey 0 inspected items 36508 times.
 Monkey 1 inspected items 33488 times.
 Monkey 2 inspected items 1360 times.
-Monkey 3 inspected items 36400 times.
+Monkey 3 inspected items 36400 times.''',
 
-== After round 8000 ==
+'''== After round 8000 ==
 Monkey 0 inspected items 41728 times.
 Monkey 1 inspected items 38268 times.
 Monkey 2 inspected items 1553 times.
-Monkey 3 inspected items 41606 times.
+Monkey 3 inspected items 41606 times.''',
 
-== After round 9000 ==
+'''== After round 9000 ==
 Monkey 0 inspected items 46945 times.
 Monkey 1 inspected items 43051 times.
 Monkey 2 inspected items 1746 times.
-Monkey 3 inspected items 46807 times.
+Monkey 3 inspected items 46807 times.''',
 
-== After round 10000 ==
+'''== After round 10000 ==
 Monkey 0 inspected items 52166 times.
 Monkey 1 inspected items 47830 times.
 Monkey 2 inspected items 1938 times.
-Monkey 3 inspected items 52013 times.
-'''
+Monkey 3 inspected items 52013 times.''']
         
-        gen_items_inspected = ''
-        monkeys = self.get_monkeys()
-        items = self.get_items()
+        for i, round in enumerate([1, 20] + list(range(1_000, 10_001, 1_000))):
+            _, after_round_monkeys = solution_np.play_n_rounds(self.get_items(), self.get_monkeys(), num_rounds=round, worryfatigue=True)
 
-        rounds_played = 0
-        for round in [1, 20] + list(range(1_000, 10_001, 1_000)):
-            gen_items_inspected += f'== After round {round} == \n'
-            items, monkeys = solution_np.play_n_rounds(items, monkeys, num_rounds=(round-rounds_played), worryfatigue=True)
-            gen_items_inspected += solution_np.generate_items_inspected_str(monkeys)
-            print('\n... done with round', round)
-            if round < 10_000:
-                gen_items_inspected += '\n'
-        self.assertEqual(answer_items_inspected, gen_items_inspected)
+            gen_items_inspected = f'== After round {round} ==\n'
+            gen_items_inspected += solution_np.generate_items_inspected_str(after_round_monkeys)
+            with self.subTest(i=round):
+                self.assertEqual(answer_items_inspected[i], gen_items_inspected)
+
+        with self.subTest(i='10_000 round monkey business'):
+            self.assertEqual(2713310158, solution_np.calculate_monkey_business(after_round_monkeys))
 
 if __name__ == '__main__':
     unittest.main()
