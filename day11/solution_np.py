@@ -97,7 +97,7 @@ def parse_input_file_into_items_and_monkey_list(inputfile, _print=False):
             if _print:
                 print(' ~ made a monkey!')
 
-    item_array = np.array(item_values, dtype=[('owneridx', int), ('queueidx', int), ('worrylevel', int)])
+    item_array = np.array(item_values, dtype=[('owneridx', np.uint64), ('queueidx', np.uint64), ('worrylevel', np.uint64)])
     return item_array, monkeys
 
 def generate_pretty_print_str_items_and_monkeys(items, monkeys):
@@ -123,7 +123,7 @@ f'''Monkey {i}:
 
 def play_round_of_monkey_in_middle(items, monkeys,
                                    undamaged_item_worry_reduction_factor=WORRY_REDUCT_FACTOR,
-                                   worryfatigue=False, _print=False):
+                                   worryfatigue=False, monkey_divis_lcm=None, _print=False):
     # inspect all items in each monkey's possession at once.
     for i, monkey in enumerate(monkeys):
 
@@ -131,17 +131,21 @@ def play_round_of_monkey_in_middle(items, monkeys,
             print(f'Monkey {i}:')
 
         # get reference to slice of items (assumption: items array is sorted)
-        _start = 0 if i == 0 else monkeys[i-1].num_items_held
+        _start = 0 if i == 0 else sum(m.num_items_held for m in monkeys[:i])
         _end   = _start + monkeys[i].num_items_held
         current_items = items[_start:_end]
-        current_item_worrylvls = current_items.view(int)[2::3]
+        current_item_worrylvls = current_items.view(np.uint64)[Item.WORRYLVL::3]
+
+        if _print:
+            print(f"Items: {items}")
+            print(f"Slice: {_start}:{_end}")
 
         # monkey inspects items
         if _print:
             old_inspection_cnt = monkey.items_inspected
         monkey.items_inspected += monkey.num_items_held  # all items held will be given away
         if _print:
-            print(f"  Monkey has inspected {monkey.items_inspected} up until now ({old_inspection_cnt} + {monkey.num_items_held})")
+            print(f"  Monkey has inspected {monkey.items_inspected} items up until now ({old_inspection_cnt} + {monkey.num_items_held})")
             print(f"  Items in monkey's possession: {current_items}")
 
         # viewer worries about items
@@ -159,6 +163,14 @@ def play_round_of_monkey_in_middle(items, monkeys,
             current_item_worrylvls //= undamaged_item_worry_reduction_factor
             if _print:
                 print(f"  Releived that nothing broke:  {current_items}")
+        # try to reduce the worry levels by LCM of all monkey divis constants to keep numbers down
+        else:
+            _divis_array = current_item_worrylvls % monkey_divis_lcm
+            for j, modresult in enumerate(_divis_array):
+                if modresult == 0:
+                    current_items[j][Item.WORRYLVL] //= monkey_divis_lcm
+                    if _print:
+                        print(f'  MONKEY LCM REDUCTION, WOOHOO')
 
         # apply divisibility test
         divis_array = current_item_worrylvls % monkey.divis_const
@@ -200,16 +212,20 @@ def play_n_rounds(items, monkeys, num_rounds=20, start_round=1,
     '''
     end_round_exclusive = start_round + num_rounds   # we start at 1 - round 1 is *first* round
     
+    monkey_divis_lcm = np.lcm.reduce(np.array([m.divis_const for m in monkeys]))
+
     after_round_status_strings = []
     for round in range(start_round, end_round_exclusive):
-        items, monkeys = play_round_of_monkey_in_middle(items, monkeys, undamaged_item_worry_reduction_factor, worryfatigue, _print)
+        if _print:
+            print('='*100, f' ROUND {round}', '='*10)
+        items, monkeys = play_round_of_monkey_in_middle(items, monkeys, undamaged_item_worry_reduction_factor, worryfatigue, monkey_divis_lcm, _print)
+        
         if gen_after_round_str:
             after_round_str = f'After round {round}, the monkeys are holding items with these worry levels:\n'
-            for i, monkey in enumerate(monkeys):
-
-                _start = 0 if i == 0 else monkeys[i-1].num_items_held
+            for i, _ in enumerate(monkeys):
+                _start = 0 if i == 0 else sum(m.num_items_held for m in monkeys[:i])
                 _end   = _start + monkeys[i].num_items_held
-                current_item_worrylvls = items[_start:_end].view(int)[2::3]
+                current_item_worrylvls = items[_start:_end].view(np.uint64)[Item.WORRYLVL::3]
 
                 itemstr = ', '.join([str(item) for item in current_item_worrylvls])
                 after_round_str += f'Monkey {i}: {itemstr}\n'
@@ -217,14 +233,22 @@ def play_n_rounds(items, monkeys, num_rounds=20, start_round=1,
     
     if gen_after_round_str:
         return after_round_status_strings
-    return monkeys   
+    return (items, monkeys)
+
+def generate_items_inspected_str(monkeys):
+    return '\n'.join([f'Monkey {i} inspected items {m.items_inspected} times.' for i, m in enumerate(monkeys)])
+
+def calculate_monkey_business(monkeys):
+    monkeys.sort(key=lambda m: m.items_inspected, reverse=True)
+    return monkeys[0].items_inspected * monkeys[1].items_inspected
 
 if __name__ == '__main__':
     items, monkeys = parse_input_file_into_items_and_monkey_list('example.txt')
     # play_round_of_monkey_in_middle(items, monkeys, _print=True)
     print(
-        '\n'.join(play_n_rounds(items, monkeys, num_rounds=1, gen_after_round_str=True, _print=True))
+        '\n'.join(play_n_rounds(items, monkeys, num_rounds=20, gen_after_round_str=True, worryfatigue=True, _print=True))
     )
+    print(generate_items_inspected_str(monkeys))
 
 '''
 Idea so far: have a numpy array that represents the items.
@@ -248,6 +272,15 @@ Idea so far: have a numpy array that represents the items.
 
 
 Update -- 
+
+https://numpy.org/doc/stable/user/basics.copies.html
+https://numpy.org/doc/stable/reference/generated/numpy.ndarray.view.html#numpy.ndarray.view
+
+Using numpy structured array with owneridx, queueidx, and theeen worrylevel.  Sorting w/o issue now :)
+Also -- I made a "view" of the structured array to only modify the worrylevels, it works well!
+
+Idk about speed though.  How can I "benchmark" this code vs my original solution, on a round-by-round basis?
+
 
 This is my 1st round printout.
 
