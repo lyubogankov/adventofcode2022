@@ -9,9 +9,9 @@ Problem breakdown:
 - Each monkey's turn consists of handling each item in its possession, from 0 -> M.I (each monkey has a queue of I items)
 - Each item handling consists of inspection (worry about item increases/decreases), and throwing to another monkey
 
-I decided to create an object to represent monkeys, and another to represent items.
+I decided to create classes to represent monkeys and items.
 
-**The `Monkey` object**
+**The `Monkey` class**
 
 Has member variables with information from input text file:
 - List of Item objects (more on this in a sec)
@@ -22,7 +22,7 @@ Has member variables with information from input text file:
 
 Additionally, I wrote a `__str__` method so that I could match the per-monkey printout shown in the problem description and input text file (for unit testing).  I did not write a `__repr__` method, because I could not find a way to properly print the worry-increase operation function name.
 
-**The `Item` object**
+**The `Item` class**
 
 The only per-item value to keep track of is its current worry level (quantified amount of worry viewer has for the item).
 
@@ -56,7 +56,7 @@ I used a verbose regular expression string with named groups to process the inpu
 
 **Unit testing**
 
-I wrote unit tests (`test_solution.py`) so that I could compare the output of my solution to the problem description on the example input.  I wrote my solution to optionally generate strings that match the format of the puzzle description, so that I could use string comparison as the assertion within my unit tests.  I tested:
+I wrote unit tests (`test_solution.py`) so that I could compare the output of my solution to the problem description on the example input.  I wrote my solution to optionally generate strings that match the format of the puzzle description, so that I could use string comparison as the assertion within my unit tests.  I tested everything that was spelled out in the problem description, which was:
 - Input file parsing
 - Actions performed by each monkey during very first round
 - Post-round game state for selected rounds between [1, 20]
@@ -84,14 +84,39 @@ The worst case computational complexity is O(N * M * I), but in practice is bett
 
 I noticed that I was using a Python `list` to store each Monkey's queue of items.  However, `lists`s have O(n) computational complexity when popping from the front of the `list` (as is required for a queue).
 
-I replaced the `list` with the standard library's `collections.deque` ("double ended queue").  It has a O(1) pops/appends to either side!  However, this improvement did not have a meaningful impact to my simulation's run time.
+I replaced the `list` with the standard library's `collections.deque` ("double ended queue").  It has O(1) pops/appends to either side!  However, this improvement did not have a meaningful impact to my simulation's run time.
 
-### Starting over From scratch (`solution_np.py`)
+### Starting over from scratch (`solution_np.py`)
 
-Talk about:
-- changing program representation -- Monkeys no longer store Items in a list/deque.  list of items is standalone, and each item is labelled w/ owner monkey's number.
+I thought for a while about how I could better utilize data structures to approach the problem.Fresh off upgrading `solution.py` from `list`s -> `collections.deque`s, I wondered whether I could extend this idea and remove the queue of items from the `Monkey` class entierly.
 
-**researching / implenting numpy approach**
+Instead, I thought that having a separate `list` of items that gets modified per-handling without ever being popped/appended could speed things up.  In addition, I wondered whether I could use matrix-like operations on slices of the item `list` to speed up the computation of the per-item worry changes.
+
+To this end, I investigated the popular Python library `numpy`!
+
+**`numpy` investigation and implementation**
+
+I read about various facets of the package:
+- I was drawn to the purported speed ([What is Numpy - Why is NumPy Fast?](https://numpy.org/doc/stable/user/whatisnumpy.html#why-is-numpy-fast) (numpy.org))
+- Its core data structure, `ndarrays`, support [*broadcasting*](https://numpy.org/doc/stable/user/basics.broadcasting.html), which allows operations to be performed on `ndarrays`, even when the two arguments do not have the same shape.
+    - For my use-case, I used it to implement the per-monkey operations (+ constant, * constant, ^2)
+- I was also drawn to [*structured arrays*](https://numpy.org/doc/stable/user/basics.rec.html)
+    - Instead of having a separate `Item` class, I represented each item with three integers:
+        - owner Monkey number
+        - item's index within the owner Monkey's queue
+        - item's current worry level
+
+Partway through my experimentation with structured arrays, I got stuck on how to broadcast each Monkey's operation onto the item worry levels.  If the items were represented using a 1D array of worry levels, I could directly operate on the array (`array *= c, += c, **=2`).  However, this notation does not work with structured arrays!
+
+I then read about, and ended up using, `numpy.ndarray.view`s.  From the docs, `view`s allow
+
+> "... access (to) the internal data buffer directly... without copying data around." ([docs - Numpy Fundamentals, Copies and views]((https://numpy.org/doc/stable/user/basics.copies.html)))
+
+Furthermore,
+
+> "It is possible to access the array differently by just changing certain metadata like stride and dtype without changing the data buffer.  This creates a new way of looking at the data and these new arrays are called views."
+
+
 
 `numpy` features I investigated and am using:
 - broadcasting
@@ -114,6 +139,6 @@ Note about computational complexity using numpy -- still the same!  In fact, add
 
 This second part of this problem was quite difficult!  This is the first AoC puzzle that has required me to optimize my approach to make it faster, and it was a fun challenge.
 
-Until now I've never used `numpy` for a personal project, and I've learned several useful tricks, like broadcasting and using `view`s for manipulation.
+Until now I've never used `numpy` for a personal project, and I've learned several useful tricks, like broadcasting and using `view`s for manipulation.  And learning how much faster it is than pure-Python `for` loops!
 
 I also had fun dipping my toes into modular arithmetic.  I don't fully understand it (I could not write a mathematical proof establishing its truth across all inputs), but I was able to read about its properties on Wikipedia and use it for my solution, which I consider a win!

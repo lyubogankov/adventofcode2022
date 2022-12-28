@@ -154,7 +154,7 @@ def play_round_of_monkey_in_middle(items, monkeys,
         elif monkey.operation_fn_str == '*':
             current_item_worrylvls *= monkey.operation_const
         elif monkey.operation_fn_str == '^':
-            current_item_worrylvls *= current_item_worrylvls
+            current_item_worrylvls **= 2
         if _print:
             print(f"  Handling increases worry:     {current_items}")
 
@@ -252,35 +252,3 @@ if __name__ == '__main__':
     _, monkeys = play_n_rounds(items, monkeys, num_rounds=10_000, worryfatigue=True)
     print(generate_items_inspected_str(monkeys))
     print(calculate_monkey_business(monkeys))
-
-'''
-Idea so far: have a numpy array that represents the items.
-    each item has a worrylevel and an owner monkey (idx).
-
-    Tried doing structured arrays for the items:
-        values = (worrylevel, ownermonkeyidx) pairs
-        dtypes = [('worrylevel', int), ('ownermonkeyidx', int)]
-        array = np.array[values, dtypes=dtypes]
-
-    However, when doing 
-        array.sort(kind='stable', order='ownermonkeyidx')
-    the order of the worrylevels is also sorted... so it won't do.
-    Also tried kind='mergesort' and kind=None, but no luck!
-
-    I can do broadcasting, though (applying a constant to the entire array, or a slice of it)
-
-    I can also replace portions of the array, if needed.  ndarrays are mutable, as are structured arrays.
-
-
-
-
-Update -- 
-
-https://numpy.org/doc/stable/user/basics.copies.html
-https://numpy.org/doc/stable/reference/generated/numpy.ndarray.view.html#numpy.ndarray.view
-
-Using numpy structured array with owneridx, queueidx, and theeen worrylevel.  Sorting w/o issue now :)
-Also -- I made a "view" of the structured array to only modify the worrylevels, it works well!
-
-Idk about speed though.  How can I "benchmark" this code vs my original solution, on a round-by-round basis?
-'''
