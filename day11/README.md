@@ -1,6 +1,8 @@
 ### Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module.
+
 
 ## Part One  (`solution.py`)
 Problem breakdown:
@@ -88,16 +90,16 @@ I replaced the `list` with the standard library's `collections.deque` ("double e
 
 ### Starting over from scratch (`solution_np.py`)
 
-I thought for a while about how I could better utilize data structures to approach the problem.Fresh off upgrading `solution.py` from `list`s -> `collections.deque`s, I wondered whether I could extend this idea and remove the queue of items from the `Monkey` class entierly.
+I thought for a while about how I could better utilize data structures to approach the problem.  Fresh off upgrading `solution.py` from `list`s -> `collections.deque`s, I wondered whether I could extend this idea and remove the queue of items from the `Monkey` class entierly.
 
-Instead, I thought that having a separate `list` of items that gets modified per-handling without ever being popped/appended could speed things up.  In addition, I wondered whether I could use matrix-like operations on slices of the item `list` to speed up the computation of the per-item worry changes.
+Instead, I thought that having a separate collection of items that gets modified per-handling without ever being popped/appended could speed things up.  In addition, I wondered whether I could use matrix-like operations on slices of the item collection to speed up the computation of the per-item worry changes.
 
 To this end, I investigated the popular Python library `numpy`!
 
 **`numpy` investigation and implementation**
 
 I read about various facets of the package:
-- I was drawn to the purported speed ([What is Numpy - Why is NumPy Fast?](https://numpy.org/doc/stable/user/whatisnumpy.html#why-is-numpy-fast) (numpy.org))
+- I was drawn to the purported speed ([What is Numpy - Why is NumPy Fast? (numpy.org)](https://numpy.org/doc/stable/user/whatisnumpy.html#why-is-numpy-fast))
 - Its core data structure, `ndarrays`, support [*broadcasting*](https://numpy.org/doc/stable/user/basics.broadcasting.html), which allows operations to be performed on `ndarrays`, even when the two arguments do not have the same shape.
     - For my use-case, I used it to implement the per-monkey operations (+ constant, * constant, ^2)
 - I was also drawn to [*structured arrays*](https://numpy.org/doc/stable/user/basics.rec.html)
@@ -108,23 +110,50 @@ I read about various facets of the package:
 
 Partway through my experimentation with structured arrays, I got stuck on how to broadcast each Monkey's operation onto the item worry levels.  If the items were represented using a 1D array of worry levels, I could directly operate on the array (`array *= c, += c, **=2`).  However, this notation does not work with structured arrays!
 
-I then read about, and ended up using, `numpy.ndarray.view`s.  From the docs, `view`s allow
+I then read about, and ended up using, `numpy.ndarray.view`s.  From the [docs](https://numpy.org/doc/stable/user/basics.copies.html), `view`s allow
 
-> "... access (to) the internal data buffer directly... without copying data around." ([docs - Numpy Fundamentals, Copies and views]((https://numpy.org/doc/stable/user/basics.copies.html)))
+> ... access (to) the internal data buffer directly... without copying data around.
 
 Furthermore,
 
-> "It is possible to access the array differently by just changing certain metadata like stride and dtype without changing the data buffer.  This creates a new way of looking at the data and these new arrays are called views."
+> It is possible to access the array differently by just changing certain metadata like stride and dtype without changing the data buffer.  This creates a new way of looking at the data and these new arrays are called views.
 
+After also reading about [dtypes]() to solidify my understanding, this is how I implemented the overall items structured array:
 
+```python
+import numpy as np
+# ...
+# each item is represented by a 3-tuple when read in from the .txt file (owneridx, queueidx, worrylevel)
+# item_values is a list of such tuples.
+items = np.array(item_values, dtype=[('owneridx', np.uint64), ('queueidx', np.uint64), ('worrylevel', np.uint64)])
+```
 
-`numpy` features I investigated and am using:
-- broadcasting
-- structured arrays
-- sorting
-- views (mutable!  very useful)
+And this is how I was able to access just the per-item worry values as an `ndarray.view`, to which I was able to broadcast the per-Monkey operations.  The `view` method allowed me to "remap" my data structure from a structured array with three `np.uint64` values per element to a 1-D, normal `ndarray` with three times the number of elements (essentially unpacking the structured array, element-wise).  A very nice property of `view`s is they directly point to the array from which they were created - they are not a copy, and so any modifications I perform on the `view` are applied back to my original structured array!
 
-**the gotcha in part two -- ever-increasing worry**
+```python
+for i, monkey in enumerate(monkeys):
+    _start = 0 if i == 0 else sum(m.num_items_held for m in monkeys[:i])
+    _end   = _start + monkeys[i].num_items_held
+    # assumption - items array is sorted
+    current_items = items[_start:_end]
+    # slice starts at idx 2 because of the structured array format (see prev code block - worrylevel is last)
+    current_item_worrylvls = current_items.view(np.uint64)[2::3] 
+```
+
+Note!  In order for this to work, the item array must be sorted by Monkey and per-Monkey queue index (accomplished by calling `items.sort()` at the end of each round).
+
+Using a structured `ndarray` required me to change the per-round flow:
+
+| `solution_np.py` (new) | `solution.py` (previous) |
+| ----------- | ----------- |
+| - Loop over all monkeys                                                 | - Loop over all monkeys |
+|     - Slice item array to point to current monkey's items' worry levels |     - Loop over current Monkey's items |
+|     - Broadcast monkey's worry-increasing operation to all items        |         - Apply monkey's worry-increasing operation |
+|     - Calculate divisibility for all items using broadcast              |         - Pick target based on current item worry level divisibility |
+|     - Loop over items and re-assign owners based on divis array         |         - Perform throw -- pop item from current Monkey's queue, append to target Monkey's queue |
+|     - Re-sort items array | |
+
+**Ever-increasing worry (part two's gotcha)**
 
 do a blockquote citation of the problem text
 
