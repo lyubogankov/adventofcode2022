@@ -176,9 +176,11 @@ At first - tried dividing each item by least common multiple of all monkeys' div
 As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
 
 Remembering this, I read about it on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
-- Definition: two integers *a* and *b* are congruent modulo *n* ($a \cong b (mod n)$) if *n* if the following holds: *a - b = kn*
-- Properties: if $a \cong b (mod n)$, then
-    - $*a* + *k* \cong *b* + *k* (mod *n*)$
+- Definition: two integers *a* and *b* are congruent modulo *n* ($a \equiv b (mod n)$) if *n* if the following holds: *a - b = kn*
+- Properties: if $a \equiv b$ (mod *n*), then
+    - $a + k \equiv b + k$ (mod *n*)
+    - $ka \equiv kb$ (mod *n*)
+    - $a^{k} \equiv b^{k}$ (mod *n*), for positive *k*
 
 
 
