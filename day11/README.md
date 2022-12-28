@@ -100,13 +100,15 @@ To this end, I investigated the popular Python library `numpy`!
 
 I read about various facets of the package:
 - I was drawn to the purported speed ([What is Numpy - Why is NumPy Fast? (numpy.org)](https://numpy.org/doc/stable/user/whatisnumpy.html#why-is-numpy-fast))
-- Its core data structure, `ndarrays`, support [*broadcasting*](https://numpy.org/doc/stable/user/basics.broadcasting.html), which allows operations to be performed on `ndarrays`, even when the two arguments do not have the same shape.
+- Its core data structure, `ndarrays`, support [broadcasting](https://numpy.org/doc/stable/user/basics.broadcasting.html), which allows operations to be performed on `ndarrays`, even when the two arguments do not have the same shape.
     - For my use-case, I used it to implement the per-monkey operations (+ constant, * constant, ^2)
-- I was also drawn to [*structured arrays*](https://numpy.org/doc/stable/user/basics.rec.html)
+- I was also drawn to [structured arrays](https://numpy.org/doc/stable/user/basics.rec.html)
     - Instead of having a separate `Item` class, I represented each item with three integers:
         - owner Monkey number
         - item's index within the owner Monkey's queue
         - item's current worry level
+
+However -- one thing that stood out to me after reading the docs is that the computational complexity of my problem would remain the same.  I still needed to simulate N rounds, iterating over each monkey per round (M monkeys), and operating on all items per monkey.  However, the combination of in-place operations and numpy's fast pre-compiled C loops vs Python's slow `for` loops is what decreases the test time (this ended up being my solution!).
 
 Partway through my experimentation with structured arrays, I got stuck on how to broadcast each Monkey's operation onto the item worry levels.  If the items were represented using a 1D array of worry levels, I could directly operate on the array (`array *= c, += c, **=2`).  However, this notation does not work with structured arrays!
 
@@ -142,26 +144,45 @@ for i, monkey in enumerate(monkeys):
 
 Note!  In order for this to work, the item array must be sorted by Monkey and per-Monkey queue index (accomplished by calling `items.sort()` at the end of each round).
 
-Using a structured `ndarray` required me to change the per-round flow:
+Using a structured `ndarray` required me to change the per-monkey flow within each round:
 
 | `solution_np.py` (new) | `solution.py` (previous) |
 | ----------- | ----------- |
-| - Loop over all monkeys                                                 | - Loop over all monkeys |
-|     - Slice item array to point to current monkey's items' worry levels |     - Loop over current Monkey's items |
-|     - Broadcast monkey's worry-increasing operation to all items        |         - Apply monkey's worry-increasing operation |
-|     - Calculate divisibility for all items using broadcast              |         - Pick target based on current item worry level divisibility |
-|     - Loop over items and re-assign owners based on divis array         |         - Perform throw -- pop item from current Monkey's queue, append to target Monkey's queue |
-|     - Re-sort items array | |
+| Slice item array to point to current monkey's items' worry levels | Loop over current Monkey's items.  Per-item: |
+| Broadcast monkey's worry-increasing operation to all items        | Apply monkey's worry-increasing operation |
+| Calculate divisibility for all items using broadcast              | Pick target based on current item worry level divisibility |
+| Loop over items and re-assign owners based on divis array         | Perform throw - pop item from current Monkey's queue, append to target Monkey's queue |
+| Re-sort items array | |
 
-**Ever-increasing worry (part two's gotcha)**
+### Ever-increasing worry (part two's gotcha)
 
-do a blockquote citation of the problem text
+Once I implented the `numpy` data structure and approach described above, I was very pleased to see that the runtime was a lot faster - ~10s for 10_000 rounds!
+However, my unit tests using the example data (running first 20 rounds) failed!
 
-Outline how I saw the problem -- numbers overflowng uint64 :(
+I didn't think much of it when I first read it, but part two has a sneaky gotcha!  While part one had a worry-decrease operation (`worry //= 3`) after the per-monkey worry increase operation (`+= c, *= c, **= 2`), this was *removed* for part two.  In my 20-round printout, I noticed that some of the items had very large worry levels.
 
-Solution - modular arithmetic!
+I'm using 64-bit unsigned integers, which can store a value in the range `[0, 18_446_744_073_709_551_617]` (2^64^ - 1).  In the 13/20th round, one of the items overflowed!  This definitely affects the divisibility checks down the line and affects how the item gets thrown between monkeys, which affects my final answer.  This is no good!
 
-Note about computational complexity using numpy -- still the same!  In fact, adding a sort per monkey within a round.  Numpy just does loops more efficiently than pure Python (link to their docs).
+A more careful read of the problem indicated that running into and eventually dealing with this issue was intended:
+
+> You're worried you might not ever get your items back. So worried, in fact, that your relief that a monkey's inspection didn't damage an item no longer causes your worry level to be divided by three.
+
+> Unfortunately, that relief was all that was keeping your worry levels from reaching **ridiculous levels**. You'll need to **find another way to keep your worry levels manageable**.
+
+**Solution: modular arithmetic**
+
+At first - tried dividing each item by least common multiple of all monkeys' divisors, but that didn't help.  My rationale was that if a number is divisible by the least common multiple of all the monkeys' divisors, it was also by definition divisible by each divisor and it would not change the outcome of the divisibility checks.
+
+As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
+
+Remembering this, I read about it on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
+- Definition: two integers *a* and *b* are congruent modulo *n* ($a \cong b (mod n)$) if *n* if the following holds: *a - b = kn*
+- Properties: if $a \cong b (mod n)$, then
+    - $*a* + *k* \cong *b* + *k* (mod *n*)$
+
+
+
+Insert "proof" of my approach here!  Is it possible to insert LaTeX?  [Yessir :)](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)
 
 
 ## Reflection
