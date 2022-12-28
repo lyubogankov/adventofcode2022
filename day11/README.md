@@ -1,7 +1,7 @@
 ### Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module.
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module.  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
@@ -180,12 +180,16 @@ Remembering this, I read about it on [Wikipedia](https://en.wikipedia.org/wiki/M
 - Properties: if $a \equiv b$ (mod *n*), then
     - $a + k \equiv b + k$ (mod *n*)
     - $ka \equiv kb$ (mod *n*)
-    - $a^{k} \equiv b^{k}$ (mod *n*), for positive *k*
+    - $a^{k} \equiv b^{k}$ (mod *n*), for any non-negative integer *k*
 
+These properties are the same three types of operations that the monkeys can perform!
 
+I was then stuck on what the *n* should be, and when I should take the modulus of each item's worry level.
+I used my initial idea of the least common multiple of all monkeys' divisors and worked out an example on paper and subsequently "proved" the method:
 
 Insert "proof" of my approach here!  Is it possible to insert LaTeX?  [Yessir :)](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)
 
+The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
 
 ## Reflection
 
