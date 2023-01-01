@@ -1,4 +1,4 @@
-### Day 11: Monkey in the Middle
+# Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
 **tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module.  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
@@ -161,7 +161,7 @@ However, my unit tests using the example data (running first 20 rounds) failed!
 
 I didn't think much of it when I first read it, but part two has a sneaky gotcha!  While part one had a worry-decrease operation (`worry //= 3`) after the per-monkey worry increase operation (`+= c, *= c, **= 2`), this was *removed* for part two.  In my 20-round printout, I noticed that some of the items had very large worry levels.
 
-I'm using 64-bit unsigned integers, which can store a value in the range `[0, 18_446_744_073_709_551_617]` (2^64^ - 1).  In the 13/20th round, one of the items overflowed!  This definitely affects the divisibility checks down the line and affects how the item gets thrown between monkeys, which affects my final answer.  This is no good!
+I'm using 64-bit unsigned integers, which can store a value in the range `[0, 18_446_744_073_709_551_617]` ($2^{64} - 1$).  In the 13/20th round, one of the items overflowed!  This definitely affects the divisibility checks down the line and affects how the item gets thrown between monkeys, which affects my final answer.  This is no good!
 
 A more careful read of the problem indicated that running into and eventually dealing with this issue was intended:
 
@@ -175,8 +175,8 @@ At first - tried dividing each item by least common multiple of all monkeys' div
 
 As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
 
-Remembering this, I read about it on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
-- Definition: two integers *a* and *b* are congruent modulo *n* ($a \equiv b (mod n)$) if *n* if the following holds: *a - b = kn*
+Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
+- Definition: two integers *a* and *b* are congruent modulo *n* if *n* if the following holds: *a - b = kn*.  This is denoted as $a \equiv b $ (mod *n*)
 - Properties: if $a \equiv b$ (mod *n*), then
     - $a + k \equiv b + k$ (mod *n*)
     - $ka \equiv kb$ (mod *n*)
