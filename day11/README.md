@@ -30,32 +30,6 @@ The only per-item value to keep track of is its current worry level (quantified 
 
 I defined several dunder methods for use with the per-monkey worry-increase operation: `__add__`, `__mul__`, and `__pow__`.  Additionally, I wrote `__str__` and `__repr__` methods for useful printouts.
 
-**Reading from input file**
-
-I used a verbose regular expression string with named groups to process the input file into `Monkey` objects.  I recently read about this method of using regex ([Raymond Hettinger, StackOverFlow](https://stackoverflow.com/a/72538070)) and I like its readability!  The one thing I dislike is that verbose mode ignores all whitespace, so in order to match spaces I have to use brackets (`[ ]`) - though it doesn't detract too much, imo.
-
-```python
-    # ...
-
-    pattern = re.compile(r"""
-          Monkey[ ](?P<monkey_idx>[\d]+):
-        | Starting[ ]items:(?P<items_csv>[\d,\s]*)
-        | Operation:[ ]new[ ]=[ ]old[ ](?P<operation>.+)
-        | Test:[ ]divisible[ ]by[ ](?P<divis_const>\d+)
-        | If[ ] true:[ ]throw[ ]to[ ]monkey[ ](?P<divis_throw_target>\d+)
-        | If[ ]false:[ ]throw[ ]to[ ]monkey[ ](?P<nondivis_throw_target>\d+)
-    """, re.VERBOSE)
-
-    mo = pattern.fullmatch(line)
-
-    if not mo:
-        continue
-    match mo.lastgroup:
-        case 'monkey_idx': # ...
-        case 'items_csv':  # ...
-        # ...
-```
-
 **Unit testing**
 
 I wrote unit tests (`test_solution.py`) so that I could compare the output of my solution to the problem description on the example input.  I wrote my solution to optionally generate strings that match the format of the puzzle description, so that I could use string comparison as the assertion within my unit tests.  I tested everything that was spelled out in the problem description, which was:
