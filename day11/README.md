@@ -178,21 +178,21 @@ $$
 
 2. Each item has a worry level, $w$, that starts at an initial value and is modified by every monkey that handles the item.
     - During the very first round, before monkey 0 has handled any items, all items are at their initial values.
-    - By definition, $w \equiv w$ (mod $n$) since $w - w = kn$ ($k$ = 0).  This is our starting point for equivalence between the modular and regular arithmetic operations.
+    - By definition, $w \equiv w$ (mod $n$) since $w - w = kn$ - in this case, $k$ = 0.  This is our starting point for equivalence between the modular and regular arithmetic operations.
 
 3. The reduction in worry-level is achieved by using modular arithmetic where $n$ is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so $n$ is the product of all monkeys' divisibility constants:
 $$n = \prod_{i=0}^{M-1} d_{i}$$
 
 4. If we pick a monkey $m$, such that 0 $\leq$ $m$ < M, we can walk through the per-item steps for a single item (with initial worry level $w$) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
-    1. Item's initial worry level is $w$ ($w$ is a positive, nonzero integer)
+    1. Item's initial worry level is $w$ (where $w$ is a positive, nonzero integer)
     2. Monkey $m$ inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
         - [*Mod arithmetic version*] Take the modulus: $w_{new} = f_{m}(w) \bmod n$
     3. Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
 
 Now, to verify whether the two divisibility checks the same.  Let's walk through some possible cases:
 
-0. (Most likely for small values of $m$) If $w$ has never been larger than $n$, then it has never been truncated by the $\bmod n$ operation ($w \bmod n = w$), which means that the modular and regular arithmetic cases are exactly the same.
+0. (Most likely for small values of $m$) If $w$ has never been larger than $n$, then it has never been truncated by the $\bmod n$ operation, $w \bmod n = w$ - the modular and regular arithmetic cases are exactly the same.
 
 1. $w$ > 0
 
