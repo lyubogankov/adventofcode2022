@@ -146,7 +146,7 @@ Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wiki
 - Properties: if $a \equiv b$ (mod $n$), then
     - $a + k \equiv b + k$ (mod $n$)
     - $ka \equiv kb$ (mod $n$)
-    - $a^{k} \equiv b^{k}$ (mod $n$), for any non-negative integer *k*
+    - $a^{k} \equiv b^{k}$ (mod $n$), for any non-negative integer $k$
 
 These properties are the same three types of operations that the monkeys can perform!
 
@@ -162,7 +162,7 @@ Goals:
 - Preserve the outcome of each per-monkey/item divisibility check so that the simulation still runs as intended (items are properly passed between monkeys, as if the worry-level reduction did not happen)
 
 General argument:
-1. For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$.  Additionally, each monkey has a worry-increasing operation, $f_{m}(w)$:
+1. For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$.  Additionally, each monkey has a worry-increasing operation, $f_{m}(w)$, where $w$ is an item's worry level:
 
 [//]: # (https://tex.stackexchange.com/a/337352)
 $$
@@ -176,19 +176,35 @@ $$
 \end{equation}
 $$
 
-2. The reduction in worry-level is achieved by using modular arithmetic where $n$ is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so $n$ is the product of all monkeys' divisibility constants:
+2. Each item has a worry level, $w$, that starts at an initial value and is modified by every monkey that handles the item.
+    - During the very first round, before monkey 0 has handled any items, all items are at their initial values.
+    - By definition, $w \equiv w$ (mod $n$) since $w - w = kn$ ($k$ = 0).  This is our starting point for equivalence between the modular and regular arithmetic operations.
+
+3. The reduction in worry-level is achieved by using modular arithmetic where $n$ is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so $n$ is the product of all monkeys' divisibility constants:
 $$n = \prod_{i=0}^{M-1} d_{i}$$
 
-3. If we pick a monkey $m$, such that 0 $\leq$ $m$ < M, we can walk through the per-item steps for a single item (with initial worry level $w$) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
+4. If we pick a monkey $m$, such that 0 $\leq$ $m$ < M, we can walk through the per-item steps for a single item (with initial worry level $w$) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
-    1. Item's initial worry level is $w$
+    1. Item's initial worry level is $w$ ($w$ is a positive, nonzero integer)
     2. Monkey $m$ inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
         - [*Mod arithmetic version*] Take the modulus: $w_{new} = f_{m}(w) \bmod n$
     3. Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
 
-Now, to check: are the two divisibility checks the same?  Let's walk through some possible cases:
+Now, to verify whether the two divisibility checks the same.  Let's walk through some possible cases:
 
-0. Most likely for small values of $m$ - if $w$ has never been larger than $n$, 
+0. (Most likely for small values of $m$) If $w$ has never been larger than $n$, then it has never been truncated by the $\bmod n$ operation ($w \bmod n = w$), which means that the modular and regular arithmetic cases are exactly the same.
+
+1. $w$ > 0
+
+    1. $f_{m}(w) \bmod n$ = 0: this means that $f_{m}(w)$ is divisible by $n$, and therefore also by $d_{m}$ per definition of $n$.  Therefore, both the modular and regular arithmetic cases yield same answer to divisibility check -- yes, $w_{new}$ is divisible by $n$!
+
+    2. $f_{m}(w) \bmod n$ > 0: $$f_{m}(w)$ may *still* be divisible by $d_{m}$ (there are $\frac{n}{d_{m}} - 1$ other factors expressible).  Divisibility will be the same for the modular and regular arithmetic cases due to the properties of modular arithmetic - assuming initial equivalence ($a \equiv b$ (mod $n$)) equivalence is preserved when adding ($a + k \equiv b + k$ (mod $n$)) or multiplying ($ka\equiv kb$ (mod $n$)) by a constant, as well as when exponentiating by a positive, nonzero integer ($a^{k} \equiv b^{k}$ (mod $n$)). This describes all possible $f_{m}(w)$ allowed by the puzzle!
+        
+2. $w \bmod n$ = 0 and $f_{m}(w) = kw$ or $f_{m}(w) = w^{2}$:  This means that the previous monkey's handling of the item ($f_{m - 1}(w) \bmod n$) yielded a worry level divisible by $n$.  If we apply multiplicative operation ($kw$ or $w^{2}$) to both the modular and regular arithmetic cases, the result will still be divisible by $n$, and therefore by $d_{m}.
+    - Regular arithmetic: $f_{m}(w) > w$, since there isn't a worry-reduction operation
+    - Modular arithmetic: $f_{m}(w) = w = 0$, since it's still divisible by $n$
+
+Since the weights are initially equivalent (before round 1), this argument can be applied to each monkey's turn within each round and carry forward across monkeys within a round, and across rounds within the simulation!
 
 
 ## Reflection
