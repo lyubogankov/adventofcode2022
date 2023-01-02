@@ -142,15 +142,15 @@ At first - tried dividing each item by least common multiple of all monkeys' div
 As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
 
 Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
-- Definition: two integers $a$ and $b$ are congruent modulo *n* if *n* if the following holds: $a$ - $b$ = $k$*n*.  This is denoted as $a \equiv b $ (mod *n*)
-- Properties: if $a \equiv b$ (mod *n*), then
-    - $a + k \equiv b + k$ (mod *n*)
-    - $ka \equiv kb$ (mod *n*)
-    - $a^{k} \equiv b^{k} (\bmod n)$ (mod *n*), for any non-negative integer *k*
+- Definition: two integers $a$ and $b$ are congruent modulo $n$ if $n$ if the following holds: $a$ - $b$ = $k$$n$.  This is denoted as $a \equiv b $ (mod $n$)
+- Properties: if $a \equiv b$ (mod $n$), then
+    - $a + k \equiv b + k$ (mod $n$)
+    - $ka \equiv kb$ (mod $n$)
+    - $a^{k} \equiv b^{k}$ (mod $n$), for any non-negative integer *k*
 
 These properties are the same three types of operations that the monkeys can perform!
 
-I was then stuck on what the *n* should be, and when I should take the modulus of each item's worry level.
+I was then stuck on what the $n$ should be, and when I should take the modulus of each item's worry level.
 I used my initial idea of the least common multiple of all monkeys' divisors and worked out an example on paper.
 
 The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
