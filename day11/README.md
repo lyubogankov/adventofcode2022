@@ -163,7 +163,7 @@ Goals:
 
 General argument:
 - For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$
-- The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants: $ n = \prod_{i=0}^{M-1} d_{i}$
+- The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants: $n = \prod_{i=0}^{M-1} d_{i}$
 
 
 ## Reflection
