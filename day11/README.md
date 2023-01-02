@@ -162,7 +162,7 @@ Goals:
 - Preserve the outcome of each per-monkey/item divisibility check so that the simulation still runs as intended (items are properly passed between monkeys, as if the worry-level reduction did not happen)
 
 General argument:
-- For *M* monkeys, [0, *M*), each with a divisibility constant of *d* ($d_0$, $d_{1}$, ... , $d_{M - 1}$), the reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
+- For *M* monkeys, [0, *M*), each with a divisibility constant of *d* ( $d_{0}$, $d_{1}$, ... , $d_{M - 1}$), the reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
 
 $$ n = \prod_{i=0}^{M-1} d_{i}$$
 
