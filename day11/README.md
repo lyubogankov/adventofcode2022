@@ -1,7 +1,7 @@
 # Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [basic `numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
