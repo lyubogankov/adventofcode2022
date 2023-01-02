@@ -6,6 +6,20 @@ The advent calendar consists of daily programming puzzles, starting on Dec 1st a
 
 Each puzzle consists of two related parts, but the description for the second part is only available once a correct solution to the first part has been found and entered into the puzzle page.  The descriptions outline the problem and contain a small worked example to demonstrate the puzzle mechanics.
 
+---
+
+## Contents
+
+- [My AoC'22 goals](#my-goals)
+- [Highlighting my favorite solutions](#im-particularly-proud-of-several-solutions)
+- Walking through typical problem structure, and some strategies I used
+    - [Parsing input text file -> data structure(s)](#input-text-file---internal-program-state)
+    - [Simulation and calculation](#simulation-and-calculation)
+    - [Unit testing](#unit-testing)
+- [Reflection](#reflections)
+
+---
+
 ## My goals
 
 - **Have fun!**  I used Python, a language with which I'm already comfortable, so that I could focus on higher-level solution aspects like extensibility, algorithms and data structures without the friction of worrying about syntax.
@@ -242,24 +256,11 @@ s.TH..''',
 ......
 ......
 ......
-s..TH.''',
+s..TH.'''
 
-# U 4
 ...
 
-# R 2
-'''......
-......
-.H....
-......
-s.....''',
-
-'''......
-......
-.TH...
-......
-s.....'''
-        ]
+]
         # initial condition
         grid = Grid.create_grid_with_dimensions(width=6, height=5)
         # run the sim!
@@ -278,9 +279,8 @@ Setting `self.maxDiff = None` within the `unittest` framework allowed me to see 
 I've solved the first 11 puzzles so far.  It's been quite fun!
 - After solving several of the puzzles, I noticed that parts one and two were related and began thinking about what elements might change from parts one -> two when writing my solution to part one.  This has made my code more modular!
 - I've incorporated unit testing into my solutions, which speeds up debug and gives me confidence that my solution still works when I make changes or refactor.
-- This is the first project that I'm thoroughly documenting on GitHub - it's been fun learning GH-flavored Markdown and getting my thoughts out on the keyboard.
-    - In a [recent blog post](https://nedbatchelder.com/blog/202212/talk_python_to_me_tools_for_readme.html), Ned Batchelder shared some of his principles about writing READMEs, and the first one inspired me:
+- It's also been fun to animate two of my solutions - Days [08 (Treetop Tree House)](/day08/) and [09 (Rope Bridge)](/day09/).  It wasn't part of the puzzle requirements, but I found that visualizing and animating the simulation state improved my understanding of the puzzle and was pretty to look at!
+
+This is the first project that I'm thoroughly documenting on GitHub - it's been fun learning GH-flavored Markdown and getting my thoughts out on the keyboard.  In a [recent blog post](https://nedbatchelder.com/blog/202212/talk_python_to_me_tools_for_readme.html), Ned Batchelder shared some of his principles about writing READMEs, and the first one inspired me:
 
 > Writing about your work helps you understand your work.
-
-- It's also been fun to animate two of my solutions - Days [08 (Treetop Tree House)](/day08/) and [09 (Rope Bridge)](/day09/).  It wasn't part of the puzzle requirements, but I found that visualizing and animating the simulation state improved my understanding of the puzzle and was pretty to look at!

@@ -1,7 +1,7 @@
 # Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module.  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
@@ -29,14 +29,6 @@ Additionally, I wrote a `__str__` method so that I could match the per-monkey pr
 The only per-item value to keep track of is its current worry level (quantified amount of worry viewer has for the item).
 
 I defined several dunder methods for use with the per-monkey worry-increase operation: `__add__`, `__mul__`, and `__pow__`.  Additionally, I wrote `__str__` and `__repr__` methods for useful printouts.
-
-**Unit testing**
-
-I wrote unit tests (`test_solution.py`) so that I could compare the output of my solution to the problem description on the example input.  I wrote my solution to optionally generate strings that match the format of the puzzle description, so that I could use string comparison as the assertion within my unit tests.  I tested everything that was spelled out in the problem description, which was:
-- Input file parsing
-- Actions performed by each monkey during very first round
-- Post-round game state for selected rounds between [1, 20]
-- Per-monkey item inspection counts after round 20
 
 
 ## Part Two
@@ -159,11 +151,21 @@ Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wiki
 These properties are the same three types of operations that the monkeys can perform!
 
 I was then stuck on what the *n* should be, and when I should take the modulus of each item's worry level.
-I used my initial idea of the least common multiple of all monkeys' divisors and worked out an example on paper and subsequently "proved" the method:
-
-Insert "proof" of my approach here!  Is it possible to insert LaTeX?  [Yessir :)](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)
+I used my initial idea of the least common multiple of all monkeys' divisors and worked out an example on paper.
 
 The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
+
+**"Proof" - trying to work out why my solution worked**
+
+Goals:
+- Decrease the worry-level of each item so that the per-monkey worry-increasing operations do not cause the worry level to overflow the containing variable (unsigned 64-bit integer)
+- Preserve the outcome of each per-monkey/item divisibility check so that the simulation still runs as intended (items are properly passed between monkeys, as if the worry-level reduction did not happen)
+
+General argument:
+- For *M* monkeys, [0, *M*), each with a divisibility constant of *d* ($d_{0}$, $d_{1}$, ... , $d_{M - 1}$), the reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
+
+$$ n = \prod_{i=0}^{M-1} d_{i}$$
+
 
 ## Reflection
 
