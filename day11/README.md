@@ -179,10 +179,10 @@ $$
 2. The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
 $$n = \prod_{i=0}^{M-1} d_{i}$$
 
-3. If we pick a monkey *m*, such that 0 $\leq$ *m* < M, we can walk through the per-item steps for a single item (with initial worry level *w*) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
+3. If we pick a monkey $m$, such that 0 $\leq$ $m$ < M, we can walk through the per-item steps for a single item (with initial worry level $w$) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
-    - Item's initial worry level is *w*
-    - Monkey *m* inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
+    - Item's initial worry level is $w$
+    - Monkey $m$ inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
         - [*Mod arithmetic version*] Take the modulus: $w_{new} = f_{m}(w) \bmod n$
     - Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
 
