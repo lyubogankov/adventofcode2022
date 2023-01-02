@@ -198,9 +198,11 @@ Now, to verify whether the two divisibility checks the same.  Let's walk through
 
     1. $f_{m}(w) \bmod n$ = 0: this means that $f_{m}(w)$ is divisible by $n$, and therefore also by $d_{m}$ per definition of $n$.  Therefore, both the modular and regular arithmetic cases yield same answer to divisibility check -- yes, $w_{new}$ is divisible by $n$!
 
-    2. $f_{m}(w) \bmod n$ > 0: $f_{m}(w)$ may *still* be divisible by $d_{m}$ (there are $\frac{n}{d_{m}} - 1$ other factors expressible).
-    
-    Divisibility will be the same for the modular and regular arithmetic cases due to the properties of modular arithmetic - assuming initial equivalence ($a \equiv b$ (mod $n$)) equivalence is preserved when adding ($a + k \equiv b + k$ (mod $n$)) or multiplying ($ka\equiv kb$ (mod $n$)) by a constant, as well as when exponentiating by a positive, nonzero integer ($a^{k} \equiv b^{k}$ (mod $n$)). This describes all possible $f_{m}(w)$ allowed by the puzzle!
+    2. $f_{m}(w) \bmod n$ > 0: $f_{m}(w)$ may *still* be divisible by $d_{m}$ (there are $\frac{n}{d_{m}} - 1$ other factors expressible). Divisibility will be the same for the modular and regular arithmetic cases due to the properties of modular arithmetic:
+        1. Assuming initial equivalence, where $a \equiv b$ (mod $n$), equivalence is preserved with all possible operations allowed by the puzzle:
+            - $a + k \equiv b + k$ (mod $n$)
+            - $ka\equiv kb$ (mod $n$)
+            - $a^{k} \equiv b^{k}$ (mod $n$), where $k$ > 0 and is an integer
         
 2. $w \bmod n$ = 0 and $f_{m}(w) = kw$ or $f_{m}(w) = w^{2}$:  This means that the previous monkey's handling of the item ($f_{m - 1}(w) \bmod n$) yielded a worry level divisible by $n$.  If we apply multiplicative operation ($kw$ or $w^{2}$) to both the modular and regular arithmetic cases, the result will still be divisible by $n$, and therefore by $d_{m}.
     - Regular arithmetic: $f_{m}(w) > w$, since there isn't a worry-reduction operation
