@@ -155,15 +155,24 @@ I used my initial idea of the least common multiple of all monkeys' divisors and
 
 The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
 
-**"Proof" - trying to work out why my solution worked**
+**"Proof" - trying to work out why my solution is valid**
 
 Goals:
 - Decrease the worry-level of each item so that the per-monkey worry-increasing operations do not cause the worry level to overflow the containing variable (unsigned 64-bit integer)
 - Preserve the outcome of each per-monkey/item divisibility check so that the simulation still runs as intended (items are properly passed between monkeys, as if the worry-level reduction did not happen)
 
 General argument:
-- For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$
-- The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants: $n = \prod_{i=0}^{M-1} d_{i}$
+1. For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$
+2. The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
+
+$$n = \prod_{i=0}^{M-1} d_{i}$$
+
+3. If we pick a monkey *m*, such that 0 $\leq$ *m* < M, we can walk through the per-item steps for a single item (with initial worry level *w*) - these steps will hold for all monkeys, so the proof should also be generally valid.
+
+per-item step | regular arithmetic | modular arithmetic (mod *n*)
+------------- | ------------------ | ----------------------------
+(1) Item's initial worry level | *w* | *w*
+(2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation, which can take three forms) | $$\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$$ | $$\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$$
 
 
 ## Reflection
