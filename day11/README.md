@@ -1,7 +1,7 @@
 # Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_*.py` scripts).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
@@ -76,7 +76,7 @@ I read about various facets of the package:
 
 However -- one thing that stood out to me after reading the docs is that the computational complexity of my problem would remain the same.  I still needed to simulate N rounds, iterating over each monkey per round (M monkeys), and operating on all items per monkey.  However, the combination of in-place operations and numpy's fast pre-compiled C loops vs Python's slow `for` loops is what decreases the test time (this ended up being my solution!).
 
-Partway through my experimentation with structured arrays, I got stuck on how to broadcast each Monkey's operation onto the item worry levels.  If the items were represented using a 1D array of worry levels, I could directly operate on the array (`array *= c, += c, **=2`).  However, this notation does not work with structured arrays!
+Partway through my experimentation with structured arrays, I got stuck on how to broadcast each Monkey's operation onto the item worry levels.  If the items were represented using a 1D array of worry levels, I could directly operate on the array (`array *= k, += k, **=2`).  However, this notation does not work with structured arrays!
 
 I then read about, and ended up using, `numpy.ndarray.view`s.  From the [docs](https://numpy.org/doc/stable/user/basics.copies.html), `view`s allow
 
