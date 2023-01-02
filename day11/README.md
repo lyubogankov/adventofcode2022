@@ -182,7 +182,7 @@ $$n = \prod_{i=0}^{M-1} d_{i}$$
 3. If we pick a monkey *m*, such that 0 $\leq$ *m* < M, we can walk through the per-item steps for a single item (with initial worry level *w*) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
     - Item's initial worry level is *w*
-    - Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation): $w_{new} = f_{m}(w)$
+    - Monkey *m* inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
         - [*Mod arithmetic version*] Take the modulus: $w_{new} = f_{m}(w) \bmod n$
     - Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
 
