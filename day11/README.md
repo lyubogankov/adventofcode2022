@@ -142,11 +142,11 @@ At first - tried dividing each item by least common multiple of all monkeys' div
 As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
 
 Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
-- Definition: two integers *a* and *b* are congruent modulo *n* if *n* if the following holds: *a - b = kn*.  This is denoted as $a \equiv b $ (mod *n*)
+- Definition: two integers $a$ and $b$ are congruent modulo *n* if *n* if the following holds: $a$ - $b$ = $k$*n*.  This is denoted as $a \equiv b $ (mod *n*)
 - Properties: if $a \equiv b$ (mod *n*), then
     - $a + k \equiv b + k$ (mod *n*)
     - $ka \equiv kb$ (mod *n*)
-    - $a^{k} \equiv b^{k}$ (mod *n*), for any non-negative integer *k*
+    - $a^{k} \equiv b^{k} (\bmod n)$ (mod *n*), for any non-negative integer *k*
 
 These properties are the same three types of operations that the monkeys can perform!
 
@@ -176,15 +176,20 @@ $$
 \end{equation}
 $$
 
-2. The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
+2. The reduction in worry-level is achieved by using modular arithmetic where $n$ is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so $n$ is the product of all monkeys' divisibility constants:
 $$n = \prod_{i=0}^{M-1} d_{i}$$
 
 3. If we pick a monkey $m$, such that 0 $\leq$ $m$ < M, we can walk through the per-item steps for a single item (with initial worry level $w$) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
-    - Item's initial worry level is $w$
-    - Monkey $m$ inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
+    1. Item's initial worry level is $w$
+    2. Monkey $m$ inspects item and viewer worries more about item: $w_{new} = f_{m}(w)$
         - [*Mod arithmetic version*] Take the modulus: $w_{new} = f_{m}(w) \bmod n$
-    - Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
+    3. Divisibility check: if $w_{new} \bmod n$ == 0, throw to first target, else to second.
+
+Now, to check: are the two divisibility checks the same?  Let's walk through some possible cases:
+
+0. Most likely for small values of $m$ - if $w$ has never been larger than $n$, 
+
 
 ## Reflection
 
