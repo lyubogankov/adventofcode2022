@@ -11,11 +11,11 @@ Each puzzle consists of two related parts, but the description for the second pa
 
 - **Have fun!**  I used Python, a language with which I'm already comfortable, so that I could focus on higher-level solution aspects like extensibility, algorithms and data structures without the friction of worrying about syntax.
 
-- **Write extensible solutions**  After completing the first several puzzles, I began noticing that each puzzle's two parts were somehow related.
+- **Write extensible solutions:**  After completing the first several puzzles, I began noticing that each puzzle's two parts were somehow related.
     - My goal from Day 05 onwards was to implement one solution that can answer both parts of the puzzle with as much shared code as possible.  This usually involves refactoring once I finish part one and read over the second part's puzzle description.
     - From Day 10 onwards, I began trying to predict which elements could change from parts one -> two.  I write a list of what might change and try to write my code such that these changes won't be painful to make.  While I haven't correctly guessed the change yet, this has been a useful thought exercise and has resulted in more modular code!
 
-- **Practice writing unit tests**  I've been strongly advised by two different mentors to write unit tests for my code.  As the puzzles became more complicated, matching my solution's console printout to the worked example became time-consuming.
+- **Practice writing unit tests:**  I've been strongly advised by two different mentors to write unit tests for my code.  As the puzzles became more complicated, matching my solution's console printout to the worked example became time-consuming.
     - Starting with Day 09, I have begun implementing unit tests that directly leverage the problem description's worked example printouts ([example](#unit-testing)), which has sped up my problem solving and gives me assurance that I'm on the right track.
 
 ## I'm particularly proud of several solutions!
@@ -26,8 +26,6 @@ Each puzzle consists of two related parts, but the description for the second pa
     - First started implementing unit testing (using Python's `unittest` module), which ended up being a huge help in understanding the puzzle.  Implemented command-prompt animation to view the rope moving!
 - [Day 11 (Monkey in the Middle)](/day11/)
     - Learned some basic `numpy` for optimization and modular arithmetic for solving the problem - part two was hard!
-
----
 
 ## General problem structure & my problem solving strategies
 
@@ -57,7 +55,7 @@ Each monkey has a list of one or more starting items, an operation (* constant, 
 
 In order to extract all of this information, I used a pre-compiled verbose regular expression with named matching groups.
 
-I recently learned about the verbose mode of Python's regular expression module from a [Stack Overflow answer by Raymond Hettinger](https://stackoverflow.com/a/72538070), and I quite like it's readability!  The only gotcha is that verbose mode ignores all whitespace, so in order to match spaces I have to use brackets (`[ ]`), though in my opinion it doesn't detract too much from readability.
+I recently learned about the verbose mode of Python's regular expression module from a [Stack Overflow answer by Raymond Hettinger](https://stackoverflow.com/a/72538070), and I quite like its readability!  The only gotcha is that verbose mode ignores all whitespace, so in order to match spaces I have to use brackets (`[ ]`), though in my opinion it doesn't detract too much from readability.
 
 ```python
 pattern = re.compile(r"""
@@ -86,25 +84,100 @@ for line in inputfile.read():
         case 'nondivis_throw_target': # ...
 ```
 
-**simple classes and namedtuples**
+**classes and namedtuples**
 
-I wrote simple classes to group related variables and functions, and defined my own double-underscore (dunder / magic) methods to control how each object gets printed (`__str__` and `__repr__`), as well as some mathematical operations (like `__add__` and `__sub__` for a 2D Cartesian-coordinate Point class for [Day 09](/day09/)).
+I often use classes and `namedtuples` to represent different elements within each puzzle solution.
 
-The `__str__` method was especially useful for formatting the printout to match the problem description, which allowed me to easily write unit tests!
+`namedtuples` are useful for representing simpler collections of attributes, whereas classes are useful when I need more control over how the object is printed out and when I want to bundle additional functionality with the class as member functions.
+
+To achieve control over object printing, I defined my own double-underscore (dunder / magic) methods `__str__` and `__repr__`.  The `__str__` method was especially useful for formatting the printout to match the problem description, which allowed me to easily write unit tests!
+
+Additionally, I defined sometimes defined dunder methods for some mathematical operations, like `__add__` and `__sub__` for a 2D Cartesian-coordinate Point class for [Day 09](/day09/).
 
 **data structures**
 
 So far, I've used:
 - lists & lists-of-lists
 - dictionaries & sets
-- a `deque` (double-ended queue)
-- a 1-D `numpy` nd-array
+- a `deque` (double-ended queue, from `collections` module)
+- a 1-D `numpy` `nd-array`
 
 ### Simulation and calculation
-. simulate change(s), calculate something
-    . Predicting what'll change from parts 1 -> 2
-        . if multiple rounds of simulation are involved - try to make function that simulates a single cycle (or n cycles) given input state and outputs final state
-    . making parameterized functions
+
+This is the meat of the puzzle solution - after reading the input text file and parsing it into a more useful form (with data structures and classes/namedtuples), the input needs to be transformed in some way to arrive at the output.
+
+I've tried to write modular solutions, where as much code as possible is shared between parts one/two.
+
+**Ex: When I need to calculate a summary statistic, write a separate function to generate the collection**
+
+[Day 07](/day07/) was a puzzle involving a directory tree of files/directories.  The two parts asked different questions about the tree - after completing part one and starting on part two, I refactored my solution to have a generic function that takes a file (sub)tree and applies a criteria function to decide which directories meet the criteria.
+
+```python
+def make_list_of_dir_meeting_criteria(current_dir, criteria_fn):
+    dirs_meeting_criteria = []
+    if criteria_fn(current_dir):
+        dirs_meeting_criteria.append(current_dir)
+    # current directory can contain other Directories and/or Files
+    for item in current_dir.contents:
+        if type(item) == Directory:
+            # recursively traverse directory tree into sub-directories
+            dirs_meeting_criteria += make_list_of_dir_meeting_criteria(item, criteria_fn)
+    return dirs_meeting_criteria
+```
+
+The functions of part one/two call this function in order to answer their respective questions:
+
+```python
+def part_one(root):
+    '''Need to find all directories that contain <= 100000, and print their sum.'''
+    dirs_below_size = make_list_of_dir_meeting_criteria(current_dir=root, criteria_fn=lambda dir: dir.contained_size <= 100_000)
+    return sum(dir.contained_size for dir in dirs_below_size)
+
+def part_two(root):
+    '''What is the smallest directory we can delete to free up enough space for update?
+    Total disk space = 70_000_000, size needed for update = 30_000_000.
+    '''
+    current_disk_usage = root.contained_size
+    current_free_space = 70_000_000 - current_disk_usage
+    space_to_free_for_update = 30_000_000 - current_free_space
+
+    dirs_above_size = make_list_of_dir_meeting_criteria(current_dir=root, criteria_fn=lambda dir: dir.contained_size >= space_to_free_for_update)
+    return min(dir.contained_size for dir in dirs_above_size)
+```
+
+The underlying pattern for generalization I took away from Day 07 is that when faced with a problem that requires me to find a sum, max, min, or perform some other calculation that requires knowledge of all collection elements, I can break up the problem into two parts:
+1. Function that comes up with list of all items  (in example, `make_list_of_dir_meeting_criteria()`)
+2. Function(s) that call the more general list-making function and apply needed operation.
+
+**Ex: When I need to simulate multiple rounds, write a function that can simulate a single round**
+
+[Day 10](/day10/) involved simulating a very simple processor with a single register and two instructions (no-ops, which do nothing, and addition, which adds pos/neg integers to X register).  I wrote a function that simulates the CPU, both per-cycle and on clock edges (between instructions).
+
+```python
+def run_instructions_and_return_cpustate(instr_list, instr_start_idx=0, start_cycle=0, num_cycles=None, mid_instr_start_cycles=0, cpu_state={'register_x' : 1}, _print=False):
+
+    if num_cycles is not None:
+        end_cycle = start_cycle + num_cycles
+    cycle_count = start_cycle
+
+    for instr_num, instruction in enumerate(instr_list[instr_start_idx:], start=1):
+        # instructions have different execution times, measured in number of cycles
+        for instr_cycle in range(mid_instr_start_cycles if instr_num == 1 else 0, instruction.num_cycles):
+            cycle_count += 1
+            if cycle_count == end_cycle:
+                return cpu_state, instr_num, instr_cycle+1
+        # apply operation, if needed
+        if instruction.operation:
+            cpu_state['register_x'] = instruction.operation(instruction.arg, cpu_state['register_x'])
+        # Added clause -- if we are trying to simulate clock boundary between cycles (num_cycles=0),
+        #                 need to end after instruction is applied.
+        if cycle_count == end_cycle:
+            return cpu_state, instr_num, 0
+    # if we weren't given an end cycle, we'll run out of instructions.  still want to return cpu state!
+    return cpu_state, instr_num, None
+```
+
+This turned out to be very useful, as the second part required me to sample the X register at precise moments (during each instruction execution) for output to a simulated CRT display!
 
 ### Unit testing
 . unit testing to validate against example(s) given in problem description
