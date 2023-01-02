@@ -142,7 +142,7 @@ At first - tried dividing each item by least common multiple of all monkeys' div
 As I was mulling over the problem, a lunch conversation with a workplace mentor ([@dnovick](https://github.com/dnovick)) came to mind - he is passionate and deeply knowledgable about cryptography, and was talking about group theory and rings of integers modulo-N.  He mentioned the term "modular arithmetic" several times.  
 
 Remembering this, I read about modular arithmetic on [Wikipedia](https://en.wikipedia.org/wiki/Modular_arithmetic), and several things immediately jumped out at me:
-- Definition: two integers $a$ and $b$ are congruent modulo $n$ if $n$ if the following holds: $a$ - $b$ = $k$$n$.  This is denoted as $a \equiv b $ (mod $n$)
+- Definition: two integers $a$ and $b$ are congruent modulo $n$ if $n$ if the following holds: $a$ - $b$ = $kn$.  This is denoted as $a \equiv b$ (mod $n$)
 - Properties: if $a \equiv b$ (mod $n$), then
     - $a + k \equiv b + k$ (mod $n$)
     - $ka \equiv kb$ (mod $n$)
