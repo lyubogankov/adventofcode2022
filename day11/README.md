@@ -205,7 +205,7 @@ Now, to verify whether the two divisibility checks the same.  Let's walk through
             - $a^{k} \equiv b^{k}$ (mod $n$), where $k$ > 0 and is an integer
         
 2. $w \bmod n$ = 0 and $f_{m}(w) = kw$ or $f_{m}(w) = w^{2}$:  This means that the previous monkey's handling of the item, $f_{m - 1}(w) \bmod n$, yielded a worry level divisible by $n$.  If we apply multiplicative operation (of the form $kw$ or $w^{2}$) to both the modular and regular arithmetic cases, the result will still be divisible by $n$, and therefore by $d_{m}$.
-    - Regular arithmetic: $f_{m}(w) > w$, since there isn't a worry-reduction operation
+    - Regular arithmetic: $f_{m}(w) - w = kn$ or $= (w-1)n$, since there isn't a worry-reduction operation
     - Modular arithmetic: $f_{m}(w) = w = 0$, since it's still divisible by $n$
 
 Since the weights are initially equivalent (before round 1), this argument can be applied to each monkey's turn within each round and carry forward across monkeys within a round, and across rounds within the simulation!
