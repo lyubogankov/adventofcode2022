@@ -172,7 +172,7 @@ $$n = \prod_{i=0}^{M-1} d_{i}$$
 per-item step | regular arithmetic | modular arithmetic (mod *n*)
 ------------- | ------------------ | ----------------------------
 (1) Item's initial worry level | *w* | *w*
-(2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation, which can take three forms) | $$\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$$ | $$\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$$
+(2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation, which can take three forms) | $\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$ | $$\begin{equation} f_{m}(w) = \begin{cases} k_{m} + w\\ k_{m}w\\ w^{2} \end{cases} \end{equation}$$
 
 
 ## Reflection
