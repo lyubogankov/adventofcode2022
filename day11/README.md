@@ -1,7 +1,7 @@
 # Day 11: Monkey in the Middle
 [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some `numpy` and modular arithmetic and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
+**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [basic `numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_solution*.py`).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
@@ -155,7 +155,7 @@ I used my initial idea of the least common multiple of all monkeys' divisors and
 
 The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
 
-**"Proof" - trying to work out why my solution is valid**
+**Attempted proof - trying to work out why my solution is valid**
 
 Goals:
 - Decrease the worry-level of each item so that the per-monkey worry-increasing operations do not cause the worry level to overflow the containing variable (unsigned 64-bit integer)
@@ -217,4 +217,4 @@ This second part of this problem was quite difficult!  This is the first AoC puz
 
 Until now I've never used `numpy` for a personal project, and I've learned several useful tricks, like broadcasting and using `view`s for manipulation.  And learning how much faster it is than pure-Python `for` loops!
 
-I also had fun dipping my toes into modular arithmetic.  I don't fully understand it (I could not write a mathematical proof establishing its truth across all inputs), but I was able to read about its properties on Wikipedia and use it for my solution, which I consider a win!
+I also had fun dipping my toes into modular arithmetic.  While I don't fully understand it (I am unable to formally prove the equivalence properties I used for my own proof), I was able to read about its properties on Wikipedia and use it for my solution and build off the properties to rationalize the equivalence, which I consider a win!
