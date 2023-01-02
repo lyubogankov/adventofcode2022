@@ -186,7 +186,7 @@ per-item step | regular arithmetic | modular arithmetic (mod *n*)
 (1) Item's initial worry level | *w* | *w*
 (2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation) | $f_{m}(w)$ | $f_{m}(w)$
 (*) | . | .
-(3) Divisibility check, to determine item throw target (if divisible, throw to target one; else target two) | $[f_{m}(w) mod n] mod d_{m}$ == 0?| $f_{m} mod d_{m}$ == 0? 
+(3) Divisibility check, to determine item throw target (if divisible, throw to target one; else target two) | $[f_{m}(w) \bmod n] \bmod d_{m}$ == 0?| $f_{m} mod d_{m}$ == 0? 
 
 ## Reflection
 
