@@ -162,37 +162,31 @@ Goals:
 - Preserve the outcome of each per-monkey/item divisibility check so that the simulation still runs as intended (items are properly passed between monkeys, as if the worry-level reduction did not happen)
 
 General argument:
-1. For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$
-2. The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
+1. For *M* monkeys, [0, *M*), each has a divisibility constant of *d*, $d_{0}$, $d_{1}$, ... , $d_{M - 1}$.  Additionally, each monkey has a worry-increasing operation, $f_{m}(w)$:
 
+[//]: # (https://tex.stackexchange.com/a/337352)
+$$
+\begin{equation}
+  f_{m}(w) = 
+  \begin{cases}
+    k_{m} + w\\
+    k_{m}w\\
+    w^{2}
+  \end{cases}
+\end{equation}
+$$
+
+2. The reduction in worry-level is achieved by using modular arithmetic where *n* is the least common multiple of all monkeys' divisibility constants.  For this problem, all values *d* are prime integers, so *n* is the product of all monkeys' divisibility constants:
 $$n = \prod_{i=0}^{M-1} d_{i}$$
 
-3. If we pick a monkey *m*, such that 0 $\leq$ *m* < M, we can walk through the per-item steps for a single item (with initial worry level *w*) - these steps will hold for all monkeys, so the proof should also be generally valid.
+3. If we pick a monkey *m*, such that 0 $\leq$ *m* < M, we can walk through the per-item steps for a single item (with initial worry level *w*) - these steps will hold for all monkeys, so the proof should also be generally valid.  Below are the steps applied to each item by each monkey:
 
 per-item step | regular arithmetic | modular arithmetic (mod *n*)
 ------------- | ------------------ | ----------------------------
 (1) Item's initial worry level | *w* | *w*
-(2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation, which can take three forms) | . | $$
-\begin{equation}
-  f_{m}(w) = 
-  \begin{cases}
-    k_{m} + w\\
-    k_{m}w\\
-    w^{2}
-  \end{cases}
-\end{equation}
-$$
-
-$$
-\begin{equation}
-  f_{m}(w) = 
-  \begin{cases}
-    k_{m} + w\\
-    k_{m}w\\
-    w^{2}
-  \end{cases}
-\end{equation}
-$$
+(2) Monkey *m* inspects item and viewer worries more about item (monkey applies its worry-increasing operation) | $f_{m}(w)$ | $f_{m}(w)$
+(*) | . | .
+(3) Divisibility check, to determine item throw target (if divisible, throw to target one; else target two) | $[f_{m}(w) \mathbin{\%} n] \mathbin{\%} d_{m}$ == 0?| $f_{m} \mathbin{\%} d_{m}$ == 0? 
 
 ## Reflection
 
