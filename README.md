@@ -1,5 +1,4 @@
-# Advent of Code 2022
-[adventofcode.com/2022/](https://adventofcode.com/2022/)
+# Advent of Code 2022 ([website link](https://adventofcode.com/2022/))
 
 I read about Advent of Code earlier this year and was excited to participate once December rolled around!
 
@@ -15,8 +14,8 @@ Each puzzle consists of two related parts, but the description for the second pa
     - My goal from Day 05 onwards was to implement one solution that can answer both parts of the puzzle with as much shared code as possible.  This usually involves refactoring once I finish part one and read over the second part's puzzle description.
     - From Day 10 onwards, I began trying to predict which elements could change from parts one -> two.  I write a list of what might change and try to write my code such that these changes won't be painful to make.  While I haven't correctly guessed the change yet, this has been a useful thought exercise and has resulted in more modular code!
 
-- **Practice writing unit tests:**  I've been strongly advised by two different mentors to write unit tests for my code.  As the puzzles became more complicated, matching my solution's console printout to the worked example became time-consuming.
-    - Starting with Day 09, I have begun implementing unit tests that directly leverage the problem description's worked example printouts ([example](#unit-testing)), which has sped up my problem solving and gives me assurance that I'm on the right track.
+- **Practice writing unit tests:**  I've been strongly advised by two mentors to write unit tests for my code.  As the puzzles became more complicated, matching my solution's console printout to the worked example became time-consuming.
+    - Starting with Day 09, I began implementing unit tests that directly leverage the problem description's worked example printouts ([example](#unit-testing)), which has sped up my problem solving and gives me assurance that I'm on the right track.
 
 ## I'm particularly proud of several solutions!
 
@@ -37,7 +36,7 @@ Each of the puzzle inputs is a plaintext file, which needs to be parsed into som
 
 I used regular expressions for several of my input file parsing functions.  Example from Day 11 (Monkey in the Middle):
 
-The input text consists of blocks of text describing the different monkeys playing the game:
+The input text consists of blocks of text describing the different monkeys playing the game.
 
 ```
 Monkey 0:
@@ -154,7 +153,7 @@ The underlying pattern for generalization I took away from Day 07 is that when f
 [Day 10](/day10/) involved simulating a very simple processor with a single register and two instructions (no-ops, which do nothing, and addition, which adds pos/neg integers to X register).  I wrote a function that simulates the CPU, both per-cycle and on clock edges (between instructions).
 
 ```python
-def run_instructions_and_return_cpustate(instr_list, instr_start_idx=0, start_cycle=0, num_cycles=None, mid_instr_start_cycles=0, cpu_state={'register_x' : 1}, _print=False):
+def run_instructions_and_return_cpustate(instr_list, instr_start_idx=0, start_cycle=0, num_cycles=None, mid_instr_start_cycles=0, cpu_state={'register_x' : 1}):
 
     if num_cycles is not None:
         end_cycle = start_cycle + num_cycles
@@ -180,5 +179,108 @@ def run_instructions_and_return_cpustate(instr_list, instr_start_idx=0, start_cy
 This turned out to be very useful, as the second part required me to sample the X register at precise moments (during each instruction execution) for output to a simulated CRT display!
 
 ### Unit testing
-. unit testing to validate against example(s) given in problem description
-    . give specific example -- day09 rope simulation!
+
+As the puzzles became harder, the simulations required to answer them got more complicated.  Prior to [Day 09](/day09/), I tried to match the worked example printout formatting within my own code and printed to the console and manually compared my output to the worked example to ensure I was on the right track.
+
+This became very difficult for Day 09, so I started writing unit tests.  I used a similar approach to my manual method, but instead of printing the strings to the console, I wrote a function to generate those strings and compared them to the worked example printouts (I copied them and put them into my unit test script).
+
+For instance, Day 09 involved simulating a knotted rope (at first 2, then 10 total knots) as the first knot (the head) is moved around.  A series of motions are given in the worked example, and a motion-by-motion printout is provided.  I used this within my unit test directly!
+
+Generating print string with format matching worked example printouts, within `solution.py`:
+
+```python
+def generate_print_grid_string(items, grid):
+    '''Creates string to be printed from list of items, note that items are applied FIFO (so they can override each other).
+    Wrote separately from print function so I can do unit tests against this function.
+    '''
+    # sort the items by x (row), then y (col) -- reverse order of loops below (y (row) = outer, x (col) = inner)
+    #   This gives us items ordered by row, then within each row by col, the same order in which the loops iterate.
+    #   That allows the character replacement to work!
+    items.sort(key=lambda item: item.point.x)
+    items.sort(key=lambda item: item.point.y, reverse=True)  
+    curr_item = 0
+
+    # generate each row at a time.  if our current coord matches an item, print its string, and get new item from list, otherwise point = .
+    print_grid_string = ''     
+    for row_idx in reversed(range(grid.botr.y, grid.topl.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
+        for col_idx in range(grid.topl.x, grid.botr.x+1):
+            nextchar = '.'
+            while curr_item < len(items) and items[curr_item].point.x == col_idx and items[curr_item].point.y == row_idx:
+                nextchar = items[curr_item].printchar
+                curr_item += 1
+            print_grid_string += nextchar
+        if row_idx > grid.botr.y:
+            print_grid_string += '\n'
+    return print_grid_string
+```
+
+Test code, within `test_solution.py`.  Note that `verify_atomic_move_rope_sim_n_knots()` is a separate, generic testing function I wrote during part two and is not shown here.
+
+```python
+def test_atomic_move_rope_simulation_2knots(self):
+        atomic_move_outcomes = [
+# R 4
+'''......
+......
+......
+......
+TH....''',
+
+'''......
+......
+......
+......
+sTH...''',
+
+'''......
+......
+......
+......
+s.TH..''',
+
+'''......
+......
+......
+......
+s..TH.''',
+
+# U 4
+...
+
+# R 2
+'''......
+......
+.H....
+......
+s.....''',
+
+'''......
+......
+.TH...
+......
+s.....'''
+        ]
+        # initial condition
+        grid = Grid.create_grid_with_dimensions(width=6, height=5)
+        # run the sim!
+        self.verify_atomic_move_rope_sim_n_knots(
+            grid=grid, exfile=self.examplefile, per_move_outcomes=atomic_move_outcomes, num_knots=2, mode='atomic')
+```
+
+This unit testing was very useful during the second part of the puzzle, when the number of knots to simulate was increased to 10!  The movement of the rope became more complicated, and I discovered that my understanding the the *written* rope movement rules (which I implemented into my simulation function) did not match the worked example.
+
+Setting `self.maxDiff = None` within the `unittest` framework allowed me to see the differences in my printed string versus the worked example and debug much more quickly!  (By default, differences above a certain number of characters are truncated, but `None` means there isn't a limit).
+
+## Reflections
+
+**[2023-Jan-01]**
+
+I've solved the first 11 puzzles so far.  It's been quite fun!
+- After solving several of the puzzles, I noticed that parts one and two were related and began thinking about what elements might change from parts one -> two when writing my solution to part one.  This has made my code more modular!
+- I've incorporated unit testing into my solutions, which speeds up debug and gives me confidence that my solution still works when I make changes or refactor.
+- This is the first project that I'm thoroughly documenting on GitHub - it's been fun learning GH-flavored Markdown and getting my thoughts out on the keyboard.
+    - In a [recent blog post](https://nedbatchelder.com/blog/202212/talk_python_to_me_tools_for_readme.html), Ned Batchelder shared some of his principles about writing READMEs, and the first one inspired me:
+
+> Writing about your work helps you understand your work.
+
+- It's also been fun to animate two of my solutions - Days [08 (Treetop Tree House)](/day08/) and [09 (Rope Bridge)](/day09/).  It wasn't part of the puzzle requirements, but I found that visualizing and animating the simulation state improved my understanding of the puzzle and was pretty to look at!
