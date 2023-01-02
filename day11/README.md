@@ -125,7 +125,7 @@ Using a structured `ndarray` required me to change the per-monkey flow within ea
 Once I implented the `numpy` data structure and approach described above, I was very pleased to see that the runtime was a lot faster - ~10s for 10_000 rounds!
 However, my unit tests using the example data (running first 20 rounds) failed!
 
-I didn't think much of it when I first read it, but part two has a sneaky gotcha!  While part one had a worry-decrease operation (`worry //= 3`) after the per-monkey worry increase operation (`+= c, *= c, **= 2`), this was *removed* for part two.  In my 20-round printout, I noticed that some of the items had very large worry levels.
+I didn't think much of it when I first read it, but part two has a sneaky gotcha!  While part one had a worry-decrease operation (`worry //= 3`) after the per-monkey worry increase operation (`+= k, *= k, **= 2`), this was *removed* for part two.  In my 20-round printout, I noticed that some of the items had very large worry levels.
 
 I'm using 64-bit unsigned integers, which can store a value in the range `[0, 18_446_744_073_709_551_617]` ($2^{64} - 1$).  In the 13/20th round, one of the items overflowed!  This definitely affects the divisibility checks down the line and affects how the item gets thrown between monkeys, which affects my final answer.  This is no good!
 
