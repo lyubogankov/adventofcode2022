@@ -275,18 +275,42 @@ def find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print=False
             not_visible_from_outside.append((score, (row_idx, col_idx)))
     return not_visible_from_outside  # scenic_scores already sorted biggest -> smallest
 
-def print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid, up_to_num_trees, _print=False, sleep_period_s=1):
+def print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid, up_to_num_trees, _print=False, sleep_period_s=1, animation=False):
     not_visible_from_outside = find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print)
     
     total_invisible_trees = len(not_visible_from_outside)
     num_trees = min(up_to_num_trees, total_invisible_trees)
     
+    if animation:      
+        # for animation - 3rd party packages.  Installed into virtualenv
+        import mss  # https://python-mss.readthedocs.io/index.html
+        screenshotter = mss.mss()
+        mon_num = 2
+        mon_info = screenshotter.monitors[mon_num]  # my second monitor
+
     for i, (score, (row_idx, col_idx)) in enumerate(not_visible_from_outside[:num_trees]):
         temp_tree_grid = copy.deepcopy(tree_grid)
         _ = calculate_scenic_score(temp_tree_grid, row_idx, col_idx, annotate_visibility=True, _print=_print)
-        print(f'--- {i+1} / {up_to_num_trees}: {score}')
         print_tree_grid_visibility_total(temp_tree_grid, hide_invisible=True)
+        print(f'--- {i+1} / {up_to_num_trees}: {score}')
         time.sleep(sleep_period_s)  # sleep for "animation" effect in terminal
+
+        if animation:
+            # save off individual frames, then make a GIF using GIMP!
+            # https://neondigitalarts.com/how-to-make-a-gif-using-gimp-software/
+            frame = screenshotter.grab({
+                'top'    : mon_info['top'] + 194, 
+                'left'   : mon_info['left'], 
+                'width'  : 794, 
+                'height' : 1700,
+                'mon'    : mon_num
+            })
+            mss.tools.to_png(frame.rgb, frame.size, output=f'/home/lyubo/script/advent_of_code/2022/media/day08/frames/frame_{i}.png')
+            time.sleep(0.3)
+        
+
+    if animation:
+        screenshotter.close()
 
 def find_not_visible_from_outside_tree_with_highest_scenic_score(tree_grid, _print=False):
     score, (row_idx, col_idx) = find_all_scenic_score_trees_not_visible_from_outside(tree_grid, _print)[0]  # just take largest score
@@ -301,23 +325,24 @@ if __name__ == '__main__':
         print('\nOriginal grid:')
         print_tree_grid(tree_grid)
 
-        # part one
+        # # part one
         num_visible_trees, modified_tree_grid_p1 = count_visible_trees(copy.deepcopy(tree_grid))
         print('\nAnnotated grid:')
         print_tree_grid_visibility_from_all_sides(modified_tree_grid_p1, hide_invisible=inputfile=='input.txt')
         print(f'\nPart one: visible trees = {num_visible_trees} / {len(modified_tree_grid_p1)*len(modified_tree_grid_p1[0])}')
 
         # part two
-        max_scenic_score, modified_tree_grid_p2 = find_tree_with_highest_scenic_score(copy.deepcopy(tree_grid))
+        # max_scenic_score, modified_tree_grid_p2 = find_tree_with_highest_scenic_score(copy.deepcopy(tree_grid))
+        max_scenic_score, modified_tree_grid_p2 = find_tree_with_highest_scenic_score(copy.deepcopy(modified_tree_grid_p1))
         print('\nAnnotated grid:')
-        print_tree_grid_visibility_total(modified_tree_grid_p2, hide_invisible=False)
-        print(f'\nPart two: max scenic score = {max_scenic_score}')
+        print_tree_grid_visibility_total(modified_tree_grid_p2, hide_invisible=True)
+        print(f'\n\nPart two: max scenic score = {max_scenic_score}')
 
-        # # extra credit -- what is the tree that is not visible from outside with highest scenic score?  Score = 3300
-        # scenic_score, modified_tree_grid_p3 = find_not_visible_from_outside_tree_with_highest_scenic_score(tree_grid=modified_tree_grid_p1)
-        # print('\nAnnotated grid:')
-        # print_tree_grid_visibility_total(modified_tree_grid_p3, hide_invisible=inputfile=='input.txt')
-        # print(f'\nScenic score = {scenic_score}')
+        # extra credit -- what is the tree that is not visible from outside with highest scenic score?  Score = 3300
+        scenic_score, modified_tree_grid_p3 = find_not_visible_from_outside_tree_with_highest_scenic_score(tree_grid=modified_tree_grid_p1)
+        print('\nAnnotated grid:')
+        print_tree_grid_visibility_total(modified_tree_grid_p3, hide_invisible=inputfile=='input.txt')
+        print(f'\n\nScenic score = {scenic_score}')
 
         # also for fun -- print out the top "n" highest-scenic-scoring trees that are not visible from outside
-        print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid=modified_tree_grid_p1, up_to_num_trees=100, sleep_period_s=0.3)
+        print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid=modified_tree_grid_p1, up_to_num_trees=100, sleep_period_s=0.3, animation=False)
