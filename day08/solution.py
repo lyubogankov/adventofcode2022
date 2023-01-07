@@ -284,8 +284,8 @@ def print_top_n_scenic_score_trees_not_visible_from_outside(tree_grid, up_to_num
         # for animation - 3rd party packages.  Installed into virtualenv
         import mss  # https://python-mss.readthedocs.io/index.html
         screenshotter = mss.mss()
-        mon_num = 2
-        mon_info = screenshotter.monitors[mon_num]  # my second monitor
+        mon_num = 2  # my second monitor
+        mon_info = screenshotter.monitors[mon_num]
 
     for i, (score, (row_idx, col_idx)) in enumerate(not_visible_from_outside[:num_trees]):
         temp_tree_grid = copy.deepcopy(tree_grid)

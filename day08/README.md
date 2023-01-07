@@ -2,7 +2,7 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/8) (adventofcode.com)
 
-**tl;dr**: Counting problem inspired me to make some pretty command-prompt pictures and animations!
+**tl;dr**: A counting problem!  [Learned about Python `slice`s](#solution-1) to generalize my solution and reduce code repetition. Made some pretty command-prompt pictures and [my first-ever gif](#making-a-gif-of-top-100-scenic-scoring-trees-not-visible-from-exterior)!
 
 
 
