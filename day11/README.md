@@ -1,5 +1,6 @@
 # Day 11: Monkey in the Middle
-[Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
+
+## [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
 **tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_*.py` scripts).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
@@ -11,24 +12,7 @@ Problem breakdown:
 - Each monkey's turn consists of handling each item in its possession, from 0 -> M.I (each monkey has a queue of I items)
 - Each item handling consists of inspection (worry about item increases/decreases), and throwing to another monkey
 
-I decided to create classes to represent monkeys and items.
-
-**The `Monkey` class**
-
-Has member variables with information from input text file:
-- List of Item objects (more on this in a sec)
-- Inspection-related: worry increase operation function / constant
-- Throwing-related: divisibility constant, two potential targets
-    - If the current item's worry level is divisible by monkey's divis constant, throw to first target; otherwise, to second.
-- Number of items inspected, a counter that's incremented during per-round simulation
-
-Additionally, I wrote a `__str__` method so that I could match the per-monkey printout shown in the problem description and input text file (for unit testing).  I did not write a `__repr__` method, because I could not find a way to properly print the worry-increase operation function name.
-
-**The `Item` class**
-
-The only per-item value to keep track of is its current worry level (quantified amount of worry viewer has for the item).
-
-I defined several dunder methods for use with the per-monkey worry-increase operation: `__add__`, `__mul__`, and `__pow__`.  Additionally, I wrote `__str__` and `__repr__` methods for useful printouts.
+Implementing the solution for this portion was fairly straightforward.
 
 
 ## Part Two
