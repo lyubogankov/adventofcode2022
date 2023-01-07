@@ -4,6 +4,7 @@
 
 **tl;dr**: A counting problem!  [Learned about Python `slice`s](#solution-1) to generalize my solution and reduce code repetition. Made some pretty command-prompt pictures and [my first-ever gif](#making-a-gif-of-top-100-scenic-scoring-trees-not-visible-from-exterior)!
 
+If possible, please view this document on a landscape monitor to fully appreciate the images!
 
 
 ## Part One
