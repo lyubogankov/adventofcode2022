@@ -115,8 +115,7 @@ def parse_file_into_tree_grid(inputfile):
 
 # part one
 def count_visible_trees(tree_grid):
-    '''TODO: combine x4 annotation passes into one loop!'''
-
+    
     # assumption - all rows have same len (it's a perfect rectangle)
     num_rows = len(tree_grid)
     num_cols = len(tree_grid[0])
