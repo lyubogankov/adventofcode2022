@@ -2,7 +2,7 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/8) (adventofcode.com)
 
-**tl;dr**: A counting problem!  [Learned about Python `slice`s](#solution-1) to generalize my solution and reduce code repetition. Made some pretty command-prompt pictures and [my first-ever gif](#making-a-gif-of-top-100-scenic-scoring-trees-not-visible-from-exterior)!
+**tl;dr**: A counting problem!  [Learned about Python `slice`s](#solution-1) to generalize my solution and reduce code repetition. Made some pretty command prompt pictures and [my first-ever gif](#making-a-gif-of-top-100-scenic-scoring-trees-not-visible-from-exterior)!
 
 If possible, please view this document on a landscape monitor to fully appreciate the images!
 
@@ -28,7 +28,11 @@ I decided to write a "`Tree`" `class` to represent each tree in the grid so that
 
 I parsed the input file into a 2-D `list`-of-`list`s.  Each `list` contains a row of `Tree`s.  Then, to count the number of visible trees, I iterated over each of the grid's four sides and used `bool` flags within each `Tree` object to indicate whether it was visible from a given side.  Afterwards, I looped over the grid one more time to count all of the trees that were visible from any side!
 
-This solution used 5 `for` loops - one for each of the directions, and a final loop to count the number of visible trees.  In hindsight, I could have created a `set` of 2-tuples of tree coordinates and added to the `set` each time I found a tree that was visible from each direction.  This would have resulted in 4 loops over the grid, since the `set` takes care of duplicate detection -- if an element is already in the `set`, trying to add that element again doesn't have any effect.
+**Computational complexity**
+
+This solution used 5 `for` loops - one for each of the directions, and a final loop to count the number of visible trees. In hindsight, I could have created a `set` of 2-tuples of tree coordinates and added to the `set` each time I found a tree that was visible from each direction.  This would have resulted in 4 loops over the grid, since the `set` takes care of duplicate detection -- if an element is already in the `set`, trying to add that element again doesn't have any effect.  This wouldn't have an impact on the overall computational complexity, *O(MN)*, where M and N are the height/width of the tree grid.
+
+**Colorful command prompt print-out**
 
 To help me with debugging during development, I wrote a function to print the tree grid state with coloring in the command prompt.  Here is what the grid of trees looks like when visible trees are red and invisible trees are black:
 
@@ -95,12 +99,12 @@ for look_dir, not_border_tree_condition, row_slice, col_slice in directional_pas
     # this occurs for edge trees
     if scenic_score == 0:
             return scenic_score
-    return scenic_score
+return scenic_score
 ```
 
 **Solution printout**
 
-I generated a colorful command-prompt printout showing the tree with the highest `scenic score`!  I carried forward the coloring from part one to make it more colorful.
+I generated a colorful command prompt printout showing the tree with the highest `scenic score`!  I carried forward the coloring from part one to make it more colorful.
 
 ![part one command prompt printout with trees colored by visibility from outside and by visibility from tree with highest max scenic score](../media/day08/parttwo_bestview.png)
 
