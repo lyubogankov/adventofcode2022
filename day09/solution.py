@@ -1,9 +1,14 @@
+# std library
 from collections import namedtuple
 from pprint import pprint
 import os
 import time
 
-ANIMATION_MODE = True
+ANIMATION_GIF_MODE = True
+
+# third party modules
+if ANIMATION_GIF_MODE:
+    import mss
 
 # colors
 RED = '\033[31m'
@@ -212,7 +217,7 @@ def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
         # lead knot = 1 or higher
         if transform.x > 0 and transform.y > 0:
             follow_new = follow_old + transform
-        # lead knot = 0  (can only move rows/cols, not diagonally')
+        # lead knot = 0  (can only move rows/cols, not diagonally)
         else:
             follow_new = lead_old
 
@@ -225,7 +230,7 @@ def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
 def update_lead_knot_pos(old_pos, atomic_move):
     return old_pos + atomic_move.transform
 
-def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False, animation_framedelay=None):
+def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False, animation_framedelay=None, screenshotparams=None, iteration_str=None):
     if print_atomic_moves:
         print('-'*(grid.botr.x + 3), f'rep {rep+1} / {lead_move.repetitions}')
 
@@ -234,8 +239,12 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
     updated_knots = [update_lead_knot_pos(knots[0], _move)]
     if print_atomic_moves:
         print(_move.transform)
-        print_knots = updated_knots + knots[1:]                
-        print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[0])
+        print_knots = updated_knots + knots[1:]
+        print_str_and_screenshot_if_necessary(
+            print_knots, grid, start_point, color_indices=[0],
+            animation_framedelay=animation_framedelay,
+            screenshotparams=screenshotparams, sim_iteration_str=f'{iteration_str}_0'
+        )
     # the 'tails' happen within the loop
     _break = False
     for i, (lead_old, follow_old) in enumerate(zip(knots, knots[1:])):                
@@ -247,18 +256,16 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
         if updated_knots[-1] == knots[len(updated_knots)-1]:
             updated_knots += knots[len(updated_knots):]  # make sure the remaining knots get transferred
             _break = True
-            if i > len(updated_knots):
-                break
+            
         # print change to board
         if print_atomic_moves:
             print(_move.transform)
             print_knots = updated_knots + knots[len(updated_knots):]
-            print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1])
-            if animation_framedelay and not _break:
-                os.system('clear') # linux only :/
-            print_current_grid_state(knots=print_knots, grid=grid, start_point=start_point, color_indices=[i+1], animation_framedelay=animation_framedelay)
-            if animation_framedelay and not _break:
-                time.sleep(animation_framedelay)
+            print_str_and_screenshot_if_necessary(
+                print_knots, grid, start_point, color_indices=[i+1],
+                animation_framedelay=animation_framedelay,
+                screenshotparams=screenshotparams, sim_iteration_str=f'{iteration_str}_{i+1}'
+            )
         
         # want to print the first move that doesn't move, then break.
         if _break:
@@ -268,8 +275,8 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
 def simulate_rope(
         move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), num_knots=10,
         print_after_move=False, print_after_full_rope_update=False, print_atomic_moves=False,
-        color_start_point=False, animation_framedelay=None):
-    '''Start point will be the bottom left corner of the grid.'''
+        color_start_point=False, animation_framedelay=None, screenshotparams=None):
+    '''By default, start point will be the bottom left corner of the grid.'''
 
     _print = print_after_move or print_after_full_rope_update or print_atomic_moves
 
@@ -288,28 +295,53 @@ def simulate_rope(
 
     if _print:
         print('Initial state:')
-        print_current_grid_state(knots, grid, start_point, animation_framedelay)
-    for move in move_list:
+        print_str_and_screenshot_if_necessary(
+            knots, grid, start_point, animation_framedelay, 
+            screenshotparams=screenshotparams, sim_iteration_str=f'0_initial'
+        )
+    for i, move in enumerate(move_list):
         if _print:
             print(f"{'='*(grid.botr.x + 15) if print_atomic_moves else ''}== {move.name} {move.repetitions} ==\n")
         for rep in range(move.repetitions):           
-            knots = update_all_knot_pos(knots, move, grid, start_point, rep, print_atomic_moves, animation_framedelay)
+            knots = update_all_knot_pos(knots, move, grid, start_point, rep, print_atomic_moves, animation_framedelay, screenshotparams, iteration_str=f'{i+1}_{rep+1}')
             # head = first knot, tail = last knot
             if not fixed_grid:
                 grid = Grid.update_dynamic_grid(knots[0], grid)
             t_move_set.add(knots[-1])
 
             if print_after_full_rope_update:
-                if animation_framedelay:
-                    os.system('clear') # linux only :/
-                print_current_grid_state(knots, grid, start_point, animation_framedelay)
-                if animation_framedelay:
-                    time.sleep(animation_framedelay)
+                print_str_and_screenshot_if_necessary(knots, grid, start_point, animation_framedelay)
         if print_after_move:
             print_current_grid_state(knots=knots, grid=grid, start_point=start_point)
 
     return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
 
+
+### for gif-making
+ScreenshotParams = namedtuple('ScreenshotParams', ['topoffset', 'leftoffset', 'width', 'height', 'framefolder'])
+
+def screenshot(screenshotparams, sim_iteration):
+    with mss.mss() as screenshotter:
+        mon_info = screenshotter.monitors[2]  # my second monitor
+        frame = screenshotter.grab({
+            'top'    : mon_info['top']  + screenshotparams.topoffset, 
+            'left'   : mon_info['left'] + screenshotparams.leftoffset, 
+            'width'  : screenshotparams.width, 
+            'height' : screenshotparams.height,
+            'mon'    : 2
+        })
+        mss.tools.to_png(frame.rgb, frame.size, output=f'/home/lyubo/script/advent_of_code/2022/media/day09/{screenshotparams.framefolder}/frame_{sim_iteration}.png')
+        time.sleep(0.3)
+
+def print_str_and_screenshot_if_necessary(knots, grid, start_point, animation_framedelay, color_indices=[], screenshotparams=None, sim_iteration_str=None):
+    if animation_framedelay:
+        os.system('clear')  # linux only :/
+    print_current_grid_state(knots, grid, start_point, animation_framedelay, color_indices=color_indices)
+    if animation_framedelay:
+        time.sleep(animation_framedelay)
+        if ANIMATION_GIF_MODE:
+            # need to capture info about sim iteration, as well as which pair of knots we're looking at within iteration!
+            screenshot(screenshotparams, sim_iteration_str)
 
 if __name__ == '__main__':
 
@@ -359,54 +391,69 @@ if __name__ == '__main__':
     # # animation
     # '''TODO
     # create GIF out of individual frames for example / input.txt
-
     # especially input, bc it's too large to render properly in terminal.
     # https://stackoverflow.com/questions/753190/programmatically-generate-video-or-animated-gif-in-python
     # '''
-    for inputfile in ['example.txt']: #, 'input.txt']:  # input is too large for the terminal animation.  perhaps create GIF?
-        example = inputfile == 'example.txt'
 
-        move_list = read_input_file_into_move_list(inputfile)
-        t_move_set, t_move_str = simulate_rope(
-            move_list,
-            num_knots=2,
-            fixed_grid=fixed_grid_example if example else fixed_grid_input,
-            start_point=Point_2D(0, 0) if example else Point_2D(299, 220),
-            print_atomic_moves=True,
-            color_start_point=True,
-            animation_framedelay=0.2
-        )
-
-        if ANIMATION_MODE:
-            os.system('clear') # linux only :/
-            print(t_move_str)
-
-    # # part two animation
-    # for inputfile in ['example.txt', 'example_two.txt']:
-    #     exampleone = inputfile == 'example.txt'
-    #     exampletwo = inputfile == 'example_two.txt'
-    #     example = exampleone or exampletwo
+    # for inputfile in ['example.txt']: #, 'input.txt']:  # input is too large for the terminal animation.  perhaps create GIF?
+    #     example = inputfile == 'example.txt'
 
     #     move_list = read_input_file_into_move_list(inputfile)
 
-    #     if exampleone:
-    #         fixed_grid = fixed_grid_example
-    #         start_pt = Point_2D(x=0, y=0)
-    #     elif exampletwo:
-    #         fixed_grid = fixed_grid_exampletwo
-    #         start_pt = Point_2D(x=11, y=5)
-    #     else:
-    #         fixed_grid = fixed_grid_input
-    #         start_pt = Point_2D(x=0, y=0)
-
-    #     _, _ = simulate_rope(
+    #     t_move_set, t_move_str = simulate_rope(
     #         move_list,
-    #         fixed_grid=fixed_grid,
-    #         start_point=start_pt,
-    #         num_knots=10,
+    #         num_knots=2,
+    #         fixed_grid=fixed_grid_example if example else fixed_grid_input,
+    #         start_point=Point_2D(0, 0) if example else Point_2D(299, 220),
     #         print_atomic_moves=True,
-    #         animation_framedelay=0.1
+    #         color_start_point=True,
+    #         animation_framedelay=0.2,
+    #         screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_partone')
     #     )
+
+    #     if ANIMATION_GIF_MODE:
+    #         os.system('clear') # linux only :/
+    #         print(t_move_str)
+    #         time.sleep(1)
+    #         screenshot(ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_partone'), sim_iteration='tail_visited')
+
+
+    # part two animation
+    for inputfile in ['example_two.txt']: #, 'example.txt']:
+        exampleone = inputfile == 'example.txt'
+        exampletwo = inputfile == 'example_two.txt'
+        example = exampleone or exampletwo
+
+        move_list = read_input_file_into_move_list(inputfile)
+
+        if exampleone:
+            fixed_grid = fixed_grid_example
+            start_pt = Point_2D(x=0, y=0)
+            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo')
+        elif exampletwo:
+            fixed_grid = fixed_grid_exampletwo
+            start_pt = Point_2D(x=11, y=5)
+            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
+        else:
+            fixed_grid = fixed_grid_input
+            start_pt = Point_2D(x=0, y=0)
+
+        _, t_move_str = simulate_rope(
+            move_list,
+            fixed_grid=fixed_grid,
+            start_point=start_pt,
+            num_knots=10,
+            print_atomic_moves=True,
+            animation_framedelay=0.1,
+            screenshotparams=parttwo_params
+        )
+
+        if ANIMATION_GIF_MODE:
+            time.sleep(1)
+            os.system('clear') # linux only :/
+            print(t_move_str)
+            time.sleep(1)
+            screenshot(parttwo_params, sim_iteration='tail_visited')
 
 
 
