@@ -3,6 +3,8 @@ from pprint import pprint
 import os
 import time
 
+ANIMATION_MODE = True
+
 # colors
 RED = '\033[31m'
 RESET = '\033[0m'
@@ -91,6 +93,13 @@ class Grid:
             topl=Point_2D(x=botl.x,             y=botl.y + (height-1)),
             botr=Point_2D(x=botl.x + (width-1), y=botl.y             )
         )
+    @staticmethod
+    def update_dynamic_grid(h, grid):
+        grid.botr.x = max(grid.botr.x, h.x)  # +x
+        grid.topl.x = min(grid.topl.x, h.x)  # -x
+        grid.topl.y = max(grid.topl.y, h.y)  # +y
+        grid.botr.y = min(grid.botr.y, h.y)  # -y
+        return grid
 
 PrintItem = namedtuple('PrintItem', ['printchar', 'point'])
 moves = {
@@ -287,26 +296,19 @@ def simulate_rope(
             knots = update_all_knot_pos(knots, move, grid, start_point, rep, print_atomic_moves, animation_framedelay)
             # head = first knot, tail = last knot
             if not fixed_grid:
-                grid = update_dynamic_grid(knots[0], grid)
+                grid = Grid.update_dynamic_grid(knots[0], grid)
             t_move_set.add(knots[-1])
 
             if print_after_full_rope_update:
                 if animation_framedelay:
-                        os.system('clear') # linux only :/
+                    os.system('clear') # linux only :/
                 print_current_grid_state(knots, grid, start_point, animation_framedelay)
                 if animation_framedelay:
-                        time.sleep(animation_framedelay)
+                    time.sleep(animation_framedelay)
         if print_after_move:
             print_current_grid_state(knots=knots, grid=grid, start_point=start_point)
 
     return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
-
-def update_dynamic_grid(h, grid):
-    grid.botr.x = max(grid.botr.x, h.x)  # +x
-    grid.topl.x = min(grid.topl.x, h.x)  # -x
-    grid.topl.y = max(grid.topl.y, h.y)  # +y
-    grid.botr.y = min(grid.botr.y, h.y)  # -y
-    return grid
 
 
 if __name__ == '__main__':
@@ -361,46 +363,50 @@ if __name__ == '__main__':
     # especially input, bc it's too large to render properly in terminal.
     # https://stackoverflow.com/questions/753190/programmatically-generate-video-or-animated-gif-in-python
     # '''
-    # for inputfile in ['example.txt']: #, 'input.txt']:  # input is too large for the terminal animation.  perhaps create GIF?
-    #     example = inputfile == 'example.txt'
-
-    #     move_list = read_input_file_into_move_list(inputfile)
-    #     t_move_set, t_move_str = simulate_rope(
-    #         move_list,
-    #         fixed_grid=fixed_grid_example if example else fixed_grid_input,
-    #         start_point=Point_2D(0, 0) if example else Point_2D(299, 220),
-    #         _print=True,
-    #         print_atomic_moves=True,
-    #         color_start_point=True,
-    #         animation_framedelay=True
-    #     )
-
-    #     # print('.'*364)
-    #     # _ = input('change your resolution.  ENTER when done.')
-
-    # part two animation
-    for inputfile in ['example.txt', 'example_two.txt']:
-        exampleone = inputfile == 'example.txt'
-        exampletwo = inputfile == 'example_two.txt'
-        example = exampleone or exampletwo
+    for inputfile in ['example.txt']: #, 'input.txt']:  # input is too large for the terminal animation.  perhaps create GIF?
+        example = inputfile == 'example.txt'
 
         move_list = read_input_file_into_move_list(inputfile)
-
-        if exampleone:
-            fixed_grid = fixed_grid_example
-            start_pt = Point_2D(x=0, y=0)
-        elif exampletwo:
-            fixed_grid = fixed_grid_exampletwo
-            start_pt = Point_2D(x=11, y=5)
-
-        _, _ = simulate_rope(
+        t_move_set, t_move_str = simulate_rope(
             move_list,
-            fixed_grid=fixed_grid,
-            start_point=start_pt,
-            num_knots=10,
+            num_knots=2,
+            fixed_grid=fixed_grid_example if example else fixed_grid_input,
+            start_point=Point_2D(0, 0) if example else Point_2D(299, 220),
             print_atomic_moves=True,
-            animation_framedelay=0.1
+            color_start_point=True,
+            animation_framedelay=0.2
         )
+
+        if ANIMATION_MODE:
+            os.system('clear') # linux only :/
+            print(t_move_str)
+
+    # # part two animation
+    # for inputfile in ['example.txt', 'example_two.txt']:
+    #     exampleone = inputfile == 'example.txt'
+    #     exampletwo = inputfile == 'example_two.txt'
+    #     example = exampleone or exampletwo
+
+    #     move_list = read_input_file_into_move_list(inputfile)
+
+    #     if exampleone:
+    #         fixed_grid = fixed_grid_example
+    #         start_pt = Point_2D(x=0, y=0)
+    #     elif exampletwo:
+    #         fixed_grid = fixed_grid_exampletwo
+    #         start_pt = Point_2D(x=11, y=5)
+    #     else:
+    #         fixed_grid = fixed_grid_input
+    #         start_pt = Point_2D(x=0, y=0)
+
+    #     _, _ = simulate_rope(
+    #         move_list,
+    #         fixed_grid=fixed_grid,
+    #         start_point=start_pt,
+    #         num_knots=10,
+    #         print_atomic_moves=True,
+    #         animation_framedelay=0.1
+    #     )
 
 
 
