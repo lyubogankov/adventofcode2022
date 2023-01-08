@@ -98,7 +98,7 @@ for look_dir, not_border_tree_condition, row_slice, col_slice in directional_pas
     scenic_score *= visible_trees
     # this occurs for edge trees
     if scenic_score == 0:
-            return scenic_score
+        return scenic_score
 return scenic_score
 ```
 
