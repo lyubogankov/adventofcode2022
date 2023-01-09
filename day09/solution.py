@@ -11,7 +11,13 @@ if ANIMATION_GIF_MODE:
     import mss
 
 # colors
+BLACK = '\033[30m'
 RED = '\033[31m'
+GREEN = '\033[32m'
+YELLOW = '\033[33m'
+BLUE = '\033[34m'
+MAGENTA = '\033[35m'
+CYAN = '\033[36m'
 RESET = '\033[0m'
 
 # reading text file -> set of moves
@@ -45,6 +51,10 @@ class Point_2D:
         x = point1.x - point2.x
         y = point1.y - point2.y
         return Point_2D(x, y)
+
+    def __mul__(self, k):
+        if isinstance(k, int):
+            return Point_2D(k*self.x, k*self.y)
 
     def __iadd__(self, point2):
         point1 = self
@@ -92,6 +102,12 @@ class Grid:
     def __init__(self, topl, botr):
         self.topl = topl
         self.botr = botr
+    def __repr__(self):
+        return f'Grid(topl={repr(self.topl)}, botr={repr(self.botr)})'
+    def __str__(self):
+        return f'Grid(topl={str(self.topl)}, botr={str(self.botr)})'
+    def contains_point(self, pt):
+        return self.topl.x <= pt.x <= self.botr.x and self.botr.y <= pt.y <= self.topl.y
     @staticmethod
     def create_grid_with_dimensions(width, height, botl=Point_2D(x=0, y=0)):
         return Grid(
@@ -146,6 +162,7 @@ def generate_print_grid_string(items, grid, animation_framedelay=None):
     for row_idx in reversed(range(grid.botr.y, grid.topl.y+1)):  # need to reverse bc row 0 is on bottom, n on top...
         for col_idx in range(grid.topl.x, grid.botr.x+1):
             nextchar = '.'
+            # if doing animation, only the edges get a marker, leave the insides blank for less clutter
             if animation_framedelay and grid.topl.x < col_idx < grid.botr.x and grid.botr.y < row_idx < grid.topl.y:
                 nextchar = ' '
             while curr_item < len(items) and items[curr_item].point.x == col_idx and items[curr_item].point.y == row_idx:
@@ -157,19 +174,32 @@ def generate_print_grid_string(items, grid, animation_framedelay=None):
     return print_grid_string
 
 # part one printer, for showing changes to grid state
-def generate_current_grid_state_string(knots, grid, start_point, animation_framedelay=None, color_indices=[]):
+def generate_current_grid_state_string(knots, grid, start_point, animation_framedelay=None, color_indices=[], tail_visited_set=set()):
+    items = []
+    # positions that tail has visited
+    for pos in tail_visited_set:
+        items.append(PrintItem(f'{CYAN}#{RESET}', pos))
+    # start point
     startpt_printchar = f'{RED}s{RESET}' if animation_framedelay else 's'
-    items = [PrintItem(startpt_printchar, start_point)]
+    items.append(PrintItem(startpt_printchar, start_point))
+    # H, T
     if len(knots) == 2:
         h_point, t_point = knots
         items += [PrintItem('T', t_point), PrintItem('H', h_point)]
-    else:
+    # H, 1, 2, ... , 9
+    elif len(knots) < 10:
         # add items to the list from least -> greatest (largest #d knot is last, up to 1, then H (0))
         for _i, point in enumerate(reversed(knots)):
             i = len(knots)-(_i+1)
-            printstr = RED if i in color_indices else ''
-            printstr += str(i) if i > 0 else 'H'
-            printstr += RESET if i in color_indices else ''
+            printchar = str(i) if i > 0 else 'H'
+            printstr = f'{RED}{printchar}{RESET}' if i in color_indices else printchar
+            items.append(PrintItem(printstr, point))
+    # H, a, b, c, ... , z
+    elif len(knots) <= 27:
+        for _i, point in enumerate(reversed(knots)):
+            i = len(knots)-(_i+1)
+            printchar = chr(i + 96) if i > 0 else 'H'
+            printstr = f'{RED}{printchar}{RESET}' if i in color_indices else printchar
             items.append(PrintItem(printstr, point))
     return  generate_print_grid_string(items=items, grid=grid, animation_framedelay=animation_framedelay )
 def print_current_grid_state(*args, **kwargs):
@@ -230,7 +260,7 @@ def update_adjacent_following_knot_pos(lead_old, follow_old, lead_atomic_move):
 def update_lead_knot_pos(old_pos, atomic_move):
     return old_pos + atomic_move.transform
 
-def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False, animation_framedelay=None, screenshotparams=None, iteration_str=None):
+def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic_moves=False, animation_framedelay=None, screenshotparams=None, iteration_str=None, tail_visited_set=set()):
     if print_atomic_moves:
         print('-'*(grid.botr.x + 3), f'rep {rep+1} / {lead_move.repetitions}')
 
@@ -243,6 +273,7 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
         print_str_and_screenshot_if_necessary(
             print_knots, grid, start_point, color_indices=[0],
             animation_framedelay=animation_framedelay,
+            tail_visited_set=tail_visited_set,
             screenshotparams=screenshotparams, sim_iteration_str=f'{iteration_str}_0'
         )
     # the 'tails' happen within the loop
@@ -264,6 +295,7 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
             print_str_and_screenshot_if_necessary(
                 print_knots, grid, start_point, color_indices=[i+1],
                 animation_framedelay=animation_framedelay,
+                tail_visited_set=tail_visited_set,
                 screenshotparams=screenshotparams, sim_iteration_str=f'{iteration_str}_{i+1}'
             )
         
@@ -274,7 +306,8 @@ def update_all_knot_pos(knots, lead_move, grid, start_point, rep=0, print_atomic
 
 def simulate_rope(
         move_list, fixed_grid=None, start_point=Point_2D(x=0, y=0), num_knots=10,
-        print_after_move=False, print_after_full_rope_update=False, print_atomic_moves=False,
+        print_after_move=False, print_after_full_rope_update=False, print_atomic_moves=False, print_tail_pos=False,
+        print_all_final_knot_pos=False,
         color_start_point=False, animation_framedelay=None, screenshotparams=None):
     '''By default, start point will be the bottom left corner of the grid.'''
 
@@ -303,16 +336,35 @@ def simulate_rope(
         if _print:
             print(f"{'='*(grid.botr.x + 15) if print_atomic_moves else ''}== {move.name} {move.repetitions} ==\n")
         for rep in range(move.repetitions):           
-            knots = update_all_knot_pos(knots, move, grid, start_point, rep, print_atomic_moves, animation_framedelay, screenshotparams, iteration_str=f'{i+1}_{rep+1}')
+            knots = update_all_knot_pos(
+                knots, move, grid, start_point, rep,
+                print_atomic_moves, animation_framedelay, 
+                screenshotparams, iteration_str=f'{i+1}_{rep+1}', 
+                tail_visited_set=t_move_set if print_tail_pos else set()
+            )
             # head = first knot, tail = last knot
             if not fixed_grid:
                 grid = Grid.update_dynamic_grid(knots[0], grid)
             t_move_set.add(knots[-1])
 
             if print_after_full_rope_update:
-                print_str_and_screenshot_if_necessary(knots, grid, start_point, animation_framedelay)
+                print_str_and_screenshot_if_necessary(
+                    knots, grid, start_point, animation_framedelay, 
+                    tail_visited_set=t_move_set if print_tail_pos else set(),
+                    screenshotparams=screenshotparams, sim_iteration_str=f'{i+1}_{rep+1}'
+                )
         if print_after_move:
             print_current_grid_state(knots=knots, grid=grid, start_point=start_point)
+            print_str_and_screenshot_if_necessary(
+                knots, grid, start_point,
+                animation_framedelay,
+                tail_visited_set=t_move_set if print_tail_pos else set(), 
+                screenshotparams=screenshotparams, sim_iteration_str=f'{i+1}_{rep+1}'
+            )
+
+    if print_all_final_knot_pos:
+        for i, knot in enumerate(knots):
+            print(i, str(knot))
 
     return t_move_set, generate_unique_t_locations_string(t_move_set, grid, start_point, color_start_point)
 
@@ -333,10 +385,10 @@ def screenshot(screenshotparams, sim_iteration):
         mss.tools.to_png(frame.rgb, frame.size, output=f'/home/lyubo/script/advent_of_code/2022/media/day09/{screenshotparams.framefolder}/frame_{sim_iteration}.png')
         time.sleep(0.3)
 
-def print_str_and_screenshot_if_necessary(knots, grid, start_point, animation_framedelay, color_indices=[], screenshotparams=None, sim_iteration_str=None):
+def print_str_and_screenshot_if_necessary(knots, grid, start_point, animation_framedelay, color_indices=[], tail_visited_set=set(), screenshotparams=None, sim_iteration_str=None):
     if animation_framedelay:
         os.system('clear')  # linux only :/
-    print_current_grid_state(knots, grid, start_point, animation_framedelay, color_indices=color_indices)
+    print_current_grid_state(knots, grid, start_point, animation_framedelay, color_indices=color_indices, tail_visited_set=tail_visited_set)
     if animation_framedelay:
         time.sleep(animation_framedelay)
         if ANIMATION_GIF_MODE:
@@ -418,44 +470,70 @@ if __name__ == '__main__':
     #         screenshot(ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_partone'), sim_iteration='tail_visited')
 
 
-    # part two animation
-    for inputfile in ['example_two.txt']: #, 'example.txt']:
-        exampleone = inputfile == 'example.txt'
-        exampletwo = inputfile == 'example_two.txt'
-        example = exampleone or exampletwo
+    # # part two animation
+    # for inputfile in ['example_two.txt']: #, 'example.txt']:
+    #     exampleone = inputfile == 'example.txt'
+    #     exampletwo = inputfile == 'example_two.txt'
+    #     example = exampleone or exampletwo
 
-        move_list = read_input_file_into_move_list(inputfile)
+    #     move_list = read_input_file_into_move_list(inputfile)
 
-        if exampleone:
-            fixed_grid = fixed_grid_example
-            start_pt = Point_2D(x=0, y=0)
-            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo')
-        elif exampletwo:
-            fixed_grid = fixed_grid_exampletwo
-            start_pt = Point_2D(x=11, y=5)
-            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
-        else:
-            fixed_grid = fixed_grid_input
-            start_pt = Point_2D(x=0, y=0)
+    #     if exampleone:
+    #         fixed_grid = fixed_grid_example
+    #         start_pt = Point_2D(x=0, y=0)
+    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo')
+    #     elif exampletwo:
+    #         fixed_grid = fixed_grid_exampletwo
+    #         start_pt = Point_2D(x=11, y=5)
+    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
+    #     else:
+    #         fixed_grid = fixed_grid_input
+    #         start_pt = Point_2D(x=0, y=0)
 
-        _, t_move_str = simulate_rope(
-            move_list,
-            fixed_grid=fixed_grid,
-            start_point=start_pt,
-            num_knots=10,
-            print_atomic_moves=True,
-            animation_framedelay=0.1,
-            screenshotparams=parttwo_params
+    #     _, t_move_str = simulate_rope(
+    #         move_list,
+    #         fixed_grid=fixed_grid,
+    #         start_point=start_pt,
+    #         num_knots=10,
+    #         print_atomic_moves=True,
+    #         animation_framedelay=0.1,
+    #         screenshotparams=parttwo_params
+    #     )
+
+    #     if ANIMATION_GIF_MODE:
+    #         time.sleep(1)
+    #         os.system('clear') # linux only :/
+    #         print(t_move_str)
+    #         time.sleep(1)
+    #         screenshot(parttwo_params, sim_iteration='tail_visited')
+
+    # bonus animation
+    # move_list = read_input_file_into_move_list('bonus.txt')
+    import bonus_moves
+
+    # fixed_grid = Grid.create_grid_with_dimensions(width=61, height=53)
+    # start_pt = Point_2D(x=30, y=26)  # grid botl is (0, 0)!
+    fixed_grid = Grid.create_grid_with_dimensions(width=53, height=53)
+    start_pt = Point_2D(x=26, y=26)  # grid botl is (0, 0)!
+    move_list, new_h_pos = bonus_moves.outward_square_spiral_counterclockwise_from_center(fixed_grid, start_pt)
+    
+    _, t_move_str = simulate_rope(
+        move_list,
+        num_knots=27,  # H, then whole lowercase alphabet
+        fixed_grid=fixed_grid,
+        start_point=start_pt,
+        print_atomic_moves=False,
+        print_after_full_rope_update=True,
+        print_tail_pos=True,
+        animation_framedelay=0.1,
+        screenshotparams=ScreenshotParams(
+            topoffset=56,
+            leftoffset=0,
+            width=915,
+            height=1758,
+            framefolder='frames_bonus'
         )
-
-        if ANIMATION_GIF_MODE:
-            time.sleep(1)
-            os.system('clear') # linux only :/
-            print(t_move_str)
-            time.sleep(1)
-            screenshot(parttwo_params, sim_iteration='tail_visited')
-
-
+    )
 
 '''
 Big takeaway from Day09:

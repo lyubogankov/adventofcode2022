@@ -58,6 +58,11 @@ This puzzle was more involved than prior days', and I decided to extend the prac
 
 Writing unit tests forced my code to be more modular.  Instead of adding code to print out the grid state within the main simulation loop, I wrote a generic function, `generate_print_grid_string`, that generates a single string representing the entire grid with a list of items (each of them a `Point_2D`).  I can use this function in my simulation loop for printing the grid state to the command prompt and *also* for generating the strings in my unit tests, for comparison against the puzzle description's worked example strings!
 
+Within the simulation loop, I added the option to print the grid state at three granularities, all of which are shown below!
+1. Updating after each move is complete
+2. Updating after each atomic move is complete (move head U/D/L/R 1 square)
+3. Updating per knot movement
+
 **Animation**
 
 The puzzle input text file's move list resulted in a grid that was 364 characters wide and 268 characters tall.  This proved to be too large to render on my portrait-oriented 1080p monitor, so I don't have an animation of the full puzzle solution.  However, here is the example motions for part one:
