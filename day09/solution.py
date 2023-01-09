@@ -401,43 +401,43 @@ if __name__ == '__main__':
     fixed_grid_exampletwo = Grid.create_grid_with_dimensions(width= 26, height= 21)
     fixed_grid_input      = Grid.create_grid_with_dimensions(width=364, height=268)
 
-    # for inputfile, num_knots in [
-    #         ('example.txt',  2),                          ('input.txt',  2),   # part one
-    #         ('example.txt', 10), ('example_two.txt', 10), ('input.txt', 10)]:  # part two
+    for inputfile, num_knots in [
+            ('example.txt',  2),                          ('input.txt',  2),   # part one
+            ('example.txt', 10), ('example_two.txt', 10), ('input.txt', 10)]:  # part two
 
-    #     if num_knots == 2:
-    #         print('-'*90, 'PART ONE')
-    #     elif num_knots == 10:
-    #         print('-'*90, 'PART TWO')
+        if num_knots == 2:
+            print('-'*90, 'PART ONE')
+        elif num_knots == 10:
+            print('-'*90, 'PART TWO')
 
-    #     exampleone = inputfile == 'example.txt'
-    #     exampletwo = inputfile == 'example_two.txt'
-    #     example = exampleone or exampletwo
+        exampleone = inputfile == 'example.txt'
+        exampletwo = inputfile == 'example_two.txt'
+        example = exampleone or exampletwo
         
-    #     if exampleone:
-    #         fixed_grid = fixed_grid_example
-    #         start_point = Point_2D(x=0, y=0)
-    #     elif exampletwo:
-    #         fixed_grid = fixed_grid_exampletwo
-    #         start_point = Point_2D(x=11, y=5)
-    #     else:
-    #         fixed_grid = None
+        if exampleone:
+            fixed_grid = fixed_grid_example
+            start_point = Point_2D(x=0, y=0)
+        elif exampletwo:
+            fixed_grid = fixed_grid_exampletwo
+            start_point = Point_2D(x=11, y=5)
+        else:
+            fixed_grid = None
 
-    #     move_list = read_input_file_into_move_list(inputfile)
+        move_list = read_input_file_into_move_list(inputfile)
 
-    #     t_move_set, t_move_str = simulate_rope(
-    #         move_list,
-    #         fixed_grid=fixed_grid,
-    #         start_point=start_point,
-    #         num_knots=num_knots,
-    #         print_after_move=exampletwo,
-    #         print_after_full_rope_update=exampleone,
-    #         print_atomic_moves=False,
-    #         color_start_point=True
-    #     )
+        t_move_set, t_move_str = simulate_rope(
+            move_list,
+            fixed_grid=fixed_grid,
+            start_point=start_point,
+            num_knots=num_knots,
+            print_after_move=exampletwo,
+            print_after_full_rope_update=exampleone,
+            print_atomic_moves=False,
+            color_start_point=True
+        )
 
-    #     print(f'Number of unique spots T has visited: {len(t_move_set)}')
-    #     print(t_move_str, end='\n\n')
+        print(f'Number of unique spots T has visited: {len(t_move_set)}')
+        print(t_move_str, end='\n\n')
 
 
     # # animation
@@ -470,44 +470,44 @@ if __name__ == '__main__':
     #         screenshot(ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_partone'), sim_iteration='tail_visited')
 
 
-    # part two animation
-    for inputfile in ['example.txt']: #, 'example.txt']:
-        exampleone = inputfile == 'example.txt'
-        exampletwo = inputfile == 'example_two.txt'
-        example = exampleone or exampletwo
+    # # part two animation
+    # for inputfile in ['example.txt']: #, 'example.txt']:
+    #     exampleone = inputfile == 'example.txt'
+    #     exampletwo = inputfile == 'example_two.txt'
+    #     example = exampleone or exampletwo
 
-        move_list = read_input_file_into_move_list(inputfile)
+    #     move_list = read_input_file_into_move_list(inputfile)
 
-        if exampleone:
-            fixed_grid = fixed_grid_example
-            start_pt = Point_2D(x=0, y=0)
-            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo_ex1_atomicmove')
-        elif exampletwo:
-            fixed_grid = fixed_grid_exampletwo
-            start_pt = Point_2D(x=11, y=5)
-            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
-        else:
-            fixed_grid = fixed_grid_input
-            start_pt = Point_2D(x=0, y=0)
+    #     if exampleone:
+    #         fixed_grid = fixed_grid_example
+    #         start_pt = Point_2D(x=0, y=0)
+    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo_ex1_atomicmove')
+    #     elif exampletwo:
+    #         fixed_grid = fixed_grid_exampletwo
+    #         start_pt = Point_2D(x=11, y=5)
+    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
+    #     else:
+    #         fixed_grid = fixed_grid_input
+    #         start_pt = Point_2D(x=0, y=0)
 
-        _, t_move_str = simulate_rope(
-            move_list,
-            fixed_grid=fixed_grid,
-            start_point=start_pt,
-            num_knots=10,
-            print_atomic_moves=False,
-            print_after_full_rope_update=True,
-            print_after_move=False,
-            animation_framedelay=0.1,
-            screenshotparams=parttwo_params
-        )
+    #     _, t_move_str = simulate_rope(
+    #         move_list,
+    #         fixed_grid=fixed_grid,
+    #         start_point=start_pt,
+    #         num_knots=10,
+    #         print_atomic_moves=False,
+    #         print_after_full_rope_update=True,
+    #         print_after_move=False,
+    #         animation_framedelay=0.1,
+    #         screenshotparams=parttwo_params
+    #     )
 
-        # if ANIMATION_GIF_MODE:
-        #     time.sleep(1)
-        #     os.system('clear') # linux only :/
-        #     print(t_move_str)
-        #     time.sleep(1)
-        #     screenshot(parttwo_params, sim_iteration='tail_visited')
+    #     # if ANIMATION_GIF_MODE:
+    #     #     time.sleep(1)
+    #     #     os.system('clear') # linux only :/
+    #     #     print(t_move_str)
+    #     #     time.sleep(1)
+    #     #     screenshot(parttwo_params, sim_iteration='tail_visited')
 
 
 '''

@@ -115,14 +115,16 @@ Within the simulation loop, I added the option to print the grid state at three 
 
 **Worked example two animation**
 
-![Animated command prompt simulation of ten-knot rope from worked example on a larger grid, with one frame per every knot update](../media/day09/parttwo_ex2/parttwo_ex2.gif)
+![Animated command prompt simulation of ten-knot rope from worked example on a larger grid, with one frame per every knot update](../media/day09/parttwo_ex2/allknots.gif)
 
 
 
-## Bonus - perfectly looping GIF! (`bonus.py`)
+## Bonus - perfectly looping GIF! ([`bonus_moves.py`](bonus_moves.py))
 
-I've always wanted to make a perfectly looping GIF, and decided to play around with spirals.  I implemented a function for moving the lead knot in an outward spiral from a central point, and another for an inward spiral back to the center.
+I've always wanted to make a perfectly looping GIF, and decided to play around with spirals to achieve that.  I implemented a function for moving the lead knot in an outward spiral from a central point, and another for an inward spiral back to the center.
 
-Additionally, I added an option for my string-generating function to print out the position of the tail knot live!
+I had to also "wiggle" the rope from side-to-side until all of the knots were back on the start point to perfectly reset everything.
 
-![Animated command prompt simulation of N-knot rope spiralling out, then spiralling back in to make a perfectly looping animation](../media/day09/bonus/bonus.gif)
+Additionally, I added an option for my string-generating function to print out the position of the tail knot live, and it made an interesting shape!
+
+![Animated command prompt simulation of 5-knot rope spiralling out, then spiralling back in to make a perfectly looping animation](../media/day09/bonus/bonus.gif)
