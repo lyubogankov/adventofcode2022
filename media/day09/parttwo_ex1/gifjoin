@@ -1,0 +1,12 @@
+#!/bin/bash
+# $1 : first gif
+# $2 : second gif
+
+convert $1 a-%04d.gif
+convert $2 b-%04d.gif
+
+for f in a-*.gif; do convert $f ${f/a/b} +append $f; done  # append frames side-by-side
+convert -loop 0 -delay 1x4 a-*.gif result.gif               # rejoin frames
+
+rm a*.gif
+rm b*.gif

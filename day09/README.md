@@ -108,9 +108,17 @@ Within the simulation loop, I added the option to print the grid state at three 
 2. Updating after each atomic move is complete (move head U/D/L/R 1 square)
 3. Updating after each move is complete
 
-![Animated command prompt simulation of ten-knot rope from worked example, with one frame per every knot update](../media/day09/parttwo_ex1/allknots.gif)
-![Animated command prompt simulation of ten-knot rope from worked example, with one frame per atomic move of lead knot](../media/day09/parttwo_ex1/atomicmove.gif)
-![Animated command prompt simulation of ten-knot rope from worked example, with one frame per complete move of head (1 or more atomic moves)](../media/day09/parttwo_ex1/wholemove_2.gif)
+![Side-by-side comparison of three grid state output granularities, animated via command prompt](../media/day09/parttwo_ex1/animation_types_optimized.gif)
+<!-- ![Animated command prompt simulation of ten-knot rope from worked example, with one frame per every knot update](../media/day09/parttwo_ex1/unoptimized_allknots.gif)
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per atomic move of lead knot](../media/day09/parttwo_ex1/unoptimized_atomicmove.gif)
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per complete move of head (1 or more atomic moves)](../media/day09/parttwo_ex1/unoptimized_wholemove.gif) -->
+
+<!-- https://legacy.imagemagick.org/script/command-line-options.php -->
+<!-- https://legacy.imagemagick.org/Usage/ -->
+<!-- https://legacy.imagemagick.org/Usage/anim_basics/ -->
+This gif was a lot harder to make than I expected - I couldn't find an easy way to play gifs side-by-side.  I instead downloaded and used ImageMagick (command-line image manipulation tool) within a [bash script](../media/day09/parttwo_ex1/gifjoin), thanks to a well-explained [StackOverFlow answer](https://stackoverflow.com/a/30932152)!
+
+Additionally, determining how to line up the frames for the three animations took several tries, and I settled on ensuring the lead knots stayed in sync, even though that distorts the time-steps the second and third simulations relative to the first.  *Aligning the gifs by simulation frame, once each move is complete, makes for a visually jarring gif*).
 
 
 **Worked example two animation**

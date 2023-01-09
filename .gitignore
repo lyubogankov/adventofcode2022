@@ -1,4 +1,5 @@
 *.pyc
 aoc_venv/
-media/*/frames*/
+
+*.png
 *.xcf
