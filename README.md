@@ -46,7 +46,7 @@ Each puzzle consists of two related parts, but the description for the second pa
 
 Each of the puzzle inputs is a plaintext file, which needs to be parsed into some kind of data structure before I can perform the simulation and calculate the answer.
 
-**regular expressions**
+#### regular expressions
 
 I used regular expressions for several of my input file parsing functions.  Example from Day 11 (Monkey in the Middle):
 
@@ -97,7 +97,7 @@ for line in inputfile.read():
         case 'nondivis_throw_target': # ...
 ```
 
-**classes and namedtuples**
+#### classes and namedtuples
 
 I often use classes and `namedtuples` to represent different elements within each puzzle solution.
 
@@ -107,7 +107,7 @@ To achieve control over object printing, I defined my own double-underscore (dun
 
 Additionally, I defined sometimes defined dunder methods for some mathematical operations, like `__add__` and `__sub__` for a 2D Cartesian-coordinate Point class for [Day 09](/day09/).
 
-**data structures**
+#### data structures
 
 So far, I've used:
 - lists & lists-of-lists
@@ -121,7 +121,7 @@ This is the meat of the puzzle solution - after reading the input text file and 
 
 I've tried to write modular solutions, where as much code as possible is shared between parts one/two.
 
-**Ex: When I need to calculate a summary statistic, write a separate function to generate the collection**
+#### Ex: When I need to calculate a summary statistic, write a separate function to generate the collection
 
 [Day 07](/day07/) was a puzzle involving a directory tree of files/directories.  The two parts asked different questions about the tree - after completing part one and starting on part two, I refactored my solution to have a generic function that takes a file (sub)tree and applies a criteria function to decide which directories meet the criteria.
 
@@ -162,7 +162,7 @@ The underlying pattern for generalization I took away from Day 07 is that when f
 1. Function that comes up with list of all items  (in example, `make_list_of_dir_meeting_criteria()`)
 2. Function(s) that call the more general list-making function and apply needed operation.
 
-**Ex: When I need to simulate multiple rounds, write a function that can simulate a single round**
+#### Ex: When I need to simulate multiple rounds, write a function that can simulate a single round
 
 [Day 10](/day10/) involved simulating a very simple processor with a single register and two instructions (no-ops, which do nothing, and addition, which adds pos/neg integers to X register).  I wrote a function that simulates the CPU, both per-cycle and on clock edges (between instructions).
 
@@ -274,7 +274,7 @@ Setting `self.maxDiff = None` within the `unittest` framework allowed me to see 
 
 ## Reflections
 
-**[2023-Jan-01]**
+#### [2023-Jan-01]
 
 I've solved the first 11 puzzles so far.  It's been quite fun!
 - After solving several of the puzzles, I noticed that parts one and two were related and began thinking about what elements might change from parts one -> two when writing my solution to part one.  This has made my code more modular!
@@ -284,3 +284,9 @@ I've solved the first 11 puzzles so far.  It's been quite fun!
 This is the first project that I'm thoroughly documenting on GitHub - it's been fun learning GH-flavored Markdown and getting my thoughts out on the keyboard.  In a [recent blog post](https://nedbatchelder.com/blog/202212/talk_python_to_me_tools_for_readme.html), Ned Batchelder shared some of his principles about writing READMEs, and the first one inspired me:
 
 > Writing about your work helps you understand your work.
+
+#### [2023-Jan-09]
+
+I've finished the write-ups for Days 08, 09, and 11 in addition to this overall README!  Writing this took longer than I originally expected because I wanted to generate images and gifs for my solutions.  I found an animation bug in my Day 09 animation code, and fixed it in order to generate the gif frames.  Additionally, I learned how to make gifs, made my [first-ever perfectly-looping gif](/media/day09/bonus/bonus.gif), and learned how to make multiple gifs play side-by-side together!
+
+Also - I downloaded [an incredibly useful Visual Studio Code extension](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles) to allow live-preview of GitHub Flavored Markdown (GFM) directly within the editor - I no longer have to make millions of small commits/pushes to view the changes within my web browser!

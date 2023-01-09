@@ -2,7 +2,9 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/11) (adventofcode.com)
 
-**tl;dr**: Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_*.py` scripts).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
+#### tl;dr
+
+Pure-Python solution for part one ended up being too slow for part two.  Learned some [`numpy`](#starting-over-from-scratch-solution_nppy) and [modular arithmetic](#ever-increasing-worry-part-twos-gotcha) basics and implemented a more efficient solution!  Wrote unit tests for both parts using Python's `unittest` module (`test_*.py` scripts).  Also learned about GitHub's README.md formatting features - used code blocks with syntax highlighting and LaTeX equations!
 
 
 ## Part One  (`solution.py`)
@@ -32,7 +34,7 @@ The first thing I did was to analyze the computational complexity of my per-roun
 
 The worst case computational complexity is O(N * M * I), but in practice is better than that.  Still - 10_000 rounds, 4 monkeys, and 10 items proved too much for my method.
 
-**Initial attempt (with different data structure)**
+#### Initial attempt (with different data structure)
 
 I noticed that I was using a Python `list` to store each Monkey's queue of items.  However, `lists`s have O(n) computational complexity when popping from the front of the `list` (as is required for a queue).
 
@@ -46,7 +48,7 @@ Instead, I thought that having a separate collection of items that gets modified
 
 To this end, I investigated the popular Python library `numpy`!
 
-**`numpy` investigation and implementation**
+#### `numpy` investigation and implementation
 
 I read about various facets of the package:
 - I was drawn to the purported speed ([What is Numpy - Why is NumPy Fast? (numpy.org)](https://numpy.org/doc/stable/user/whatisnumpy.html#why-is-numpy-fast))
@@ -119,7 +121,7 @@ A more careful read of the problem indicated that running into and eventually de
 
 > Unfortunately, that relief was all that was keeping your worry levels from reaching **ridiculous levels**. You'll need to **find another way to keep your worry levels manageable**.
 
-**Solution: modular arithmetic**
+#### Solution: modular arithmetic
 
 At first - tried dividing each item by least common multiple of all monkeys' divisors, but that didn't help.  My rationale was that if a number is divisible by the least common multiple of all the monkeys' divisors, it was also by definition divisible by each divisor and it would not change the outcome of the divisibility checks.
 
@@ -139,7 +141,7 @@ I used my initial idea of the least common multiple of all monkeys' divisors and
 
 The only modification to the code is taking the modulus of each item's worry level after each monkey increases the worry level using its operation.  The example unit test passed, and my answer against the input text file was correct!
 
-**Attempted proof - trying to work out why my solution is valid**
+#### Attempted proof - trying to work out why my solution is valid
 
 Goals:
 - Decrease the worry-level of each item so that the per-monkey worry-increasing operations do not cause the worry level to overflow the containing variable (unsigned 64-bit integer)
