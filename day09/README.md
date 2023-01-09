@@ -2,9 +2,8 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/9) (adventofcode.com)
 
-**tl;dr**:
+**tl;dr**:  Wrote unit tests (which were hugely helpful with debug and development), supported by a robust simulation state printout function with three levels of granularity to compare to the puzzle description's worked examples.  Made a perfectly looping gif of a spiralling rope for fun!
 
-.
 
 
 ## Part One
@@ -32,7 +31,7 @@ During the simulation, I need to keep track of the grid positions that T visits 
 
 I invested time into defining useful data structures (listed here in their Part One versions) to express puzzle components to facilitate easier solution implementation:
 
-- `Point_2D`: a `class` to represent an (x, y) point on the grid.   Wrote `__repr/str__`, `__add/iadd/sub__`, and `__eq/hash__`, dunder/magic methods for convinience
+- `Point_2D`: a `class` to represent an (x, y) point on the grid.   Wrote `__repr/str__`, `__add/iadd/sub/mul__`, and `__eq/hash__`, dunder/magic methods for convinience
 
 - `Move`: a `namedtuple` containing the atomic transformation (up/down/left/right one grid space, as a `Point_2D` object), number of repetitions, and name (string representation of move direction)
 
@@ -58,16 +57,12 @@ This puzzle was more involved than prior days', and I decided to extend the prac
 
 Writing unit tests forced my code to be more modular.  Instead of adding code to print out the grid state within the main simulation loop, I wrote a generic function, `generate_print_grid_string`, that generates a single string representing the entire grid with a list of items (each of them a `Point_2D`).  I can use this function in my simulation loop for printing the grid state to the command prompt and *also* for generating the strings in my unit tests, for comparison against the puzzle description's worked example strings!
 
-Within the simulation loop, I added the option to print the grid state at three granularities, all of which are shown below!
-1. Updating after each move is complete
-2. Updating after each atomic move is complete (move head U/D/L/R 1 square)
-3. Updating per knot movement
 
 **Animation**
 
-The puzzle input text file's move list resulted in a grid that was 364 characters wide and 268 characters tall.  This proved to be too large to render on my portrait-oriented 1080p monitor, so I don't have an animation of the full puzzle solution.  However, here is the example motions for part one:
+The puzzle input text file's move list resulted in a grid that was 364 characters wide and 268 characters tall.  This proved to be too large to render on my portrait-oriented 1080p monitor, so I don't have an animation of the full puzzle solution.  However, here are the example motions for part one:
 
-INSERT GIF
+![Animated command prompt simulation of two-knot rope from worked example](../media/day09/partone/atomicmoves.gif)
 
 
 
@@ -105,14 +100,29 @@ The rules for updating the following knot became more complicated:
 4. (**new!**) If our lead knot made a diagonal move (H can't do that, it must be a later knot), apply a diagonal move to the follower.
 5. Otherwise, the follower knot takes the lead knot's old position.
 
+
 **Worked example one animation**
+
+Within the simulation loop, I added the option to print the grid state at three granularities, all of which are shown below!
+1. Updating per knot movement
+2. Updating after each atomic move is complete (move head U/D/L/R 1 square)
+3. Updating after each move is complete
+
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per every knot update](../media/day09/parttwo_ex1/allknots.gif)
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per atomic move of lead knot](../media/day09/parttwo_ex1/atomicmove.gif)
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per complete move of head (1 or more atomic moves)](../media/day09/parttwo_ex1/wholemove.gif)
+
 
 **Worked example two animation**
 
-## Bonus - rope with 50 knots on a large grid!
+![Animated command prompt simulation of ten-knot rope from worked example on a larger grid, with one frame per every knot update](../media/day09/parttwo_ex2/parttwo_ex2.gif)
 
-In order to simulate more than 10 knots, I needed to pick single-character symbols for each knot, which involved a minor tweak to the grid-state print string function.
 
-- make the characters unique, but it can't just be 1-9.  Need lowercase alphabet + symbols?  Could just do lowercase alphabet - H + 26 chars = len 27
 
-- make it a perfectly looping gif.  Make grid height/width be odd, and start the rope at the very center.  Then, apply a series of moves and have the entire rope and up right back at the center.  Before ending, flash the moves made by the tail, and then loop again!
+## Bonus - perfectly looping GIF! (`bonus.py`)
+
+I've always wanted to make a perfectly looping GIF, and decided to play around with spirals.  I implemented a function for moving the lead knot in an outward spiral from a central point, and another for an inward spiral back to the center.
+
+Additionally, I added an option for my string-generating function to print out the position of the tail knot live!
+
+![Animated command prompt simulation of N-knot rope spiralling out, then spiralling back in to make a perfectly looping animation](../media/day09/bonus/bonus.gif)

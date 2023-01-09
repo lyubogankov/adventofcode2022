@@ -187,7 +187,7 @@ def generate_current_grid_state_string(knots, grid, start_point, animation_frame
         h_point, t_point = knots
         items += [PrintItem('T', t_point), PrintItem('H', h_point)]
     # H, 1, 2, ... , 9
-    elif len(knots) < 10:
+    elif len(knots) <= 10:
         # add items to the list from least -> greatest (largest #d knot is last, up to 1, then H (0))
         for _i, point in enumerate(reversed(knots)):
             i = len(knots)-(_i+1)
@@ -470,70 +470,45 @@ if __name__ == '__main__':
     #         screenshot(ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_partone'), sim_iteration='tail_visited')
 
 
-    # # part two animation
-    # for inputfile in ['example_two.txt']: #, 'example.txt']:
-    #     exampleone = inputfile == 'example.txt'
-    #     exampletwo = inputfile == 'example_two.txt'
-    #     example = exampleone or exampletwo
+    # part two animation
+    for inputfile in ['example.txt']: #, 'example.txt']:
+        exampleone = inputfile == 'example.txt'
+        exampletwo = inputfile == 'example_two.txt'
+        example = exampleone or exampletwo
 
-    #     move_list = read_input_file_into_move_list(inputfile)
+        move_list = read_input_file_into_move_list(inputfile)
 
-    #     if exampleone:
-    #         fixed_grid = fixed_grid_example
-    #         start_pt = Point_2D(x=0, y=0)
-    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo')
-    #     elif exampletwo:
-    #         fixed_grid = fixed_grid_exampletwo
-    #         start_pt = Point_2D(x=11, y=5)
-    #         parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
-    #     else:
-    #         fixed_grid = fixed_grid_input
-    #         start_pt = Point_2D(x=0, y=0)
+        if exampleone:
+            fixed_grid = fixed_grid_example
+            start_pt = Point_2D(x=0, y=0)
+            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=145, height=228, framefolder='frames_parttwo_ex1_atomicmove')
+        elif exampletwo:
+            fixed_grid = fixed_grid_exampletwo
+            start_pt = Point_2D(x=11, y=5)
+            parttwo_params = screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=635, height=984, framefolder='frames_parttwo_ex2')
+        else:
+            fixed_grid = fixed_grid_input
+            start_pt = Point_2D(x=0, y=0)
 
-    #     _, t_move_str = simulate_rope(
-    #         move_list,
-    #         fixed_grid=fixed_grid,
-    #         start_point=start_pt,
-    #         num_knots=10,
-    #         print_atomic_moves=True,
-    #         animation_framedelay=0.1,
-    #         screenshotparams=parttwo_params
-    #     )
-
-    #     if ANIMATION_GIF_MODE:
-    #         time.sleep(1)
-    #         os.system('clear') # linux only :/
-    #         print(t_move_str)
-    #         time.sleep(1)
-    #         screenshot(parttwo_params, sim_iteration='tail_visited')
-
-    # bonus animation
-    # move_list = read_input_file_into_move_list('bonus.txt')
-    import bonus_moves
-
-    # fixed_grid = Grid.create_grid_with_dimensions(width=61, height=53)
-    # start_pt = Point_2D(x=30, y=26)  # grid botl is (0, 0)!
-    fixed_grid = Grid.create_grid_with_dimensions(width=53, height=53)
-    start_pt = Point_2D(x=26, y=26)  # grid botl is (0, 0)!
-    move_list, new_h_pos = bonus_moves.outward_square_spiral_counterclockwise_from_center(fixed_grid, start_pt)
-    
-    _, t_move_str = simulate_rope(
-        move_list,
-        num_knots=27,  # H, then whole lowercase alphabet
-        fixed_grid=fixed_grid,
-        start_point=start_pt,
-        print_atomic_moves=False,
-        print_after_full_rope_update=True,
-        print_tail_pos=True,
-        animation_framedelay=0.1,
-        screenshotparams=ScreenshotParams(
-            topoffset=56,
-            leftoffset=0,
-            width=915,
-            height=1758,
-            framefolder='frames_bonus'
+        _, t_move_str = simulate_rope(
+            move_list,
+            fixed_grid=fixed_grid,
+            start_point=start_pt,
+            num_knots=10,
+            print_atomic_moves=False,
+            print_after_full_rope_update=True,
+            print_after_move=False,
+            animation_framedelay=0.1,
+            screenshotparams=parttwo_params
         )
-    )
+
+        # if ANIMATION_GIF_MODE:
+        #     time.sleep(1)
+        #     os.system('clear') # linux only :/
+        #     print(t_move_str)
+        #     time.sleep(1)
+        #     screenshot(parttwo_params, sim_iteration='tail_visited')
+
 
 '''
 Big takeaway from Day09:
