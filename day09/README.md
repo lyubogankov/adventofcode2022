@@ -2,7 +2,9 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/9) (adventofcode.com)
 
-**tl;dr**:  Wrote unit tests (which were hugely helpful with debug and development), supported by a robust simulation state printout function with three levels of granularity to compare to the puzzle description's worked examples.  Made a perfectly looping gif of a spiralling rope for fun!
+#### tl;dr
+
+[Wrote unit tests](#unit-testing-test_solutionpy) (which were hugely helpful with debug and development), supported by a [robust simulation state printout function](#worked-example-one-animation) with three levels of granularity to compare to the puzzle description's worked examples.  Made a [perfectly looping gif of a spiralling rope](#bonus---perfectly-looping-gif-bonus_movespy) for fun!
 
 
 
@@ -27,7 +29,7 @@ During the simulation, I need to keep track of the grid positions that T visits 
 
 ### Solution
 
-**Setup - defining data structures**
+#### Setup - defining data structures
 
 I invested time into defining useful data structures (listed here in their Part One versions) to express puzzle components to facilitate easier solution implementation:
 
@@ -38,7 +40,7 @@ I invested time into defining useful data structures (listed here in their Part 
 - `Grid`: a `namedtuple` containing two `Point_2D`s (top left, and bottom right coords) which define the grid boundaries.
 
 
-**Simulation**
+#### Simulation
 
 Instead of using a `list`-of-`list`s to keep track of the grid state like in Day08, I realized that each knot could be represented perfectly by a `Point_2D` object, to which I could apply moves (also containing `Point_2D` objects) as needed!  No `lists` needed :grin:
 
@@ -51,14 +53,14 @@ I added two grid options -- fixed and dynamic.
 - Dynamic grid starts as a 1x1 which grows as the rope head is moved.  I used this for the puzzle input, because I didn't know in advance how large of a grid would be required to fit the entire move list prior to successfully running the simulation!
 
 
-**Unit Testing ([`test_solution.py`](./test_solution.py))**
+#### Unit Testing ([`test_solution.py`](./test_solution.py))
 
 This puzzle was more involved than prior days', and I decided to extend the practice of matching the printout format of the puzzle description and write unit tests to directly compare my simulation output to the description's worked example using Python's builtin `unittest` module.
 
 Writing unit tests forced my code to be more modular.  Instead of adding code to print out the grid state within the main simulation loop, I wrote a generic function, `generate_print_grid_string`, that generates a single string representing the entire grid with a list of items (each of them a `Point_2D`).  I can use this function in my simulation loop for printing the grid state to the command prompt and *also* for generating the strings in my unit tests, for comparison against the puzzle description's worked example strings!
 
 
-**Animation**
+#### Animation
 
 The puzzle input text file's move list resulted in a grid that was 364 characters wide and 268 characters tall.  This proved to be too large to render on my portrait-oriented 1080p monitor, so I don't have an animation of the full puzzle solution.  However, here are the example motions for part one:
 
@@ -101,7 +103,7 @@ The rules for updating the following knot became more complicated:
 5. Otherwise, the follower knot takes the lead knot's old position.
 
 
-**Worked example one animation**
+#### Worked example one animation
 
 Within the simulation loop, I added the option to print the grid state at three granularities, all of which are shown below!
 1. Updating per knot movement
@@ -121,7 +123,7 @@ This gif was a lot harder to make than I expected - I couldn't find an easy way 
 Additionally, determining how to line up the frames for the three animations took several tries, and I settled on ensuring the lead knots stayed in sync, even though that distorts the time-steps the second and third simulations relative to the first.  *Aligning the gifs by simulation frame, once each move is complete, makes for a visually jarring gif*).
 
 
-**Worked example two animation**
+#### Worked example two animation
 
 ![Animated command prompt simulation of ten-knot rope from worked example on a larger grid, with one frame per every knot update](../media/day09/parttwo_ex2/allknots.gif)
 
