@@ -110,7 +110,7 @@ Within the simulation loop, I added the option to print the grid state at three 
 
 ![Animated command prompt simulation of ten-knot rope from worked example, with one frame per every knot update](../media/day09/parttwo_ex1/allknots.gif)
 ![Animated command prompt simulation of ten-knot rope from worked example, with one frame per atomic move of lead knot](../media/day09/parttwo_ex1/atomicmove.gif)
-![Animated command prompt simulation of ten-knot rope from worked example, with one frame per complete move of head (1 or more atomic moves)](../media/day09/parttwo_ex1/wholemove.gif)
+![Animated command prompt simulation of ten-knot rope from worked example, with one frame per complete move of head (1 or more atomic moves)](../media/day09/parttwo_ex1/wholemove_2.gif)
 
 
 **Worked example two animation**
