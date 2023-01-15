@@ -7,21 +7,22 @@ import sys
 from collections import namedtuple
 from pprint import pprint
 # local
-ANIMATION_GIF_MODE = False
+ANIMATION_GIF_MODE = True
 if ANIMATION_GIF_MODE:
     _file = os.path.dirname(f'{os.getcwd()}/{__file__}')
     sys.path.append(f'{os.path.dirname(_file)}/common')
     import screenshot
     params=screenshot.ScreenshotParams(
-        topoffset=46,
+        topoffset=56,
         leftoffset=0,
-        width=1360,
-        height=788,
+        width=909,
+        height=761-56,
         monitor=1,
-        framefolder='dijkstra_bad'
+        framefolder='dijkstra_good'
     )
 
 ### colors
+# (8 colors)
 BLACK = '\033[30m'
 RED = '\033[31m'
 GREEN = '\033[32m'
@@ -30,6 +31,37 @@ BLUE = '\033[34m'
 MAGENTA = '\033[35m'
 CYAN = '\033[36m'
 RESET = '\033[0m'
+# 256 colors -- hand-picking colors for aesthetics
+# for contrast, repeating ROYGBIV since the elevation spirals up to peak
+height_colorcode_map = {
+    'a' : 106,
+    'b' : 100,
+    'c' : 103,
+    'd' : 124,  # R ---
+    'e' : 166,  # 0
+    'f' : 227,  # Y
+    'g' : 28,   # G
+    'h' : 27,   # B
+    'i' : 63,   # I
+    'j' : 90,   # V
+    'k' : 88,   # R ---
+    'l' : 208,  # O
+    'm' : 154,  # Y
+    'n' : 82,   # G
+    'o' : 117,  # B
+    'p' : 105,  # I
+    'q' : 135,  # V
+    'r' : 160,  # R ---
+    's' : 130,  # O
+    't' : 227,  # Y
+    'u' : 28,   # G
+    'v' : 38,   # B
+    'w' : 33,   # I
+    'x' : 92,   # V
+    'y' : 123,  # bonus
+    'z' : 160,  # bonus
+}
+height_color_map = {chr : f'\033[38;5;{color}m' for chr, color in height_colorcode_map.items()}
 
 ### input file -> data structure
 Node = namedtuple('Node', ['height', 'coords', 'connections', 'shortest_path_from_start'])
@@ -81,7 +113,7 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
 
     return start_node, end_node, nodes
 
-def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, end_coords=None, connected=False):
+def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, end_coords=None, connected=False, heightcolors=False):
 
     WIDTH_BETWEEN_CHARS_X = 5
     WIDTH_BETWEEN_CHARS_Y = 2
@@ -125,6 +157,8 @@ def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, 
                 row_str += 'S'
             elif (x, y) == end_coords:
                 row_str += 'E'
+            elif heightcolors:
+                row_str += f'{height_color_map[curr_node.height]}{curr_node.height}{RESET}'
             else:
                 row_str += curr_node.height
 
@@ -177,7 +211,7 @@ def direction_arrow_for_node_from(node_from_coords, node_to_coords):
     else:
         raise Exception(f'Unexpected coord pair: {node_from_coords} -> {node_to_coords}')
 
-def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_coords=[], color_shortest_path=False, unvisited_set=set(), current_coords=None):
+def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_coords=[], color_shortest_path=False, unvisited_set=set(), current_coords=None, heightcolor=False):
 
     if shortest_path_coords:
         from_to_pairs = zip(shortest_path_coords[:-1], shortest_path_coords[1:])
@@ -199,7 +233,7 @@ def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_c
             elif (x, y) == current_coords:
                 color = GREEN
             elif unvisited_set:
-                color = BLACK if (x, y) in unvisited_set else YELLOW
+                color = BLACK if (x, y) in unvisited_set else height_color_map[height]
             # default case - coloring for shortest path
             elif color_shortest_path:
                 if height == 'a':
@@ -221,8 +255,8 @@ def generate_print_str_shortest_path(grid_width, grid_height, nodes, shortest_pa
         shortest_path_coords=shortest_path_coords,
         color_shortest_path=color_shortest_path
     )
-def generate_print_str_during_sim(grid_width, grid_height, nodes, unvisited_set, current_coords):
-    return generate_annotated_print_str(grid_width, grid_height, nodes, unvisited_set=unvisited_set, current_coords=current_coords)
+def generate_print_str_during_sim(grid_width, grid_height, nodes, unvisited_set, current_coords, heightcolor=False):
+    return generate_annotated_print_str(grid_width, grid_height, nodes, unvisited_set=unvisited_set, current_coords=current_coords, heightcolor=heightcolor)
 
 
 ### part one
@@ -291,10 +325,12 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _print=False, _anima
                 grid_height,
                 nodes,
                 unvisited_set=unvisited_coords,
-                current_coords=current_coords
+                current_coords=current_coords,
+                heightcolor=True
             ))
             time.sleep(0.3)
-            screenshot.screenshot(screenshotter, params, sim_iteration=f'{len(nodes) - len(unvisited_coords)}', savefolder='day12')
+            if ANIMATION_GIF_MODE:
+                screenshot.screenshot(screenshotter, params, sim_iteration=f'{len(nodes) - len(unvisited_coords)}', savefolder='day12')
 
         # 5. Check for termination
         if current_coords == end_coords:
@@ -324,7 +360,7 @@ if __name__ == '__main__':
     if ANIMATION_GIF_MODE:
         screenshotter = screenshot.mss.mss()
 
-    for inputfile in ['example.txt', 'input.txt']:
+    for inputfile in ['input.txt']: # ['example.txt', 'input.txt']:
         example = inputfile == 'example.txt'
         if example:
             grid_width = 8
@@ -348,15 +384,27 @@ if __name__ == '__main__':
                 grid_height,
                 start_coords=start_node.coords,
                 end_coords=end_node.coords,
-                connected=True))  # example
-        
+                connected=True
+            ))
+
+        # print('\n\n')
+        # print(generate_print_str_graph(
+        #     nodes,
+        #     grid_width,
+        #     grid_height,
+        #     start_coords=start_node.coords,
+        #     end_coords=end_node.coords,
+        #     connected=False,
+        #     heightcolors=True
+        # ))
+
         shortest_path_len, path_from_start_to_end = dijstras_shortest_path(
             nodes, start_node.coords, end_node.coords,
-            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+            _animate=True, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
         )
 
-        print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
-        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, color_shortest_path=not(example)))
+        # print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, color_shortest_path=not(example)))
 
     if ANIMATION_GIF_MODE:
         screenshotter.close()
