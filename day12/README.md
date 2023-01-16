@@ -137,8 +137,11 @@ Notice how some of the nodes are inaccessible (`c`s surrounded by `a`s):
 ### Solution
 
 
+## Bonus 1 - Implementing A* algorithm
 
-## Bonus 1 - Using an off-the-shelf implementation of Dijkstra's algorithm
+While reading about Dijkstra's algorithm on Wikipedia, I came across the A* ("A-star") algorithm, which is described as a *best*-first search.  I decided to attempt an implementation!
+
+## Bonus 2 - Using an off-the-shelf implementation of Dijkstra's algorithm
 
 Describe the module I used, how I had to change my program to use it
 
@@ -146,4 +149,3 @@ Describe the module I used, how I had to change my program to use it
 
 
 
-## Bonus 2 - Implementing A* algorithm

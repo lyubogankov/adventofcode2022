@@ -1,11 +1,14 @@
 # std library
+import heapq
 import math
 import pdb
 import time
 import os
 import sys
-from collections import namedtuple
+from collections import namedtuple, defaultdict, deque
 from pprint import pprint
+# third party
+import numpy as np
 # local
 ANIMATION_GIF_MODE = False
 if ANIMATION_GIF_MODE:
@@ -18,7 +21,7 @@ if ANIMATION_GIF_MODE:
         width=909,
         height=761-56,
         monitor=1,
-        framefolder='dijkstra_good'
+        framefolder='a_star'
     )
 
 ### colors
@@ -34,44 +37,44 @@ WHITE = '\033[37m'
 RESET = '\033[0m'
 # # 256 colors -- hand-picking colors for aesthetics
 # # for contrast, repeating ROYGBIV since the elevation spirals up to peak
-# height_colorcode_map = {
-#     'a' : 106,
-#     'b' : 100,
-#     'c' : 103,
-#     'd' : 124,  # R ---
-#     'e' : 166,  # 0
-#     'f' : 227,  # Y
-#     'g' : 28,   # G
-#     'h' : 27,   # B
-#     'i' : 63,   # I
-#     'j' : 90,   # V
-#     'k' : 88,   # R ---
-#     'l' : 208,  # O
-#     'm' : 154,  # Y
-#     'n' : 82,   # G
-#     'o' : 117,  # B
-#     'p' : 105,  # I
-#     'q' : 135,  # V
-#     'r' : 160,  # R ---
-#     's' : 130,  # O
-#     't' : 227,  # Y
-#     'u' : 28,   # G
-#     'v' : 38,   # B
-#     'w' : 33,   # I
-#     'x' : 92,   # V
-#     'y' : 123,  # bonus
-#     'z' : 160,  # bonus
-# }
+height_colorcode_map = {
+    'a' : 106,
+    'b' : 100,
+    'c' : 103,
+    'd' : 124,  # R ---
+    'e' : 166,  # 0
+    'f' : 227,  # Y
+    'g' : 28,   # G
+    'h' : 27,   # B
+    'i' : 63,   # I
+    'j' : 90,   # V
+    'k' : 88,   # R ---
+    'l' : 208,  # O
+    'm' : 154,  # Y
+    'n' : 82,   # G
+    'o' : 117,  # B
+    'p' : 105,  # I
+    'q' : 135,  # V
+    'r' : 160,  # R ---
+    's' : 130,  # O
+    't' : 227,  # Y
+    'u' : 28,   # G
+    'v' : 38,   # B
+    'w' : 33,   # I
+    'x' : 92,   # V
+    'y' : 123,  # bonus
+    'z' : 160,  # bonus
+}
 # using 256 colors!  https://www.ditig.com/256-colors-cheat-sheet
-height_colorcode_map = {}
-# a-c = shades of grey
-for i in range(0, 3):
-    letter = chr(ord('a') + i)
-    height_colorcode_map[letter] = 244 + i*3
-# d-z = shades of pink -> red
-for i in range(3, 26):
-    letter = chr(ord('a') + i)
-    height_colorcode_map[letter] = 183 - (i-3)
+# height_colorcode_map = {}
+# # a-c = shades of grey
+# for i in range(0, 3):
+#     letter = chr(ord('a') + i)
+#     height_colorcode_map[letter] = 244 + i*3
+# # d-z = shades of pink -> red
+# for i in range(3, 26):
+#     letter = chr(ord('a') + i)
+#     height_colorcode_map[letter] = 183 - (i-3)
 height_color_map = {chr : f'\033[38;5;{color}m' for chr, color in height_colorcode_map.items()}
 
 ### input file -> data structure
@@ -124,6 +127,7 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
 
     return start_node, end_node, nodes
 
+### printing
 def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, end_coords=None, connected=False, heightcolors=False):
 
     WIDTH_BETWEEN_CHARS_X = 5
@@ -264,11 +268,69 @@ def generate_print_str_shortest_path(grid_width, grid_height, nodes, shortest_pa
 def generate_print_str_during_sim(grid_width, grid_height, nodes, unvisited_set, current_coords, heightcolor=False):
     return generate_annotated_print_str(grid_width, grid_height, nodes, unvisited_set=unvisited_set, current_coords=current_coords, heightcolor=heightcolor)
 
+def generate_astar_pring_str_during_sim(grid_width, grid_height, nodes, exploration_boundary, visited_coords, heightcolor):
+    print_str = ''
+    for y in range(grid_height):  # rows
+        row_str = ''
+        for x in range(grid_width):  # cols
+            height = nodes[(x, y)].height
+            # deciding node color
+            if (x, y) in exploration_boundary:
+                color = '\033[48;5;240m' + GREEN
+            elif (x, y) in visited_coords:
+                color = height_color_map[height]
+            else:
+                color = BLACK
+            row_str += f'{color}{height}{RESET}'
+        print_str = row_str + '\n' + print_str
+    return print_str
+
+def generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, shortest_paths):
+    
+    arrow_annotations = []
+    for shortest_path_coords in shortest_paths:
+        from_to_pairs = zip(shortest_path_coords[:-1], shortest_path_coords[1:])
+        arrow_annotations.append({_from : direction_arrow_for_node_from(_from, _to) for _from, _to in from_to_pairs})
+    
+    shortest_path_colors = [
+        '\033[38;5;39m',  # DeepSkyBlue1
+        '\033[38;5;51m',  # Cyan
+        '\033[38;5;11m',  # Yellow
+        '\033[38;5;10m',  # Lime
+    ]
+
+    print_str = ''
+    for y in range(grid_height):  # rows
+        row_str = ''
+        for x in range(grid_width):  # cols
+            # setup
+            height = nodes[(x, y)].height
+            included_in_paths = []
+            for i, arrows in enumerate(arrow_annotations):
+                if (x, y) in arrows:
+                    included_in_paths.append(i)
+            # pick colors and/or display str
+            if (x, y) == shortest_path_coords[0][-1]:
+                row_str += 'E'
+            # elif len(included_in_paths) == len(arrow_annotations):
+            #     row_str += arrow_annotations[0][(x, y)]
+            elif len(included_in_paths) > 0:
+                idx = included_in_paths[-1]
+                arrowcolor = shortest_path_colors[idx]
+                arrow = arrow_annotations[idx][(x, y)]
+                row_str += f'{arrowcolor}{arrow}{RESET}'
+            else:
+                heightcolor = height_color_map[height]
+                row_str += f'{heightcolor}{height}{RESET}'
+        print_str = row_str + '\n' + print_str
+    return print_str
 
 ### part one
 part_one_edge_rule_fn = lambda curr_node, adj_node: ord(adj_node.height) - ord(curr_node.height) <= 1
 
-def dijstras_shortest_path(nodes, start_coords, end_coords, _print=False, _animate=False, screenshotter=None):
+# first try my own dijstra implementation, then try this:
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.dijkstra.html
+def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, screenshotter=None):
     '''
     Arguments
         nodes: dictionary
@@ -356,10 +418,148 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _print=False, _anima
     path_from_start_to_end = nodes[end_coords].shortest_path_from_start + [end_coords]
     return shortest_path_len, path_from_start_to_end
 
+def manhattan_distance(point_one, point_two):
+    '''Returns the "Manhattan", or 4-way grid, distance between two points.
 
-# first try my own dijstra implementation, then try this:
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.dijkstra.html
+    Inputs:
+        point_one, point_two: 2-tuple of integers (x, y)
 
+    Returns
+        integer
+
+    https://en.wikipedia.org/wiki/Taxicab_geometry
+    '''
+    x1, y1 = point_one
+    x2, y2 = point_two
+    return abs(x2 - x1) + abs(y2 - y1)
+
+def reconstruct_path(camefrom, current_coords):
+    path = deque([current_coords])
+    while current_coords in camefrom:
+        current_coords = camefrom[current_coords]
+        path.appendleft(current_coords)
+    return list(path)
+
+def default_f_of_n(*, g_of_n, h_of_n, **kwargs):
+    '''f(n) = g(n) + h(n)'''
+    return g_of_n + h_of_n
+def height_then_f_of_n(*, current_node, end_node, g_of_n, h_of_n, **kwargs):
+    return (
+        ord(end_node.height) - ord(current_node.height),  # height difference
+        g_of_n + h_of_n                                   # original fscore
+    )
+def height_dotprod_f_of_n(*, start_node, current_node, end_node, g_of_n, h_of_n, **kwargs):
+    v_start_to_n = [current_node.coords[i] - start_node.coords[i] for i in range(2)]  # 0=x, 1=y
+    v_n_to_end   = [end_node.coords[i]   - current_node.coords[i] for i in range(2)]
+    return (
+        ord(end_node.height) - ord(current_node.height),  # height difference,
+        np.dot(v_start_to_n, v_n_to_end) / (np.linalg.norm(v_start_to_n) * np.linalg.norm(v_n_to_end)),
+        g_of_n + h_of_n
+    )
+
+def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fscore_fn=default_f_of_n, _animate=False, screenshotter=None):
+    '''Find the shortest path from start to end.  The heuristic function is used to determine next-node selection.
+    
+    Inputs:
+        nodes (dict)
+            (x, y) : Node, where x and y are integers and Node is a namedtuple representing a graph node
+        start (2-tuple of integers)
+        end   (2-tuple of integers)
+            (x, y)
+        heuristic_fn (function)
+            Requred to take two arguments, both coordinate pairs.  Calculates heuristic from start -> end.
+
+    Returns:
+        list
+            shortest path from start -> end
+    
+    Note that this function does not use the Node namedtuple's shortest_path_from_start_to_end in leiu of
+    the camefrom dict -- a much cleaner solution!
+
+    Take 2 - instead of using f(n) as prioritization criteria, will use:
+        (height_end - height_n, f(n)) -- when sorting, this means that climbing hills is higher priority than finding shortest path
+
+    Other ideas:
+    - instead of using manhattan distance for h(n),
+      could take the normalized dot product between "vector" from start -> n and n -> end to prioritize moving towards end?
+
+      (height_diff, dot_prod(start_n, n_end), g(n)) = priority
+    '''
+    ## animation setup
+    if _animate:
+        grid_height = max(y+1 for (_, y) in nodes.keys())
+        grid_width  = max(x+1 for (x, _) in nodes.keys())
+
+    ## Setting up data structures
+
+    # Map/dict where camefrom[coords_n] stores the coords of 
+    # node immediately preceding node n on shortest path from start.
+    camefrom = {}
+
+    # Stores "g(n)" values for each node.  Default = infinity for unvisited nodes.
+    shortest_known_path_from_start = defaultdict(lambda: math.inf)
+    shortest_known_path_from_start[start] = 0
+
+    # Stores "f(n)" values for each node.  f(n) = g(n)                              + h(n)
+    #                                           = shortest_known_path_from_start[n] + heuristic_fn(n)
+    # Could re-compute this to avoid storing it, but prioritizing runtime over storage.
+    fscore = defaultdict(lambda: math.inf)
+    fscore[start] = heuristic_fn(start, end)
+
+    # discovered nodes, ranked by f(n) = g(n) + h(n), where
+    #                                    g(n)        = cost from start -> node n
+    #                                           h(n) = estimated cost from node n -> end
+    # Using a min-heap (heapq.py) as a priority queue
+    # Also using a set to keep track of membership of exploration_boundary list, bc lists have O(n) membership.
+    #   This doubles the space requirement, though.
+    exploration_boundary = [(fscore[start], 0, start)]  # heapq operates on list, it's not a separate data structure.
+    exploration_boundary_set = {start,}
+
+    ## Running the search
+    while len(exploration_boundary) > 0:
+        (_, _, current) = heapq.heappop(exploration_boundary)
+        exploration_boundary_set.remove(current)
+
+        if current == end:
+            shortest_path = reconstruct_path(camefrom, end)
+            return len(shortest_path), shortest_path
+
+        # examine all neighbors
+        for edge in nodes[current].connections:
+            neighbor = edge.node_to_coords
+            path_len_from_start = shortest_known_path_from_start[current] + edge.weight
+            
+            if path_len_from_start < shortest_known_path_from_start[neighbor]:
+                camefrom[neighbor] = current
+                shortest_known_path_from_start[neighbor] = path_len_from_start
+                # Using passed-in function for fscore to experiment with different approaches.
+                # Need to pass all possible arguments that any of my fscore functions may take!
+                fscore[neighbor] = fscore_fn(
+                    g_of_n=path_len_from_start,
+                    h_of_n=heuristic_fn(neighbor, end),
+                    start_node=nodes[start],
+                    end_node=nodes[end],
+                    current_node=nodes[neighbor]
+                )
+                if neighbor not in exploration_boundary_set:
+                    exploration_boundary_set.add(neighbor)
+                    # since this is a minheap -- prioritize later-added nodes over earlier-added nodes in case of fscore tie
+                    heapq.heappush(exploration_boundary, (fscore[neighbor], -1*len(exploration_boundary), neighbor))
+
+        if _animate:
+            os.system('clear')  # linux only
+            print(generate_astar_pring_str_during_sim(
+                grid_width,
+                grid_height,
+                nodes,
+                exploration_boundary_set,
+                visited_coords=set(shortest_known_path_from_start.keys()),
+                heightcolor=True
+            ))
+            time.sleep(0.3)
+            if ANIMATION_GIF_MODE:
+                iteration = len([dist for dist in shortest_known_path_from_start.values() if dist < math.inf])
+                screenshot.screenshot(screenshotter, params, sim_iteration=f'{iteration}', savefolder='day12')
 
 if __name__ == '__main__':
     
@@ -404,13 +604,67 @@ if __name__ == '__main__':
             heightcolors=True
         ))
 
-        shortest_path_len, path_from_start_to_end = dijstras_shortest_path(
-            nodes, start_node.coords, end_node.coords,
-            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        )
+        # # Dijkstra's alg
+        # shortest_path_len, path_from_start_to_end = dijstras_shortest_path(
+        #     nodes, start_node.coords, end_node.coords,
+        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        # )
 
-        print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
-        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+        # # A* alg
+        # shortest_path_len, path_from_start_to_end = a_star_shortest_path(
+        #     nodes, start_node.coords, end_node.coords,
+        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        # )
+
+        # print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+
+
+        ### Comparing algorithm outputs
+        # for shortest_path_alg in [dijstras_shortest_path, a_star_shortest_path]:
+            
+        #     print(f'--- {shortest_path_alg.__name__}')
+
+        #     shortest_path_len, path_from_start_to_end = shortest_path_alg(
+        #         nodes, start_node.coords, end_node.coords,
+        #         _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        #     )
+
+        #     print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
+        #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+
+
+        ### Generating algorithm comparison graphic
+        shortest_paths = []
+
+        # dshortest_path_len, dpath_from_start_to_end = dijstras_shortest_path(
+        #     nodes, start_node.coords, end_node.coords,
+        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        # )
+        # print('D shortest path: ', dshortest_path_len)
+        # shortest_paths.append(dpath_from_start_to_end)
+
+        # # w/ default heuristic
+        # ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
+        #     nodes, start_node.coords, end_node.coords,
+        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        # )
+        # print('A shortest path: ', ashortest_path_len)
+        # shortest_paths.append(apath_from_start_to_end)
+
+        # comparing my three fscore formulations:
+        for fscorefn in [default_f_of_n, height_then_f_of_n, height_dotprod_f_of_n]:
+            ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
+                nodes, start_node.coords, end_node.coords, fscore_fn=fscorefn,
+                _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+            )
+            print(f'A shortest path ({fscorefn.__name__}): ', ashortest_path_len)
+            shortest_paths.append(apath_from_start_to_end)
+
+            print(f'Shortest path length from S -> E: {ashortest_path_len}', end='\n\n')
+            print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor=WHITE))
+
+        # print(generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, shortest_paths))
 
     if ANIMATION_GIF_MODE:
         screenshotter.close()
