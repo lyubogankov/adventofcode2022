@@ -143,6 +143,30 @@ While reading about Dijkstra's algorithm on Wikipedia, I came across the A* ("A-
 
 Its [Wikipedia article](https://en.wikipedia.org/wiki/A*_search_algorithm) generously provides a description of the algorithm, as well as commented pseudocode.  I used the pseudocode as a base (implemented in Python), and later augmented it to try out different definitions of "best".
 
+I really like the article's method for storing and reconstructing the shortest path from start to any visited node: using a map (`dict`), and for each node n (key) storing the prior node n-1 (value).  Then, to reconstruct shortest path from start, begin with the last node and work backwards.  This is *waaaaaaay* more space-efficient than in my Dijkstra's alg implementation, where I store the shortest path as a list on each node!
+
+```python
+def reconstruct_path(camefrom, current_coords):
+    path = deque([current_coords])
+    while current_coords in camefrom:
+        current_coords = camefrom[current_coords]
+        path.appendleft(current_coords)
+    return list(path)
+```
+
+I used the [Manhattan](https://en.wikipedia.org/wiki/Taxicab_geometry), or taxi-cab distance as my heuristic function *h(n)*, and later augmented this with more information in an attempt to further optimize the search.
+
+I ended up making several changes to the pseudocode:
+- I used a min-heap to implement a priority queue (a `list` + the `heapq` module from standard library).  In the pseudocode, they used a hash-set called *openSet*.  I called mine `exploration_boundary`.
+    - I actually used a hash-set (`set`) as well, since adding new nodes to the heap requires a membership check.  This has a time-complexity of *O(n)* for `lists` but *O(1)* for `sets`.
+    - This approach uses more memory in favor of faster membership lookup.  The animation below illustrates that the number of nodes in the `exploration_boundary` at any time is small compared to the number of nodes on the map, so perhaps this was a premature "optimization" on my part.
+
+- Talk about the modification I made to the fscore (the value used to rank next-best-search nodes) to allow me to write different heuristics
+
+Explain the rationale for each of my heuristic functions, and show the shortest path and if applicable, animation
+
+
+
 ## Bonus 2 - Using an off-the-shelf implementation of Dijkstra's algorithm
 
 **Compare my solution with the off-the-shelf version, time how long each one takes for part one and part two!**
