@@ -137,13 +137,13 @@ Notice how some of the nodes are inaccessible (`c`s surrounded by `a`s):
 ### Solution
 
 
-## Bonus 1 - Implementing A* algorithm
+## Bonus 1 - Implementing the A* (best-first search) algorithm
 
 While reading about Dijkstra's algorithm on Wikipedia, I came across the A* ("A-star") algorithm, which is described as a *best*-first search.  I decided to attempt an implementation!
 
-## Bonus 2 - Using an off-the-shelf implementation of Dijkstra's algorithm
+Its [Wikipedia article](https://en.wikipedia.org/wiki/A*_search_algorithm) generously provides a description of the algorithm, as well as commented pseudocode.  I used the pseudocode as a base (implemented in Python), and later augmented it to try out different definitions of "best".
 
-Describe the module I used, how I had to change my program to use it
+## Bonus 2 - Using an off-the-shelf implementation of Dijkstra's algorithm
 
 **Compare my solution with the off-the-shelf version, time how long each one takes for part one and part two!**
 
