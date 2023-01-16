@@ -163,7 +163,9 @@ I ended up making several changes to the pseudocode:
 
 - Talk about the modification I made to the fscore (the value used to rank next-best-search nodes) to allow me to write different heuristics
 
-Explain the rationale for each of my heuristic functions, and show the shortest path and if applicable, animation
+Explain the rationale for each of my heuristic functions, and show the shortest path and if applicable, animation and compare the number of edges / nodes visited in a table
+
+Talk about the "admissibility" mentioned on the wiki page and how some heuristic functions are not guaranteed to find the actual shortest path
 
 
 
