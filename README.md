@@ -114,6 +114,7 @@ So far, I've used:
 - dictionaries & sets
 - a `deque` (double-ended queue, from `collections` module)
 - a 1-D `numpy` `nd-array`
+- a min-heap (list + `heapq` from standard library)
 
 ### Simulation and calculation
 
