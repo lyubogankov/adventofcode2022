@@ -182,7 +182,7 @@ This algorithm found the same shortest path as Dijkstra's, 380 steps between sta
 
 ![Command prompt visualizations of Dijkstra's and A*'s shortest paths overlaid for comparison](../media/day12/input_shortestpath_vs_0_1.gif)
 
-The order in which this formulation of A* visited nodes was different, as well, since it prioritized nodes not only based on distance from start, but also to their estimated distance to the end, as well.  The animation below shows the full run of the algorithm - the gray-colored squares are the "exploration boundary", the set of nodes from which we can expand our search.
+The order in which this formulation of A* visited nodes was different, as well, since it prioritized nodes not only based on distance from start, but also to their estimated distance to the end.  The animation below shows the full run of the algorithm - the gray-colored squares are the "exploration boundary", the set of nodes from which we can expand our search.
 
 ![Command prompt animation of A* algorithm searching the puzzle input](../media/day12/astar_fofn.gif)
 
@@ -313,7 +313,7 @@ The last fscore I tried involved using *h(n)* as a tie-breaker for height/*f(n)*
 
 The comparison animations above only show one side of the story -- what the shortest path looks like.  I would also like to compare these approaches based on how they process the graph, in terms of shortest path, number of nodes processed (all neighbors considered), number of nodes visited (distance from start is finite), and number of edges processed.
 
-| Strategy | Shortest Path Length | New Nodes Processed | Total Nodes Processed | New Nodes Visited | Total Nodes Visited | New Edges Processed | Total Edges Processed |
+<!-- | Strategy | Shortest Path Length | New Nodes Processed | Total Nodes Processed | New Nodes Visited | Total Nodes Visited | New Edges Processed | Total Edges Processed |
 | - | - | - | - | - | - | - | - |
 | Dijkstra's                            |    380             |   4549   |  4549   | 4549 |   4549   |   7974   |  16482   |
 | A* `f(n)`                             |    380             |   4525   |  4676   | 4538 |   4538   |   7904   |  16913   |
@@ -323,7 +323,35 @@ The comparison animations above only show one side of the story -- what the shor
 | A* `(height_diff, f(n), dotprod)`     |    380             |   3041   |  3046   | 3675 |   3675   |   6278   |  11108   |
 | A* `(height_diff, f(n), theta)`       |    382 (380)       |   3032   |  3100   | 3673 |   3672   |   6257   |  11252   |
 | A* `(height_diff, f(n), neg_dotprod)` |    382 (380)       |   3032   |  3100   | 3673 |   3672   |   6277   |  11252   |
-| A* `(height_diff, neg_dotprod, f(n))` |    390 (380)       | **2484** |  2644   | 3166 | **3166** | **5190** |   9593   |
+| A* `(height_diff, neg_dotprod, f(n))` |    390 (380)       | **2484** |  2644   | 3166 | **3166** | **5190** |   9593   | -->
+
+#### Skipping already-visited nodes IS NOT allowed
+
+| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | Edges Processed |
+| - | - | - | - | - |
+| Dijkstra's                            |    380    |  4549   |   4549   |  16482   |
+| A* `f(n)`                             |    380    |  4676   |   4538   |  16913   |
+| A* `(height_diff, f(n))`              |    380    |  2548   |   3293   |   9916   |
+| A* `(height_diff, f(n), h(n))`        |    380    |**2571** |   3286   | **9908** |
+| A* `(height_diff, dotprod, f(n))`     |  **510**  |  8415   |   4131   |  31033   |
+| A* `(height_diff, f(n), dotprod)`     |    380    |  3046   |   3675   |  11108   |
+| A* `(height_diff, f(n), theta)`       |    380    |  3100   |   3672   |  11252   |
+| A* `(height_diff, f(n), neg_dotprod)` |    380    |  3100   |   3672   |  11252   |
+| A* `(height_diff, neg_dotprod, f(n))` |    380    |  2644   | **3166** |   9593   |
+
+#### Skipping already-visited nodes IS allowed
+
+| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | Edges Processed |
+| - | - | - | - | - |
+| Dijkstra's                            |    380   |   4549   | 4549 |   7974   |
+| A* `f(n)`                             |    380   |   4525   | 4538 |   7904   |
+| A* `(height_diff, f(n))`              |    380   |   4548   | 3305 |   5398   |
+| A* `(height_diff, f(n), h(n))`        |   *382*  |   2530   | 3299 |   5381   |
+| A* `(height_diff, dotprod, f(n))`     |  **650** |   2921   | 4131 |   6657   |
+| A* `(height_diff, f(n), dotprod)`     |    380   |   3041   | 3675 |   6278   |
+| A* `(height_diff, f(n), theta)`       |   *382*  |   3032   | 3673 |   6257   |
+| A* `(height_diff, f(n), neg_dotprod)` |   *382*  |   3032   | 3673 |   6257   |
+| A* `(height_diff, neg_dotprod, f(n))` |   *390*  | **2484** | 3166 | **5190** |
 
 Notable points:
 - A* `(height_diff, f(n), h(n))`
@@ -331,7 +359,7 @@ Notable points:
     - 2nd fewest number of edges processed, behind Dijkstra's.
 - A* `(height_diff, neg_dotprod, f(n))` had the fewest number of nodes *visited*, 3166.
 
-Originally, I was counting the new edges processed for Dijkstra's, and the total edges for A* -- this meant that Dijkstra looked like it was processing way fewer edges than any of my A* solutions.  Upon looking at the code I realized that there are two ways of defining the processing of an edge for Dijkstra's algorithm:
+Originally, I made a single table and was counting the new edges processed for Dijkstra's, and the total edges for A*.  This meant that Dijkstra looked like it was processing way fewer edges than any of my A* solutions.  Upon looking at the code I realized that there are two ways of defining the processing of an edge for Dijkstra's algorithm:
 1. Counting *new* edges processed, because we know which nodes have a shortest path from start (they're not in the `unvisited_set`) - 7974.  This was my original implementation.
 2. Counting all edges seen - 16482.
 
@@ -343,7 +371,7 @@ An inconsistent heuristic cannot guarantee that an optimal path will be found wi
 
 I implemented this in the A* routine, and now the table differentiates between new and total edges processed, as well as new and total nodes visited/processed.
 
-Five of the heuristics yeilded less optimal shortest paths with the `visited_set`, and all of them seem to be inconsistent since new/total nodes processed $\neq$ new/total nodes visited, which means that nodes are being processed more than one time.
+Five of the heuristics yeilded less optimal shortest paths with the `visited_set`, and all of them seem to be inconsistent since nodes processed $\neq$ visited, which means that nodes are being processed more than one time.
 
 
 ### Longest path?
