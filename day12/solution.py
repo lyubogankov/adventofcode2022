@@ -777,6 +777,8 @@ def part_two(nodes, end_coords):
         results.append((pathlen, steps, a_tile_coords))
 
     results.sort(key=lambda x: x[0])
+    # for len, _, coords in results:
+    #     print(len, coords)
     return results[0]
 
 if __name__ == '__main__':
@@ -839,7 +841,7 @@ if __name__ == '__main__':
 
         # # A*
         # ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
-        #     nodes, start_node.coords, end_node.coords, fscore_fn=height_then_f_of_n,
+        #     nodes, start_node.coords, end_node.coords, fscore_fn=height_fofn_hofn,
         #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
         # )
         # print('A shortest path: ', ashortest_path_len)

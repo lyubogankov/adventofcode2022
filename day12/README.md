@@ -107,7 +107,7 @@ Instead of expanding outwards from the center smoothly and filling in gaps, the 
 
 Below is an animation of the incorrect implementation in action.  This animation helped me hone in on my bug - I saw the behavior of the algorithm was much different than the animations in Wikipedia!
 
-![](../media/day12/dijkstra_bad_cropped.gif)
+![Command prompt animation of incorrect Dijkstra's algorithm implementation searchin initial nodes](../media/day12/dijkstra_bad_cropped.gif)
 
 ##### Correct implementation
 
@@ -133,6 +133,28 @@ The new goal is to
 This problem is a trick question, since there is a single column of `b`s on the input grid.  This greatly reduces the number of `a`-tiles to try!
 
 ### Solution
+
+To make the solution more general (ie not tailored to the puzzle input, and to allow unit testing) I wrote a simple rule to filter the nodes in the graph and find the `a`-tiles eligible for the shortest-path-to-end minimization:
+
+```python
+candidate_a_tiles = []
+for node in nodes.values():
+    if node.height != 'a':
+        continue
+    # look through all edges -- does it point to a 'b'?
+    # shortest possible path up would be a -> b -> c -> ... -> z
+    for edge in node.connections:
+        neighbor = nodes[edge.node_to_coords]
+        if neighbor.height == 'b':
+            candidate_a_tiles.append(node.coords)
+            break
+```
+
+I then ran a shortest-path algorithm ([A*](#bonus---implementing-the-a-best-first-search-algorithm)) from each `a`-tile to the end, and picked the shortest path among those!
+
+There are 61 `a`-tiles in the puzzle input, and among them the one at `(0, 25)` had the shortest path (375).  The longest path was 400, from tile `(0, 0)`.  Here is the shortest path found from part two, versus part one:
+
+![Command prompt printout comparison of shortest paths for part one versus part two](../media/day12/input_shortestpath_parttwo_vs.gif)
 
 
 ## Bonus - Implementing the A* (best-first search) algorithm
