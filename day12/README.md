@@ -313,17 +313,17 @@ The last fscore I tried involved using *h(n)* as a tie-breaker for height/*f(n)*
 
 The comparison animations above only show one side of the story -- what the shortest path looks like.  I would also like to compare these approaches based on how they process the graph, in terms of shortest path, number of nodes processed (all neighbors considered), number of nodes visited (distance from start is finite), and number of edges processed.
 
-| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | Edges Processed | 
-| - | - | - | - | - |
-| Dijkstra's                            |   380  |   4549   |   4549   |  **7974** (16482) |
-| A* `f(n)`                             |   380  |   4676   |   4538   |   16913           |
-| A* `(height_diff, f(n))`              |   380  |   2573   |   3293   |    9916           |
-| A* `(height_diff, f(n), h(n))`        |   380  | **2571** |   3286   |  **9908**         |
-| A* `(height_diff, dotprod, f(n))`     | **510**|   8415   |   4131   |   31033           |
-| A* `(height_diff, f(n), dotprod)`     |   380  |   3046   |   3675   |   11108           |
-| A* `(height_diff, f(n), theta)`       |   380  |   3100   |   3672   |   11252           |
-| A* `(height_diff, f(n), neg_dotprod)` |   380  |   3100   |   3672   |   11252           |
-| A* `(height_diff, neg_dotprod, f(n))` |   380  |   2644   | **3166** |    9593           |
+| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | New Edges Processed | Total Edges Processed |
+| - | - | - | - | - | - |
+| Dijkstra's                            |    380             |   4549   |   4549   |   7974   |  16482   |
+| A* `f(n)`                             |    380             |   4676   |   4538   |   7904   |  16913   |
+| A* `(height_diff, f(n))`              |    380             |   2573   |   3293   |   5398   |   9916   |
+| A* `(height_diff, f(n), h(n))`        |    382 (380)       | **2571** |   3286   |   5381   | **9908** |
+| A* `(height_diff, dotprod, f(n))`     |  **650** (**510**) |   8415   |   4131   |   6657   |  31033   |
+| A* `(height_diff, f(n), dotprod)`     |    380             |   3046   |   3675   |   6278   |  11108   |
+| A* `(height_diff, f(n), theta)`       |    382 (380)       |   3100   |   3672   |   6257   |  11252   |
+| A* `(height_diff, f(n), neg_dotprod)` |    382 (380)       |   3100   |   3672   |   6277   |  11252   |
+| A* `(height_diff, neg_dotprod, f(n))` |    390 (380)       |   2644   | **3166** | **5190** |   9593   |
 
 Notable points:
 - A* `(height_diff, f(n), h(n))`
@@ -331,7 +331,7 @@ Notable points:
     - 2nd fewest number of edges processed, behind Dijkstra's.
 - A* `(height_diff, neg_dotprod, f(n))` had the fewest number of nodes *visited*, 3166.
 
-A result I didn't expect was that Dijkstra's would have the lowest number of processed edges, but upon looking at the code I realized that there are two ways of defining the processing of an edge for Dijkstra's algorithm:
+Originally, I was counting the new edges processed for Dijkstra's, and the total edges for A* -- this meant that Dijkstra looked like it was processing way fewer edges than any of my A* solutions.  Upon looking at the code I realized that there are two ways of defining the processing of an edge for Dijkstra's algorithm:
 1. Counting *new* edges processed, because we know which nodes have a shortest path from start (they're not in the `unvisited_set`) - 7974.  This was my original implementation.
 2. Counting all edges seen - 16482.
 
@@ -339,9 +339,17 @@ My original implementation of A* doesn't have a similar notion of "visited", so 
         
 > *h(x)* $\le$ *d(x, y)* + *h(y)* for every edge (x, y) of the graph where d is edge length.
         
-An inconsistent heuristic cannot guarantee that an optimal path will be found without nodes being processed more than once, and additional nodes means additional edges.  If my heuristics are *consistent*, perhaps I can formulate a `visited_set`.
+An inconsistent heuristic cannot guarantee that an optimal path will be found without nodes being processed more than once, and additional nodes means additional edges.  If my heuristics are *consistent*, I can formulate a `visited_set` of nodes.
+
+I implemented this in the A* routine, and now the table differentiates between new edges and total edges processed.
+
+Note that my incosistent, inadmissable heuristic `(height_diff, dotprod, f(n))` has a longer path with the new code because previously-seen edges are skipped.  The shortest path with edge-reprocessing allowed is shown in parantheses.
+
+I didn't expect any of the other heuristics to yield an inoptimal shortest path, but four others did.
 
 
 ### Longest path?
 
 Try using a different fscore formulation - make everything *-1 so that the min-heap behaves like a max heap.  Start with f(n).
+
+Hmm, I'll also need a different alg entierly.  I'll want to start all the distances at negative infinity instead of positive, do comparisons the other way, etc.

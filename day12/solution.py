@@ -615,10 +615,14 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
     edges_processed = 0
     nodes_processed = 0
 
+    # heuristic consistency check
+    visited_set = set()
+
     ## Running the search
     while len(exploration_boundary) > 0:
         (_, _, current) = heapq.heappop(exploration_boundary)
         exploration_boundary_set.remove(current)
+        visited_set.add(current)  # consistency check
 
         if current == end:
             print('Num edges processed: ', edges_processed)
@@ -630,6 +634,10 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
 
         # examine all neighbors
         for edge in nodes[current].connections:
+            
+            # heuristic consistency check
+            if edge.node_to_coords in visited_set:
+                continue
             edges_processed += 1
 
             neighbor = edge.node_to_coords
