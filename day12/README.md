@@ -2,9 +2,10 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/12) (adventofcode.com)
 
-**tl;dr**:
+**tl;dr**
 
-.
+Shortest-path algorithms ([Dijkstra's](#correct-implementation), [A*](#bonus---implementing-the-a-best-first-search-algorithm)) and more GIFs :)
+
 
 
 ## Part One
@@ -372,10 +373,3 @@ An inconsistent heuristic cannot guarantee that an optimal path will be found wi
 I implemented this in the A* routine, and now the table differentiates between new and total edges processed, as well as new and total nodes visited/processed.
 
 Five of the heuristics yeilded less optimal shortest paths with the `visited_set`, and all of them seem to be inconsistent since nodes processed $\neq$ visited, which means that nodes are being processed more than one time.
-
-
-### Longest path?
-
-Try using a different fscore formulation - make everything *-1 so that the min-heap behaves like a max heap.  Start with f(n).
-
-Hmm, I'll also need a different alg entierly.  I'll want to start all the distances at negative infinity instead of positive, do comparisons the other way, etc.

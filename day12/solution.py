@@ -436,6 +436,65 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
     path_from_start_to_end = nodes[end_coords].shortest_path_from_start + [end_coords]
     return shortest_path_len, path_from_start_to_end
 
+# DID NOT WORK
+def dijkstras_longest_path(nodes, start_coords, end_coords):
+
+    edges_processed = 0
+    nodes_processed = 0
+
+    camefrom = {}
+
+    # 1. Create set of unvisited nodes.
+    unvisited_coords = set(nodes.keys())
+
+    # 2. Create tentative distance tracker
+    # https://stackoverflow.com/questions/7781260/how-can-i-represent-an-infinite-number-in-python
+    # CHANGE, math.inf to -math.inf
+    tentative_distance_from_start = {coords : math.inf for coords in unvisited_coords}  
+    tentative_distance_from_start[start_coords] = 0
+
+    ## Run Dijstra's alg!
+    current_coords = start_coords
+    while len(unvisited_coords) > 0:
+
+        # 3. For current node, look at all of its unvisited edges and calculate distance from start -> neighbor.
+        for edge in nodes[current_coords].connections:
+
+            # if edge.node_to_coords not in unvisited_coords:
+            #     continue
+            edges_processed += 1
+
+            start_to_neighb_dist_thru_curr_node = tentative_distance_from_start[current_coords] + edge.weight
+            start_to_neighb_shortest_known_path = tentative_distance_from_start[edge.node_to_coords]
+
+            # CHANGE, < to >
+            if start_to_neighb_dist_thru_curr_node > start_to_neighb_shortest_known_path:
+                # found shorter path - update!
+                tentative_distance_from_start[edge.node_to_coords] = start_to_neighb_dist_thru_curr_node
+                # write down best known path from source -> current node
+                camefrom[edge.node_to_coords] = current_coords
+        nodes_processed += 1  # processed = looked at all neighbors
+
+        # 4. Current node is done!  Remove it from unvisited set.
+        unvisited_coords.remove(current_coords)
+
+        # 5. Select next node!
+        # CHANGE?
+        max_tentative_distance = -math.inf
+        for coords in unvisited_coords:
+            if tentative_distance_from_start[coords] > max_tentative_distance:
+                current_coords = coords
+                max_tentative_distance = tentative_distance_from_start[coords]
+
+    # terminate after looking at the whole graph
+    print('Num edges processed: ', edges_processed)
+    print('Num nodes processed: ', nodes_processed)
+    print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
+
+    longest_path_len = tentative_distance_from_start[end_coords]
+    longest_path = reconstruct_path(camefrom, end_coords)
+    return longest_path_len, longest_path
+
 def manhattan_distance(point_one, point_two):
     '''Returns the "Manhattan", or 4-way grid, distance between two points.
 
@@ -677,6 +736,7 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
                 iteration = len([dist for dist in shortest_known_path_from_start.values() if dist < math.inf])
                 screenshot.screenshot(screenshotter, params, sim_iteration=f'{iteration}', savefolder='day12')
 
+
 if __name__ == '__main__':
     
     if ANIMATION_GIF_MODE:
@@ -721,12 +781,12 @@ if __name__ == '__main__':
 
         ### Run a single algorithm and print out the results
 
-        # Dijkstra's alg
-        dshortest_path_len, dpath_from_start_to_end = dijstras_shortest_path(
-            nodes, start_node.coords, end_node.coords,
-            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        )
-        print(f'Shortest path length from S -> E: {dshortest_path_len}', end='\n\n')
+        # # Dijkstra's alg
+        # dshortest_path_len, dpath_from_start_to_end = dijstras_shortest_path(
+        #     nodes, start_node.coords, end_node.coords,
+        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        # )
+        # print(f'Shortest path length from S -> E: {dshortest_path_len}', end='\n\n')
         # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, dpath_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
         # # A*
@@ -739,7 +799,7 @@ if __name__ == '__main__':
 
 
         ### Generating algorithm comparison graphic
-        shortest_paths = []
+        # shortest_paths = []
 
         # _, dpath_from_start_to_end = dijstras_shortest_path(nodes, start_node.coords, end_node.coords)
         # shortest_paths.append(dpath_from_start_to_end)
@@ -751,19 +811,25 @@ if __name__ == '__main__':
         # shortest_paths.append(apath_from_start_to_end)
 
         # comparing my fscore formulations:
-        for fscorefn in [default_f_of_n, height_then_f_of_n, height_fofn_hofn,
-                         height_dotprod_f_of_n, height_f_of_n_dotprod,
-                         height_f_of_n_theta,
-                         height_negdotprod_f_of_n, height_f_of_n_negdotprod]:
-            ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
-                nodes, start_node.coords, end_node.coords, fscore_fn=fscorefn,
-                _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-            )
-            print(f'A shortest path ({fscorefn.__name__}): ', ashortest_path_len, end='\n\n')
-            # shortest_paths.append(apath_from_start_to_end)
-            # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor='\033[48;5;245m\033[38;5;126m'))
+        # for fscorefn in [default_f_of_n, height_then_f_of_n, height_fofn_hofn,
+        #                  height_dotprod_f_of_n, height_f_of_n_dotprod,
+        #                  height_f_of_n_theta,
+        #                  height_negdotprod_f_of_n, height_f_of_n_negdotprod]:
+        #     ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
+        #         nodes, start_node.coords, end_node.coords, fscore_fn=fscorefn,
+        #         _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        #     )
+        #     print(f'A shortest path ({fscorefn.__name__}): ', ashortest_path_len, end='\n\n')
+        #     # shortest_paths.append(apath_from_start_to_end)
+        #     # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor='\033[48;5;245m\033[38;5;126m'))
 
         # print(generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, shortest_paths))
+
+        
+        # ### Dijkstra's longest path (DID NOT WORK)
+        # dlongest_path_len, dpath_from_start_to_end = dijstras_shortest_path(nodes, start_node.coords, end_node.coords)
+        # print(f'Shortest path length from S -> E: {dlongest_path_len}', end='\n\n')
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, dpath_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
     if ANIMATION_GIF_MODE:
         screenshotter.close()
