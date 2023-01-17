@@ -24,21 +24,13 @@ There are two rules for traversing the tile grid:
 
 I briefly pondered writing my own algorithm, but abandoned that when I remembered learning about Dijkstra's shortest-path algorithm in a college data structures course.  Its [Wikipedia page](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) the contains a pseudocode description, which I used as the foundation for my solution.
 
-#### Visualizing the inputs
+#### Visualizing the input
 
 *Really, I generated these images after-the-fact, but structurally it makes the most sense here.*
 
 Previously, I thought only 8 colors could be used in the terminal, but discovered [otherwise](https://stackabuse.com/how-to-print-colored-text-in-python/#256colorsinrawpython) after some web searching.  Some Linux-based OSs support 256 colors in the terminal.  To check support, run the command  `echo $TERM` in the command prompt.  If the return value is `xterm-256color`, the OS supports 256 colors!!
 
-After consoluting a [cheat sheet](https://www.ditig.com/256-colors-cheat-sheet) for the colors and their codes, I colored the the elevations to get a nice gradient on the hills:
-- Letters [a, c]: greyscale; color codes 244, 247, 250 (ascending)
-- Letters [d, z]: progression of plum -> gold -> pink -> orange -> red; color codes [183, 160] (descending)
-
-Example:
-
-![Command-prompt printout of example tile map with height-based coloring](../media/day12/example_heightheatmap.png)
-
-Puzzle input, which has a much nicer hill than the example, due to its larger grid size:
+After consoluting a [cheat sheet](https://www.ditig.com/256-colors-cheat-sheet) for the colors and their codes, I colored the the elevations to get a nice gradient on the hills.  I used three rounds of ROYGBIV (rainbow) coloring for contrast between the different elevations:
 
 ![Command-prompt printout of larger, puzzle input tile map with height-based coloring](../media/day12/input_heightheatmap.png)
 
@@ -68,13 +60,15 @@ start_node, end_node, nodes = parse_input_into_graph(
     edge_rule_fn=part_one_edge_rule_fn
 )
 ```
-#### My implementation of Dijkstra's algorithm
+####  Dijkstra's algorithm
+
+##### Initial implementation
 
 I augmented the algorithm from Wikipedia to not only provide me the shortest path between desired nodes, but also the shortest path from the source to each visited node.  This allows me to generate a printout of the shortest path overlaid over the input map for unit testing (against the example printout in puzzle description), as well as to generate pretty images.
 
 However, I made two mistakes during my initial attempt, detailed below.  I wanted to use the Visual Studio Code built-in debugger for the second bug, but it didn't work out-of-the-box and I wasn't in the mood to figure out why.  Instead, I decided to learn about `pdb`, the standard library's debugging module!  The [docs](https://docs.python.org/3/library/pdb.html) were very helpful, and it helped me inspect the program state while investigating hypotheses.
 
-##### 1. Improper handling start -> node shortest path list propagation
+###### 1. Improper handling start -> node shortest path list propagation
 
 ```python
 start_to_neighb_dist_thru_curr_node = tentative_distance_from_start[current_coords] + edge.weight
@@ -92,7 +86,7 @@ if start_to_neighb_dist_thru_curr_node < start_to_neighb_shortest_known_path:
 
 I forgot the clear the current known shortest from start to current node, which resulted in a shortest path list that was much longer than the shortest path length reported by the algorithm (it's computed separately).
 
-##### 2. Improperly choosing next node
+###### 2. Improperly choosing next node
 
 ```python
 min_tentative_distance = math.inf
@@ -116,9 +110,9 @@ Below is an animation of the incorrect implementation in action.  This animation
 
 ##### Correct implementation
 
-Here's the shortest path through the puzzle input, which my partner pointed out looks like a rose!
+Here's the shortest path found:
 
-![Command prompt printout of shortest path between start & end](../media/day12/input_shortestpath.png)
+![Command prompt printout of shortest path between start & end](../media/day12/input_shortestpath_dijkstra_0.png)
 
 And here is the algorithm in action!  Making this GIF took a very long time on my laptop (old processor with integrated graphics and 8GB RAM), however it was fun to pick out the color scheme with my newly expanded 256-color palette.  I used a different colors than the height-annotated printout above to emphasize the hill's elevation profile!
 
@@ -137,7 +131,7 @@ Notice how some of the nodes are inaccessible (`c`s surrounded by `a`s):
 ### Solution
 
 
-## Bonus 1 - Implementing the A* (best-first search) algorithm
+## Bonus - Implementing the A* (best-first search) algorithm
 
 While reading about Dijkstra's algorithm on Wikipedia, I came across the A* ("A-star") algorithm, which is described as a *best*-first search.  I decided to attempt an implementation!
 
@@ -154,24 +148,200 @@ def reconstruct_path(camefrom, current_coords):
     return list(path)
 ```
 
-I used the [Manhattan](https://en.wikipedia.org/wiki/Taxicab_geometry), or taxi-cab distance as my heuristic function *h(n)*, and later augmented this with more information in an attempt to further optimize the search.
+### Implementation
 
-I ended up making several changes to the pseudocode:
-- I used a min-heap to implement a priority queue (a `list` + the `heapq` module from standard library).  In the pseudocode, they used a hash-set called *openSet*.  I called mine `exploration_boundary`.
+I made two changes to the pseudocode:
+
+- I used a min-heap to implement a priority queue (a `list` + the `heapq` module from standard library).  In the pseudocode, they used a hash-set called *openSet*.
     - I actually used a hash-set (`set`) as well, since adding new nodes to the heap requires a membership check.  This has a time-complexity of *O(n)* for `lists` but *O(1)* for `sets`.
-    - This approach uses more memory in favor of faster membership lookup.  The animation below illustrates that the number of nodes in the `exploration_boundary` at any time is small compared to the number of nodes on the map, so perhaps this was a premature "optimization" on my part.
+    - This approach uses more memory in favor of faster membership lookup.  The animations below illustrates that the number of nodes in the `exploration_boundary` (priority queue) at any time is small compared to the number of nodes on the map, so perhaps this was a premature "optimization" on my part.
 
-- Talk about the modification I made to the fscore (the value used to rank next-best-search nodes) to allow me to write different heuristics
+- The A* algorithm uses a function, *f(n)*, to determine which node *n* to next choose for exploration.
+    - *f(n) = g(n) + h(n)*, where
+        - *g(n)* is the shortest known path from start to node *n*
+        - *h(n)* is the "heuristic function" that estimates the shortest path from node *n* to end
+            - Dijkstra's algorithm is equivalent to A* where *h(n) = 0*
+            - For A* *h(n)*, I used the [Manhattan](https://en.wikipedia.org/wiki/Taxicab_geometry), or taxi-cab distance per the A* algo wiki page description's recommendation
 
-Explain the rationale for each of my heuristic functions, and show the shortest path and if applicable, animation and compare the number of edges / nodes visited in a table
-
-Talk about the "admissibility" mentioned on the wiki page and how some heuristic functions are not guaranteed to find the actual shortest path
-
-
-
-## Bonus 2 - Using an off-the-shelf implementation of Dijkstra's algorithm
-
-**Compare my solution with the off-the-shelf version, time how long each one takes for part one and part two!**
+    I changed the formulation of the "f-score" *f(n)* - instead of being a single integer value, I made it a tuple of values so that I could prioritize different problem parameters.  The priority queue tries to minimize the f-score, which means it sorts first by the first tuple index, and to break ties looks at the second, and so on.
 
 
+### Results using fscore = *f(n)*
 
+
+#### *f(n)* = *g(n)* + *h(n)*, where h(n) is the Manhattan distance between node and end
+
+```python
+def manhattan_distance(point_one, point_two):
+    x1, y1 = point_one
+    x2, y2 = point_two
+    return abs(x2 - x1) + abs(y2 - y1)
+```
+
+This algorithm found the same shortest path as Dijkstra's, 380 steps between start and end!  The shortest path it found is not exactly the same, though.  In the animation below, the magenta path is Dijkstra's and the blue is A*'s:
+
+![Command prompt visualizations of Dijkstra's and A*'s shortest paths overlaid for comparison](../media/day12/input_shortestpath_vs_0_1.gif)
+
+The order in which this formulation of A* visited nodes was different, as well, since it prioritized nodes not only based on distance from start, but also to their estimated distance to the end, as well.  The animation below shows the full run of the algorithm - the gray-colored squares are the "exploration boundary", the set of nodes from which we can expand our search.
+
+![Command prompt animation of A* algorithm searching the puzzle input](../media/day12/astar_fofn.gif)
+
+After making the animation, I was surprised to find that while this algorithm prioritized nodes differently, it still explored all the way around the big hill before finding the goal, just like Dijkstra's and thought about how to improve the search efficiency.
+
+
+### Experimenting with other formulations of fscore
+
+I tried augment the heurustic function to find a more optimal solution for the puzzle input.  It's likely that if I were to generate random heightmaps, these more complicated f-scores would perform worse than the vanilla f-score above, but it was fun to experiment!
+
+
+#### 1. `(height_diff, f(n))`
+
+The input heightmap consists primarily of `c`-elevation tiles, with "pits" of `a` tiles.  Due to the traversal rules, once one of these `a`-pits is entered, escape is not possible.
+
+To avoid searching these `a`-pits, I wanted to come up with a way to prioritize hill-climbing, but was initially stuck on how to proceed because modifying *h(n)* to incorporate vertical distance as well as horizontal would necessitate modifying *g(n)*, which I wanted to avoid.
+
+I had the idea of not using a single integer for the fscore - instead, I used a `tuple`!  The min-heap sorts `tuples` just fine, and I like the solution because it allows me to specify multiple levels of tie-breaker rules.  This is the first fscore-tuple function I wrote (it's an argument into my A* algorithm):
+
+```python
+def height_then_f_of_n(*, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    # Rationale - penalize doing downhill to avoid exploring lower areas
+    return (
+        ord(end_node.height) - ord(neighbor_node.height), # height difference
+        g_of_n + h_of_n                                   # original fscore
+    )
+```
+
+Tiles are prioritized for exploration based on their height difference relative to the goal (since this is a min-heap).  In case of a tie, the original *f(n)* is used.
+
+This version yielded a slightly different shortest path than the original fscore function, though both paths are 380 steps long.  Here is a comparison between the two versions of A*:
+
+![Command prompt visualizations of two A* shortest paths (from different fscore formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_1_2.gif)
+
+The big difference is the order in which nodes are visited during the search, the `a`-pits are entirely ignored!  Once the spiralling hill is reached (first tile with elevation `d`), all exploration of the plains immediately ceases, which was very satisfying to see.
+
+![Command prompt animation of A* algorithm with height-prioritizing fscore searching the puzzle input](../media/day12/astar_height_fofn.gif)
+
+This prioritiziation worked well for this map, since it has one large hill and `a`-pits, but would completely search any smaller hills it found if this map were instead rolling hills, which might be less efficient than other approaches.
+
+
+#### 2. `(height_diff, dotprod, f(n))`
+
+I was pleased with the outcome of the prior fscore augmentation that prioritized height, but noticed that the search stagnates when blocked by `a`-pits.  In these cases, the exploration boundary slowly expands in all directions, which isn't what an explorer would do in real life.  If I had to start at a low elevation and climb up to a mountain peak, I'd orient myself towards the mountain at all times.
+
+This led me to think about orientation, and I decided to use the vector dot product within my priority.  I reasoned that I could incentivize progressing towards the goal instead of away from it if I computed the dot product between a vector from the current -> neighbor node (potential exploration direction) and the current -> end node (desired end).
+
+```python   
+def normalized_dotprod(v1, v2):
+    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
+def height_dotprod_f_of_n(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    height_diff = ord(end_node.height) - ord(current_node.height)
+    estimated_dist_to_end = g_of_n + h_of_n
+    if current_node == end_node:
+        return (height_diff, 0, estimated_dist_to_end)
+    dotprod = normalized_dotprod(to_vector(current_node, neighbor_node), to_vector(current_node, end_node))
+    return (height_diff, dotprod, estimated_dist_to_end)
+```
+
+Here is the "shortest path" (510 steps) found by this fscore vs the original *f(n)* (380 steps):
+
+![Command prompt visualizations of two A* shortest paths (f(n) and dot product formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_1_4.gif)
+
+I later realized that I was using the dot product incorrectly - when normalized, normalized its output is [-1, 1], where
+- +1 means the vectors are parallel, both pointing towards goal
+- 0 means the vectors are perpendicular
+- -1 means the vectors are parallel one pointing towards goal, the other away
+
+This is a valid way to deduce orientation relative to the goal, but when using this in a min-heap the priority becomes moving *away* from the goal (-1 < 0 < 1, and therefore that's the priority in which moves are made).
+
+The A* wiki page talks about *admissibility*:
+
+> A search algorithm is said to be admissible if it is guaranteed to return an optimal solution.  If the heuristic function used by A* is admissible, then A* is admissible.
+
+Unlike Dijkstra's algorithm, which is guaranteed to find the shortest path, A*'s ability to find an optimal route depends on its heuristic function.  In this case, the fscore function I've written is actively fighting the search and results in a very convoluted "shortest path" - it is not admissible!
+
+
+#### 3. `(height_diff, f(n), dot prod)`
+
+Not realizing my implementation error regarding the dot product, I also tried a re-prioritized version of the fscore.  This one did actually find the real shortest path, despite the dot product working against the goal in cases of height and *f(n)* ties.  While the shortest path was found, additional nodes were considered relative to the first two A* attempts.
+
+![Command prompt visualizations of two A* shortest paths (f(n) and dot product formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_1_5.gif)
+
+
+#### 4. `(height_diff, f(n), theta)`
+
+After mulling over the problem further, I realized my mistake on variants 2/3 related to the vector dot product and the priority queue (explained in [section 2](#2-height_diff-dot-prod-fn)).
+
+My first attempt at fixing this was to use the angle between the vectors, theta, as the tie-breaker instead of the vector dot prod (which is found by taking the inverse cosine of that value).  This re-maps the values from [0, 180] degrees and will work together with the min-heap to prioritize moving towards the goal rather than away from it.
+
+![Command prompt visualizations of two A* shortest paths (f(n) and vector-angle formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_1_6.gif)
+
+
+#### 5. `(height_diff, f(n), neg_dotprod)`
+
+I also tried again with the normalized dot product, this time multiplying it by -1 to fit with the min-heap.  Now,
+- -1 means the vectors are parallel, both pointing towards goal
+- 0 means the vectors are perpendicular
+- +1 means the vectors are parallel one pointing towards goal, the other away
+
+I didn't realize it until after seeing the shortest path, but this is actually the same fscore formulation as the the angle between vectors, just represented between [-1, 1] instead of [0, 180].
+
+Here is the comparison against the angle-approach:
+
+![Command prompt visualizations of two A* shortest paths (corrected dot product and vector-angle formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_6_8.gif)
+
+
+#### 6. `(height_diff, neg_dotprod, f(n))`
+
+Given the success of the prior to approaches, I tried prioritizing direction over *f(n)*, which yielded a correct shortest path!
+
+![Command prompt visualizations of two A* shortest paths (f(n) and corrected dot product formulations) overlaid for comparison](../media/day12/input_shortestpath_vs_1_7.gif)
+
+I also made a search animation for this approach:
+
+![Command prompt animation of A* algorithm with fscore prioritizing height, orientation, and f(n)](../media/day12/astar_height_negdotprod_fofn.gif)
+
+
+#### 7. `(height_diff, f(n), h(n))`
+
+The last fscore I tried involved using *h(n)* as a tie-breaker for height/*f(n)*, as a proxy for heading towards the goal.  Here it is compared with #1, fscore=(height_diff, *f(n)*):
+
+![Command prompt visualizations of two A* shortest paths (height, f(n), and no tie breaker vs h(n)) overlaid for comparison](../media/day12/input_shortestpath_vs_2_3.gif)
+
+
+### Comparison
+
+The comparison animations above only show one side of the story -- what the shortest path looks like.  I would also like to compare these approaches based on how they process the graph, in terms of shortest path, number of nodes processed (all neighbors considered), number of nodes visited (distance from start is finite), and number of edges processed.
+
+| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | Edges Processed | 
+| - | - | - | - | - |
+| Dijkstra's                            |   380  |   4549   |   4549   |  **7974** (16482) |
+| A* `f(n)`                             |   380  |   4676   |   4538   |   16913           |
+| A* `(height_diff, f(n))`              |   380  |   2573   |   3293   |    9916           |
+| A* `(height_diff, f(n), h(n))`        |   380  | **2571** |   3286   |  **9908**         |
+| A* `(height_diff, dotprod, f(n))`     | **510**|   8415   |   4131   |   31033           |
+| A* `(height_diff, f(n), dotprod)`     |   380  |   3046   |   3675   |   11108           |
+| A* `(height_diff, f(n), theta)`       |   380  |   3100   |   3672   |   11252           |
+| A* `(height_diff, f(n), neg_dotprod)` |   380  |   3100   |   3672   |   11252           |
+| A* `(height_diff, neg_dotprod, f(n))` |   380  |   2644   | **3166** |    9593           |
+
+Notable points:
+- A* `(height_diff, f(n), h(n))`
+    - Fewest number of nodes *processed*, 2571.  That's 2 less than without *h(n)* as tiebreaker.
+    - 2nd fewest number of edges processed, behind Dijkstra's.
+- A* `(height_diff, neg_dotprod, f(n))` had the fewest number of nodes *visited*, 3166.
+
+A result I didn't expect was that Dijkstra's would have the lowest number of processed edges, but upon looking at the code I realized that there are two ways of defining the processing of an edge for Dijkstra's algorithm:
+1. Counting *new* edges processed, because we know which nodes have a shortest path from start (they're not in the `unvisited_set`) - 7974.  This was my original implementation.
+2. Counting all edges seen - 16482.
+
+My original implementation of A* doesn't have a similar notion of "visited", so I can't skip any edges.  However, the A* wiki page discusses another property of the heuristic function, its *consistency*.  A heuristic is consistent if 
+        
+> *h(x)* $\le$ *d(x, y)* + *h(y)* for every edge (x, y) of the graph where d is edge length.
+        
+An inconsistent heuristic cannot guarantee that an optimal path will be found without nodes being processed more than once, and additional nodes means additional edges.  If my heuristics are *consistent*, perhaps I can formulate a `visited_set`.
+
+
+### Longest path?
+
+Try using a different fscore formulation - make everything *-1 so that the min-heap behaves like a max heap.  Start with f(n).

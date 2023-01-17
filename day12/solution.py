@@ -293,12 +293,17 @@ def generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, 
         arrow_annotations.append({_from : direction_arrow_for_node_from(_from, _to) for _from, _to in from_to_pairs})
     
     shortest_path_colors = [
-        '\033[38;5;39m',  # DeepSkyBlue1
+        # '\033[38;5;39m',  # DeepSkyBlue1
+        '\033[38;5;126m',  # magenta
+        # RED,
         '\033[38;5;51m',  # Cyan
         '\033[38;5;11m',  # Yellow
         '\033[38;5;10m',  # Lime
-        RED
     ]
+    # adding bg color
+    bgcolor = '\033[48;5;245m'
+    for i in range(len(shortest_path_colors)):
+        shortest_path_colors[i] = bgcolor + shortest_path_colors[i]
 
     print_str = ''
     for y in range(grid_height):  # rows
@@ -351,15 +356,15 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
 
     shortest path: 380
     Num edges processed: 7974
-    Num nodes processed: 4549/4633
+    Num nodes visited:   4549/4633
     '''
     
     ## Setup
     grid_height = max(y+1 for (x, y) in nodes.keys())
     grid_width  = max(x+1 for (x, y) in nodes.keys())
 
-    edges_seen = 0
-    nodes_seen = 0
+    edges_processed = 0
+    nodes_processed = 0
 
     # 1. Create set of unvisited nodes.
     unvisited_coords = set(nodes.keys())
@@ -378,7 +383,7 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
 
             if edge.node_to_coords not in unvisited_coords:
                 continue
-            edges_seen += 1
+            edges_processed += 1
 
             start_to_neighb_dist_thru_curr_node = tentative_distance_from_start[current_coords] + edge.weight
             start_to_neighb_shortest_known_path = tentative_distance_from_start[edge.node_to_coords]
@@ -391,6 +396,7 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
                 for coords in nodes[current_coords].shortest_path_from_start:
                     nodes[edge.node_to_coords].shortest_path_from_start.append(coords)
                 nodes[edge.node_to_coords].shortest_path_from_start.append(current_coords)
+        nodes_processed += 1  # processed = looked at all neighbors
 
         # 4. Current node is done!  Remove it from unvisited set.
         unvisited_coords.remove(current_coords)
@@ -411,7 +417,8 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
 
         # 5. Check for termination
         if current_coords == end_coords:
-            print('Num edges processed: ', edges_seen)
+            print('Num edges processed: ', edges_processed)
+            print('Num nodes processed: ', nodes_processed)
             print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
             shortest_path_len = tentative_distance_from_start[current_coords]
             path_from_start_to_end = nodes[current_coords].shortest_path_from_start + [current_coords]
@@ -451,6 +458,12 @@ def reconstruct_path(camefrom, current_coords):
         path.appendleft(current_coords)
     return list(path)
 
+def to_vector(node_from, node_to):
+    return [node_to.coords[i] - node_from.coords[i] for i in range(2)]  # i=0=x, i=1=y
+
+def normalized_dotprod(v1, v2):
+    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
 def default_f_of_n(*, g_of_n, h_of_n, **kwargs):
     '''f(n) = g(n) + h(n)
     Rationale:
@@ -461,7 +474,7 @@ def default_f_of_n(*, g_of_n, h_of_n, **kwargs):
 
     Reported shortest path 380
     Num edges processed: 16913
-    Num nodes processed: 4538/4633  (11 fewer than Dijkstra)
+    Num nodes visited:    4538/4633  (11 fewer than Dijkstra)
     '''
     return g_of_n + h_of_n
 def height_then_f_of_n(*, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
@@ -473,11 +486,22 @@ def height_then_f_of_n(*, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
 
     Reported shortest path 380
     Num edges processed: 9916
-    Num nodes processed: 3293/4633 (1245 fewer than Dijkstra)
+    Num nodes visited:    3293/4633 (1245 fewer than Dijkstra)
     '''
     return (
         ord(end_node.height) - ord(neighbor_node.height),  # height difference
         g_of_n + h_of_n                                   # original fscore
+    )
+def height_fofn_hofn(*, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    '''
+    Reported shortest path: 380
+    Num edges processed: 9908  (8 fewer than above)
+    Num nodes visited:   3286  (7 fewer than above)
+    '''
+    return (
+        ord(end_node.height) - ord(neighbor_node.height),  # height difference
+        g_of_n + h_of_n,                                   # original fscore
+        h_of_n                                             # tie-breaker for height/fscore
     )
 def height_dotprod_f_of_n(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
     '''
@@ -488,36 +512,56 @@ def height_dotprod_f_of_n(*, current_node, neighbor_node, end_node, g_of_n, h_of
 
     Reported shortest path 510
     Num edges processed: 31033
-    Num nodes processed: 4131/4633
+    Num nodes visited:    4131/4633
+
+    I originally thought minimizing dot product would mean obtaining dot prod = 0 aka parallel vectors.
+    However, normalized dot product yields a value [-1, 1] so really I am optimizing for away from end...
+
+    I could do -1*dotprod though, that'd prioritize going towards (-1*1) rather than away (-1*-1)
     '''
     height_diff = ord(end_node.height) - ord(current_node.height)
     estimated_dist_to_end = g_of_n + h_of_n
     if current_node == end_node:
         return (height_diff, 0, estimated_dist_to_end)
-    v_n_to_neighb = [neighbor_node.coords[i] - current_node.coords[i] for i in range(2)]  # 0=x, 1=y
-    v_n_to_end    = [end_node.coords[i]      - current_node.coords[i] for i in range(2)]
-    return (
-        height_diff,
-        np.dot(v_n_to_neighb, v_n_to_end) / (np.linalg.norm(v_n_to_neighb) * np.linalg.norm(v_n_to_end)),
-        estimated_dist_to_end
-    )
+    dotprod = normalized_dotprod(to_vector(current_node, neighbor_node), to_vector(current_node, end_node))
+    return (height_diff, dotprod, estimated_dist_to_end)
 def height_f_of_n_dotprod(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
     '''
     Reported shortest path 380
     Num edges processed: 11108
-    Num nodes processed: 3675/4366
+    Num nodes visited:    3675/4366
+
+    This one worked *in spite of* the dotprod, not because of it.
     '''
-    height_diff = ord(end_node.height) - ord(current_node.height)
-    estimated_dist_to_end = g_of_n + h_of_n
-    if current_node == end_node:
-        return (height_diff, estimated_dist_to_end, 0)
-    v_n_to_neighb = [neighbor_node.coords[i] - current_node.coords[i] for i in range(2)]  # 0=x, 1=y
-    v_n_to_end    = [end_node.coords[i]      - current_node.coords[i] for i in range(2)]
-    return (
-        height_diff,
-        estimated_dist_to_end,
-        np.dot(v_n_to_neighb, v_n_to_end) / (np.linalg.norm(v_n_to_neighb) * np.linalg.norm(v_n_to_end))
-    )
+    height_diff, dotprod, f_of_n = height_dotprod_f_of_n(current_node=current_node, neighbor_node=neighbor_node, end_node=end_node, g_of_n=g_of_n, h_of_n=h_of_n)
+    return (height_diff, f_of_n, dotprod)
+def height_f_of_n_theta(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    '''Rationale:
+    cos(theta) can go from 0 -> 180 degrees, so minimizing this value points us towards the end!
+    Update - this actually yeielded the same results as -1*normalized dotprod :o
+
+    Shortest path: 380
+    Num edges processed: 11252
+    Num nodes visited:   3672/4633
+    '''
+    height_diff, dotprod, f_of_n = height_dotprod_f_of_n(current_node=current_node, neighbor_node=neighbor_node, end_node=end_node, g_of_n=g_of_n, h_of_n=h_of_n)
+    return (height_diff, f_of_n, math.acos(dotprod))
+def height_negdotprod_f_of_n(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    '''
+    Shortest path: 388 ***
+    Num edges processed: 9593
+    Num nodes visited:   3166/4633
+    '''
+    height_diff, dotprod, f_of_n = height_dotprod_f_of_n(current_node=current_node, neighbor_node=neighbor_node, end_node=end_node, g_of_n=g_of_n, h_of_n=h_of_n)
+    return (height_diff, -1*dotprod, f_of_n)
+def height_f_of_n_negdotprod(*, current_node, neighbor_node, end_node, g_of_n, h_of_n, **kwargs):
+    '''
+    Shortest path: 380
+    Num edges processed: 11252
+    Num nodes visited:    3672/4633
+    '''
+    height_diff, dotprod, f_of_n = height_dotprod_f_of_n(current_node=current_node, neighbor_node=neighbor_node, end_node=end_node, g_of_n=g_of_n, h_of_n=h_of_n)
+    return (height_diff, f_of_n, -1*dotprod)
 
 def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fscore_fn=default_f_of_n, _animate=False, screenshotter=None):
     '''Find the shortest path from start to end.  The heuristic function is used to determine next-node selection.
@@ -537,15 +581,6 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
     
     Note that this function does not use the Node namedtuple's shortest_path_from_start_to_end in leiu of
     the camefrom dict -- a much cleaner solution!
-
-    Take 2 - instead of using f(n) as prioritization criteria, will use:
-        (height_end - height_n, f(n)) -- when sorting, this means that climbing hills is higher priority than finding shortest path
-
-    Other ideas:
-    - instead of using manhattan distance for h(n),
-      could take the normalized dot product between "vector" from start -> n and n -> end to prioritize moving towards end?
-
-      (height_diff, dot_prod(start_n, n_end), g(n)) = priority
     '''
     ## animation setup
     if _animate:
@@ -577,7 +612,8 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
     exploration_boundary = [(fscore[start], 0, start)]  # heapq operates on list, it's not a separate data structure.
     exploration_boundary_set = {start,}
 
-    edges_considered = 0
+    edges_processed = 0
+    nodes_processed = 0
 
     ## Running the search
     while len(exploration_boundary) > 0:
@@ -585,7 +621,8 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
         exploration_boundary_set.remove(current)
 
         if current == end:
-            print(f'Num edges processed: {edges_considered}')
+            print('Num edges processed: ', edges_processed)
+            print('Num nodes processed: ', nodes_processed)
             print(f'Num nodes visited: ', len([x for x in shortest_known_path_from_start.values() if x < math.inf]))
             shortest_path = reconstruct_path(camefrom, end)
             # the puzzle want the number of steps from start -> end, which is one less than number of nodes in shortest path
@@ -593,7 +630,7 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
 
         # examine all neighbors
         for edge in nodes[current].connections:
-            edges_considered += 1
+            edges_processed += 1
 
             neighbor = edge.node_to_coords
             path_len_from_start = shortest_known_path_from_start[current] + edge.weight
@@ -615,6 +652,7 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
                     exploration_boundary_set.add(neighbor)
                     # since this is a minheap -- prioritize later-added nodes over earlier-added nodes in case of fscore tie
                     heapq.heappush(exploration_boundary, (fscore[neighbor], -1*len(exploration_boundary), neighbor))
+        nodes_processed += 1  # processed = looked at all neighbors
 
         if _animate:
             os.system('clear')  # linux only
@@ -644,7 +682,6 @@ if __name__ == '__main__':
         else:
             grid_width = 113
             grid_height = 41
-
         print('\n---', inputfile)
 
         start_node, end_node, nodes = parse_input_into_graph(
@@ -652,7 +689,7 @@ if __name__ == '__main__':
             # for part one - "if height diff is higher than +1, can't traverse"
             edge_rule_fn=part_one_edge_rule_fn
         )
-
+        # print out the input heightmap (potentially as a graph, always w/ color-annotated height)
         if example:  # input is too large to render like this
             print(generate_print_str_graph(
                 nodes,
@@ -662,7 +699,6 @@ if __name__ == '__main__':
                 end_coords=end_node.coords,
                 connected=True
             ))
-
         print('\n\n')
         print(generate_print_str_graph(
             nodes,
@@ -674,65 +710,50 @@ if __name__ == '__main__':
             heightcolors=True
         ))
 
-        # # Dijkstra's alg
-        # shortest_path_len, path_from_start_to_end = dijstras_shortest_path(
-        #     nodes, start_node.coords, end_node.coords,
+
+        ### Run a single algorithm and print out the results
+
+        # Dijkstra's alg
+        dshortest_path_len, dpath_from_start_to_end = dijstras_shortest_path(
+            nodes, start_node.coords, end_node.coords,
+            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+        )
+        print(f'Shortest path length from S -> E: {dshortest_path_len}', end='\n\n')
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, dpath_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+
+        # # A*
+        # ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
+        #     nodes, start_node.coords, end_node.coords, fscore_fn=height_then_f_of_n,
         #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
         # )
-
-        # # A* alg
-        # shortest_path_len, path_from_start_to_end = a_star_shortest_path(
-        #     nodes, start_node.coords, end_node.coords,
-        #     _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        # )
-
-        # print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
-        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
-
-
-        ### Comparing algorithm outputs
-        # for shortest_path_alg in [dijstras_shortest_path, a_star_shortest_path]:
-            
-        #     print(f'--- {shortest_path_alg.__name__}')
-
-        #     shortest_path_len, path_from_start_to_end = shortest_path_alg(
-        #         nodes, start_node.coords, end_node.coords,
-        #         _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        #     )
-
-        #     print(f'Shortest path length from S -> E: {shortest_path_len}', end='\n\n')
-        #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+        # print('A shortest path: ', ashortest_path_len)
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
 
         ### Generating algorithm comparison graphic
         shortest_paths = []
 
-        dshortest_path_len, dpath_from_start_to_end = dijstras_shortest_path(
-            nodes, start_node.coords, end_node.coords,
-            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        )
-        print('D shortest path: ', dshortest_path_len)
-        shortest_paths.append(dpath_from_start_to_end)
-        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, dpath_from_start_to_end, heightcolor=True, arrowcolor=WHITE))
+        # _, dpath_from_start_to_end = dijstras_shortest_path(nodes, start_node.coords, end_node.coords)
+        # shortest_paths.append(dpath_from_start_to_end)
+        
+        # _, apath_from_start_to_end = a_star_shortest_path(nodes, start_node.coords, end_node.coords, fscore_fn=height_f_of_n_theta)
+        # shortest_paths.append(apath_from_start_to_end)
 
-        # A*
-        ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
-            nodes, start_node.coords, end_node.coords, fscore_fn=height_then_f_of_n,
-            _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        )
-        print('A shortest path: ', ashortest_path_len)
-        shortest_paths.append(apath_from_start_to_end)
-        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor=WHITE))
+        # _, apath_from_start_to_end = a_star_shortest_path(nodes, start_node.coords, end_node.coords, fscore_fn=height_f_of_n_negdotprod)
+        # shortest_paths.append(apath_from_start_to_end)
 
-        # # comparing my fscore formulations:
-        # for fscorefn in [default_f_of_n, height_then_f_of_n, height_dotprod_f_of_n, height_f_of_n_dotprod]:
-        #     ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
-        #         nodes, start_node.coords, end_node.coords, fscore_fn=fscorefn,
-        #         _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
-        #     )
-        #     print(f'A shortest path ({fscorefn.__name__}): ', ashortest_path_len)
-        #     shortest_paths.append(apath_from_start_to_end)
-        #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor=WHITE))
+        # comparing my fscore formulations:
+        for fscorefn in [default_f_of_n, height_then_f_of_n, height_fofn_hofn,
+                         height_dotprod_f_of_n, height_f_of_n_dotprod,
+                         height_f_of_n_theta,
+                         height_negdotprod_f_of_n, height_f_of_n_negdotprod]:
+            ashortest_path_len, apath_from_start_to_end = a_star_shortest_path(
+                nodes, start_node.coords, end_node.coords, fscore_fn=fscorefn,
+                _animate=False, screenshotter=screenshotter if ANIMATION_GIF_MODE else None
+            )
+            print(f'A shortest path ({fscorefn.__name__}): ', ashortest_path_len, end='\n\n')
+            # shortest_paths.append(apath_from_start_to_end)
+            # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, apath_from_start_to_end, heightcolor=True, arrowcolor='\033[48;5;245m\033[38;5;126m'))
 
         # print(generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, shortest_paths))
 
