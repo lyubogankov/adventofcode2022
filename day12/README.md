@@ -125,9 +125,12 @@ Notice how some of the nodes are inaccessible (`c`s surrounded by `a`s):
 
 ## Part Two
 
-
 ### Problem Breakdown
 
+The new goal is to
+> find the shortest path from **any square with elevation `a`** to the square marked `E`.
+
+This problem is a trick question, since there is a single column of `b`s on the input grid.  This greatly reduces the number of `a`-tiles to try!
 
 ### Solution
 

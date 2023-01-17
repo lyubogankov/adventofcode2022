@@ -241,7 +241,10 @@ def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_c
             height = nodes[(x, y)].height
             # shortest path
             if shortest_path_coords and (x, y) in shortest_path_node_arrows:
-                row_str += f'{arrowcolor}{shortest_path_node_arrows[(x, y)]}{RESET}'
+                if arrowcolor is not None:
+                    row_str += f'{arrowcolor}{shortest_path_node_arrows[(x, y)]}{RESET}'
+                else:
+                    row_str += shortest_path_node_arrows[(x, y)]
             elif shortest_path_coords and (x, y) == shortest_path_coords[-1]:
                 row_str += 'E'
             # coloring as the alg runs to visualize what we've already looked at
@@ -334,9 +337,10 @@ def generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, 
 ### part one
 part_one_edge_rule_fn = lambda curr_node, adj_node: ord(adj_node.height) - ord(curr_node.height) <= 1
 
+## Dijkstra's
 # first try my own dijstra implementation, then try this:
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.dijkstra.html
-def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, screenshotter=None):
+def dijstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _animate=False, screenshotter=None):
     '''
     Arguments
         nodes: dictionary
@@ -417,9 +421,10 @@ def dijstras_shortest_path(nodes, start_coords, end_coords, _animate=False, scre
 
         # 5. Check for termination
         if current_coords == end_coords:
-            print('Num edges processed: ', edges_processed)
-            print('Num nodes processed: ', nodes_processed)
-            print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
+            if print_stats:
+                print('Num edges processed: ', edges_processed)
+                print('Num nodes processed: ', nodes_processed)
+                print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
             shortest_path_len = tentative_distance_from_start[current_coords]
             path_from_start_to_end = nodes[current_coords].shortest_path_from_start + [current_coords]
             return shortest_path_len, path_from_start_to_end
@@ -495,6 +500,7 @@ def dijkstras_longest_path(nodes, start_coords, end_coords):
     longest_path = reconstruct_path(camefrom, end_coords)
     return longest_path_len, longest_path
 
+## A*
 def manhattan_distance(point_one, point_two):
     '''Returns the "Manhattan", or 4-way grid, distance between two points.
 
@@ -622,7 +628,7 @@ def height_f_of_n_negdotprod(*, current_node, neighbor_node, end_node, g_of_n, h
     height_diff, dotprod, f_of_n = height_dotprod_f_of_n(current_node=current_node, neighbor_node=neighbor_node, end_node=end_node, g_of_n=g_of_n, h_of_n=h_of_n)
     return (height_diff, f_of_n, -1*dotprod)
 
-def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fscore_fn=default_f_of_n, _animate=False, screenshotter=None):
+def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fscore_fn=default_f_of_n, print_stats=True, revisiting_allowed=True, _animate=False, screenshotter=None):
     '''Find the shortest path from start to end.  The heuristic function is used to determine next-node selection.
     
     Inputs:
@@ -675,18 +681,22 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
     nodes_processed = 0
 
     # heuristic consistency check
-    visited_set = set()
+    if not revisiting_allowed:
+        visited_set = set()
 
     ## Running the search
     while len(exploration_boundary) > 0:
         (_, _, current) = heapq.heappop(exploration_boundary)
         exploration_boundary_set.remove(current)
-        visited_set.add(current)  # consistency check
+        # for heuristic consistency check
+        if not revisiting_allowed:
+            visited_set.add(current)
 
         if current == end:
-            print('Num edges processed: ', edges_processed)
-            print('Num nodes processed: ', nodes_processed)
-            print(f'Num nodes visited: ', len([x for x in shortest_known_path_from_start.values() if x < math.inf]))
+            if print_stats:
+                print('Num edges processed: ', edges_processed)
+                print('Num nodes processed: ', nodes_processed)
+                print(f'Num nodes visited: ', len([x for x in shortest_known_path_from_start.values() if x < math.inf]))
             shortest_path = reconstruct_path(camefrom, end)
             # the puzzle want the number of steps from start -> end, which is one less than number of nodes in shortest path
             return len(shortest_path) - 1, shortest_path
@@ -695,7 +705,7 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
         for edge in nodes[current].connections:
             
             # heuristic consistency check
-            if edge.node_to_coords in visited_set:
+            if not revisiting_allowed and edge.node_to_coords in visited_set:
                 continue
             edges_processed += 1
 
@@ -736,6 +746,38 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
                 iteration = len([dist for dist in shortest_known_path_from_start.values() if dist < math.inf])
                 screenshot.screenshot(screenshotter, params, sim_iteration=f'{iteration}', savefolder='day12')
 
+
+def part_two(nodes, end_coords):
+
+    candidate_a_tiles = []
+    for node in nodes.values():
+
+        # we need to start at an 'a'
+        if node.height != 'a':
+            continue
+
+        # look through all edges -- does it point to a 'b'?
+        # shortest possible path up would be a -> b -> c -> ... -> z
+        for edge in node.connections:
+            neighbor = nodes[edge.node_to_coords]
+            if neighbor.height == 'b':
+                candidate_a_tiles.append(node.coords)
+                break
+    
+    # now, find the shortest path among the candidate a tiles:
+    results = []
+    for a_tile_coords in candidate_a_tiles:
+        pathlen, steps = a_star_shortest_path(
+            nodes=nodes,
+            start=a_tile_coords,
+            end=end_coords,
+            fscore_fn=height_fofn_hofn,
+            print_stats=False
+        )
+        results.append((pathlen, steps, a_tile_coords))
+
+    results.sort(key=lambda x: x[0])
+    return results[0]
 
 if __name__ == '__main__':
     
@@ -778,6 +820,12 @@ if __name__ == '__main__':
             heightcolors=True
         ))
 
+        ##### PART TWO
+        best_path_len, best_path, coords = part_two(nodes, end_node.coords)
+        print(f'Shortest overall path: {best_path_len} from coords {coords}')
+        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, best_path, heightcolor=True, arrowcolor='\033[48;5;245m\033[38;5;126m'))
+
+        ##### PART ONE
 
         ### Run a single algorithm and print out the results
 
