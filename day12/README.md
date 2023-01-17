@@ -313,17 +313,17 @@ The last fscore I tried involved using *h(n)* as a tie-breaker for height/*f(n)*
 
 The comparison animations above only show one side of the story -- what the shortest path looks like.  I would also like to compare these approaches based on how they process the graph, in terms of shortest path, number of nodes processed (all neighbors considered), number of nodes visited (distance from start is finite), and number of edges processed.
 
-| Strategy | Shortest Path Length | Nodes Processed | Nodes Visited | New Edges Processed | Total Edges Processed |
-| - | - | - | - | - | - |
-| Dijkstra's                            |    380             |   4549   |   4549   |   7974   |  16482   |
-| A* `f(n)`                             |    380             |   4676   |   4538   |   7904   |  16913   |
-| A* `(height_diff, f(n))`              |    380             |   2573   |   3293   |   5398   |   9916   |
-| A* `(height_diff, f(n), h(n))`        |    382 (380)       | **2571** |   3286   |   5381   | **9908** |
-| A* `(height_diff, dotprod, f(n))`     |  **650** (**510**) |   8415   |   4131   |   6657   |  31033   |
-| A* `(height_diff, f(n), dotprod)`     |    380             |   3046   |   3675   |   6278   |  11108   |
-| A* `(height_diff, f(n), theta)`       |    382 (380)       |   3100   |   3672   |   6257   |  11252   |
-| A* `(height_diff, f(n), neg_dotprod)` |    382 (380)       |   3100   |   3672   |   6277   |  11252   |
-| A* `(height_diff, neg_dotprod, f(n))` |    390 (380)       |   2644   | **3166** | **5190** |   9593   |
+| Strategy | Shortest Path Length | New Nodes Processed | Total Nodes Processed | New Nodes Visited | Total Nodes Visited | New Edges Processed | Total Edges Processed |
+| - | - | - | - | - | - | - | - |
+| Dijkstra's                            |    380             |   4549   |  4549   | 4549 |   4549   |   7974   |  16482   |
+| A* `f(n)`                             |    380             |   4525   |  4676   | 4538 |   4538   |   7904   |  16913   |
+| A* `(height_diff, f(n))`              |    380             |   4548   |  2548   | 3305 |   3293   |   5398   |   9916   |
+| A* `(height_diff, f(n), h(n))`        |    382 (380)       |   2530   |**2571** | 3299 |   3286   |   5381   | **9908** |
+| A* `(height_diff, dotprod, f(n))`     |  **650** (**510**) |   2921   |  8415   | 4131 |   4131   |   6657   |  31033   |
+| A* `(height_diff, f(n), dotprod)`     |    380             |   3041   |  3046   | 3675 |   3675   |   6278   |  11108   |
+| A* `(height_diff, f(n), theta)`       |    382 (380)       |   3032   |  3100   | 3673 |   3672   |   6257   |  11252   |
+| A* `(height_diff, f(n), neg_dotprod)` |    382 (380)       |   3032   |  3100   | 3673 |   3672   |   6277   |  11252   |
+| A* `(height_diff, neg_dotprod, f(n))` |    390 (380)       | **2484** |  2644   | 3166 | **3166** | **5190** |   9593   |
 
 Notable points:
 - A* `(height_diff, f(n), h(n))`
@@ -341,11 +341,9 @@ My original implementation of A* doesn't have a similar notion of "visited", so 
         
 An inconsistent heuristic cannot guarantee that an optimal path will be found without nodes being processed more than once, and additional nodes means additional edges.  If my heuristics are *consistent*, I can formulate a `visited_set` of nodes.
 
-I implemented this in the A* routine, and now the table differentiates between new edges and total edges processed.
+I implemented this in the A* routine, and now the table differentiates between new and total edges processed, as well as new and total nodes visited/processed.
 
-Note that my incosistent, inadmissable heuristic `(height_diff, dotprod, f(n))` has a longer path with the new code because previously-seen edges are skipped.  The shortest path with edge-reprocessing allowed is shown in parantheses.
-
-I didn't expect any of the other heuristics to yield an inoptimal shortest path, but four others did.
+Five of the heuristics yeilded less optimal shortest paths with the `visited_set`, and all of them seem to be inconsistent since new/total nodes processed $\neq$ new/total nodes visited, which means that nodes are being processed more than one time.
 
 
 ### Longest path?
