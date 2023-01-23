@@ -125,7 +125,82 @@ def parse_input_file_into_packet_pairs(inputfile, method='iterative', _print=Fal
         packet_pairs[i//3].append(parsed_line)
 
     return packet_pairs
-        
+
+### part one
+ORDER_CORRECT = 1
+ORDER_INCORRECT = 2
+ORDER_INDETERMINATE = 3
+
+def determine_order_correctness(lhs, rhs, pairnum=None, indentlevel=0):
+    prefix = '  '*indentlevel  + '- '
+    resultprefix = '  '*(indentlevel + 1) + '- '
+    
+    print_str = ''
+    if indentlevel == 0:
+        print_str += f'== Pair {pairnum} ==\n'
+    lhs_str = generate_list_str(lhs) if isinstance(lhs, list) else str(lhs)
+    rhs_str = generate_list_str(rhs) if isinstance(rhs, list) else str(rhs)
+    print_str += f'{prefix}Compare {lhs_str} vs {rhs_str}\n'
+    
+    # int vs int
+    if isinstance(lhs, int) and isinstance(rhs, int):
+        if lhs < rhs:
+            print_str += f'{resultprefix}Left side is smaller, so inputs are in the right order\n'
+            return ORDER_CORRECT, print_str
+        elif rhs < lhs:
+            print_str += f'{resultprefix}Right side is smaller, so inputs are not in the right order\n'
+            return ORDER_INCORRECT, print_str
+        else:
+            return ORDER_INDETERMINATE, print_str
+
+    # list vs list
+    elif isinstance(lhs, list) and isinstance(rhs, list):
+        # go through all items -- stop at first instance of (in)correct order
+        for litem, ritem in zip(lhs, rhs):
+            result, sub_print_str = determine_order_correctness(litem, ritem, indentlevel=indentlevel+1)
+            if result in [ORDER_CORRECT, ORDER_INCORRECT]:
+                return result, print_str + sub_print_str
+            print_str += sub_print_str
+        # tie-breaker - list lengths
+        if len(lhs) < len(rhs):
+            print_str += f'{resultprefix}Left side ran out of items, so inputs are in the right order\n'
+            return ORDER_CORRECT, print_str
+        elif len(rhs) < len(lhs):
+            print_str += f'{resultprefix}Right side ran out of items, so inputs are not in the right order\n'
+            return ORDER_INCORRECT, print_str
+        else:
+            return ORDER_INDETERMINATE, print_str
+
+    # list vs int
+    else:
+        lhs_int = isinstance(lhs, int)
+        side       = 'left'     if lhs_int else 'right'
+        value      = lhs        if lhs_int else rhs
+
+        print_str += f'{resultprefix}Mixed types; convert {side} to [{value}] and retry comparison\n'
+        result, sub_print_str = determine_order_correctness(
+            lhs = [lhs] if lhs_int else lhs, 
+            rhs = rhs if lhs_int else [rhs], 
+            indentlevel=indentlevel + 1
+        )
+        return result, print_str + sub_print_str
+
+
+def part_one_find_all_correct_pairs(packet_pairs, _print=False):
+    correct_order_pair_numbers = []
+    for _i, (lhs, rhs) in enumerate(packet_pairs):
+        i = _i + 1
+        order, print_str = determine_order_correctness(lhs, rhs, pairnum=i)
+        if _print:
+            print(print_str)
+        if order == ORDER_CORRECT:
+            correct_order_pair_numbers.append(i)
+    return correct_order_pair_numbers
+
+def part_one_obtain_sum(packet_pairs, _print=False):
+    return sum(part_one_find_all_correct_pairs(packet_pairs, _print=_print))
+
 
 if __name__ == '__main__':
-    parse_input_file_into_packet_pairs('input.txt', method='recursive', _print=True)
+    packet_pairs = parse_input_file_into_packet_pairs('input.txt', method='recursive', _print=False)
+    print(f'Part one: sum of correct_order indices = {part_one_obtain_sum(packet_pairs)}')
