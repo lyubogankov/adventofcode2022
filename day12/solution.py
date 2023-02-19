@@ -1,4 +1,5 @@
 # std library
+import copy
 import heapq
 import math
 import pdb
@@ -77,13 +78,14 @@ height_colorcode_map = {
 #     height_colorcode_map[letter] = 183 - (i-3)
 height_color_map = {chr : f'\033[38;5;{color}m' for chr, color in height_colorcode_map.items()}
 
-### input file -> data structure
-Node = namedtuple('Node', ['height', 'coords', 'connections', 'shortest_path_from_start'])
+### input file -> data structure --------------------------------------------------------------------------------------
+Node = namedtuple('Node', ['height', 'coords', 'connections', 'shortest_path_from_start', 'flags'])
+def initialize_node(height, coords):
+    return Node(height=height, coords=coords, connections=set(), shortest_path_from_start=[], flags={'pruned': False})
 # Edge = namedtuple('Edge', ['weight', 'node_one_coords', 'node_two_coords'])  # undirected edge
 DirectedEdge = namedtuple('DirectedEdge', ['weight', 'node_to_coords'])  # edges belong to nodes, so the "from" is the node to which the edge belongs
 
 def parse_input_into_graph(inputfile, edge_rule_fn):
-    # return the start node as the graph?
 
     with open(inputfile, 'r') as f:
         lines = list(f)
@@ -96,11 +98,11 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
     for y, row in enumerate(reversed(lines)):
         for x, node_height in enumerate(row.rstrip()):  # looping over each character in the row str
             if node_height == 'S':
-                start_node = node = Node(height='a', coords=(x, y), connections=set(), shortest_path_from_start=[])  # previously, Point_2D(x, y)
+                node = start_node = initialize_node(height='a',  coords=(x, y))
             elif node_height == 'E':
-                end_node   = node = Node(height='z', coords=(x, y), connections=set(), shortest_path_from_start=[])  # previously, Point_2D(x, y)
+                node = end_node   = initialize_node(height='z',  coords=(x, y))
             else:
-                node = Node(height=node_height, coords=(x, y), connections=set(), shortest_path_from_start=[])  # previously, Point_2D(x, y)
+                node              = initialize_node(node_height, coords=(x, y))
 
             # this is how I'm looking up the nodes
             nodes[(x, y)] = node
@@ -108,26 +110,25 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
             # form connections between this node and prior nodes, if applicable
                                              # left neighbor,     bottom neighbor
             for condition, neighborcoords in [(x > 0, (x-1, y)), (y > 0, (x, y-1))]:
-                if condition:
-                    neighbor = nodes[neighborcoords]  # either to the left, or below current node
-                    if edge_rule_fn(node, neighbor):
-                        edge = DirectedEdge(
-                            weight=1,
-                            # node_from_coords=node.coords,
-                            node_to_coords=neighbor.coords
-                        )
-                        node.connections.add(edge)
-                    if edge_rule_fn(neighbor, node):
-                        edge = DirectedEdge(
-                            weight=1,
-                            # node_from_coords=neighbor.coords,
-                            node_to_coords=node.coords
-                        )
-                        neighbor.connections.add(edge)
+                if not condition:
+                    continue
+                neighbor = nodes[neighborcoords]  # either to the left, or below current node
+                if edge_rule_fn(node, neighbor):
+                    edge = DirectedEdge(
+                        weight=1,
+                        node_to_coords=neighbor.coords
+                    )
+                    node.connections.add(edge)
+                if edge_rule_fn(neighbor, node):
+                    edge = DirectedEdge(
+                        weight=1,
+                        node_to_coords=node.coords
+                    )
+                    neighbor.connections.add(edge)
 
     return start_node, end_node, nodes
 
-### printing
+### printing ----------------------------------------------------------------------------------------------------------
 def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, end_coords=None, connected=False, heightcolors=False):
 
     WIDTH_BETWEEN_CHARS_X = 5
@@ -226,7 +227,7 @@ def direction_arrow_for_node_from(node_from_coords, node_to_coords):
     else:
         raise Exception(f'Unexpected coord pair: {node_from_coords} -> {node_to_coords}')
 
-def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_coords=[],unvisited_set=set(), current_coords=None, heightcolor=False, arrowcolor=WHITE):
+def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_coords=[], unvisited_set=set(), current_coords=None, heightcolor=False, arrowcolor=WHITE):
 
     if shortest_path_coords:
         from_to_pairs = zip(shortest_path_coords[:-1], shortest_path_coords[1:])
@@ -252,6 +253,8 @@ def generate_annotated_print_str(grid_width, grid_height, nodes, shortest_path_c
                 color = GREEN
             elif unvisited_set:
                 color = BLACK if (x, y) in unvisited_set else height_color_map[height]
+            elif nodes[(x, y)].flags['pruned']:
+                color = BLACK
             # default case - coloring for shortest path
             elif heightcolor:
                 color = height_color_map[height]
@@ -334,13 +337,8 @@ def generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, 
         print_str = row_str + '\n' + print_str
     return print_str
 
-### part one
-part_one_edge_rule_fn = lambda curr_node, adj_node: ord(adj_node.height) - ord(curr_node.height) <= 1
-
-## Dijkstra's
-# first try my own dijstra implementation, then try this:
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.dijkstra.html
-def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _animate=False, screenshotter=None):
+## Dijkstra's ---------------------------------------------------------------------------------------------------------
+def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _animate=False, screenshotter=None, return_unvisited=False):
     '''
     Arguments
         nodes: dictionary
@@ -349,6 +347,16 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
             (x, y) coordinates of start node
         end_coords: 2-tuple of integers
             (x, y) coordinates of end node
+
+    Optional Arguments
+        print_stats: bool
+            On return, print out nodes/edges processed
+        _animate: bool
+            Create animation of algorithm running
+        screenshotter: mss.mss()
+            Take screenshots (for animation)
+        return_unvisited: bool
+            Instead of returning shortest path + length, return set of unvisited coords
     
     Returns
         shortest_path_len: int
@@ -356,13 +364,19 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
         shortest_path: list of Nodes
             From start -> end, each node visited.  Can be used to print the path.
     
+        OR
+        unvisited_set: set of tuples of integers
+            (x, y) coordinates of all unvisited Nodes
+
     From https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+
+    first try my own dijkstra implementation, then try this?
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.dijkstra.html
 
     shortest path: 380
     Num edges processed: 7974
     Num nodes visited:   4549/4633
     '''
-    
     ## Setup
     grid_height = max(y+1 for (x, y) in nodes.keys())
     grid_width  = max(x+1 for (x, y) in nodes.keys())
@@ -378,9 +392,9 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
     tentative_distance_from_start = {coords : math.inf for coords in unvisited_coords}
     tentative_distance_from_start[start_coords] = 0
 
-    ## Run Dijstra's alg!
+    ## Run Dijkstra's alg!  Keep running until we've visited all *reachable* nodes.
     current_coords = start_coords
-    while len(unvisited_coords) > 0:
+    while len([coords for coords in unvisited_coords if tentative_distance_from_start[coords] < math.inf]) > 0:
 
         # 3. For current node, look at all of its unvisited edges and calculate distance from start -> neighbor.
         for edge in nodes[current_coords].connections:
@@ -419,31 +433,32 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
             if ANIMATION_GIF_MODE:
                 screenshot.screenshot(screenshotter, params, sim_iteration=f'{len(nodes) - len(unvisited_coords)}', savefolder='day12')
 
-        # 5. Check for termination
-        if current_coords == end_coords:
-            if print_stats:
-                print('Num edges processed: ', edges_processed)
-                print('Num nodes processed: ', nodes_processed)
-                print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
-            shortest_path_len = tentative_distance_from_start[current_coords]
-            path_from_start_to_end = nodes[current_coords].shortest_path_from_start + [current_coords]
-            return shortest_path_len, path_from_start_to_end
+        # 5. Check for termination (if return_unvisited, we want to visit the entire graph)
+        if current_coords == end_coords and not return_unvisited:
+            break
 
         # 6. Select next node!
-        min_tentative_distance = math.inf
-        for coords in unvisited_coords:
-            if tentative_distance_from_start[coords] < min_tentative_distance:
-                current_coords = coords
-                min_tentative_distance = tentative_distance_from_start[coords]
+        if len(unvisited_coords) > 0:
+            current_coords = min(unvisited_coords, key=lambda c: tentative_distance_from_start[c])
 
     # terminate after looking at the whole graph
+    if return_unvisited:
+        return unvisited_coords
+    if print_stats:
+        print('Num edges processed: ', edges_processed)
+        print('Num nodes processed: ', nodes_processed)
+        print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
     shortest_path_len = tentative_distance_from_start[end_coords]
     path_from_start_to_end = nodes[end_coords].shortest_path_from_start + [end_coords]
     return shortest_path_len, path_from_start_to_end
 
-# DID NOT WORK
 def dijkstras_longest_path(nodes, start_coords, end_coords):
-
+    '''
+    DID NOT WORK
+        On the wiki page for Dijkstra's algorithm is a discussion of types of graphs the alg can handle.
+        Notably, it cannot handle graphs with negative edge weights because it'd get stuck in a cycle.
+        The longest path problem is simliar to shortest path with negative weights.
+    '''
     edges_processed = 0
     nodes_processed = 0
 
@@ -457,7 +472,7 @@ def dijkstras_longest_path(nodes, start_coords, end_coords):
     tentative_distance_from_start = {coords : -math.inf for coords in unvisited_coords}  
     tentative_distance_from_start[start_coords] = 0
 
-    ## Run Dijstra's alg!
+    ## Run Dijkstra's alg!
     current_coords = start_coords
     while len(unvisited_coords) > 0:
         print(f'Visiting new node: {current_coords}')
@@ -499,7 +514,7 @@ def dijkstras_longest_path(nodes, start_coords, end_coords):
     longest_path = reconstruct_path(camefrom, end_coords)
     return longest_path_len, longest_path
 
-## A*
+## A* -----------------------------------------------------------------------------------------------------------------
 def manhattan_distance(point_one, point_two):
     '''Returns the "Manhattan", or 4-way grid, distance between two points.
 
@@ -745,6 +760,8 @@ def a_star_shortest_path(nodes, start, end, heuristic_fn=manhattan_distance, fsc
                 iteration = len([dist for dist in shortest_known_path_from_start.values() if dist < math.inf])
                 screenshot.screenshot(screenshotter, params, sim_iteration=f'{iteration}', savefolder='day12')
 
+### puzzle ------------------------------------------------------------------------------------------------------------
+part_one_edge_rule_fn = lambda curr_node, adj_node: ord(adj_node.height) - ord(curr_node.height) <= 1
 
 def part_two(nodes, end_coords):
 
@@ -780,12 +797,66 @@ def part_two(nodes, end_coords):
     #     print(len, coords)
     return results[0]
 
+## Longest Path -------------------------------------------------------------------------------------------------------
+def prune_node(nodes, coords_to_prune):
+    for edge in nodes[coords_to_prune]:
+        neighbor_coords = edge.node_to_coords
+        # remove node from neihbor's connection, if needed
+        nodes[neighbor_coords].connections.discard(DirectedEdge(1, coords_to_prune))
+        # remove neighbor from node's connection, if needed
+        nodes[coords_to_prune].connections.discard(DirectedEdge(1, neighbor_coords))
+    nodes[coords_to_prune].pruned = True
+
+def prune_graph(nodes, start_coords, end_coords):
+    '''Prunes `nodes` graph in-place -- removes all nodes that cannot reach either start or end.'''
+    unreachable_from_start = dijkstras_shortest_path(nodes, start_coords=start_coords, end_coords=end_coords, return_unvisited=True)
+    unreachable_from_end   = dijkstras_shortest_path(nodes, start_coords=end_coords, end_coords=start_coords, return_unvisited=True)
+    for coords in unreachable_from_start.union(unreachable_from_end):
+        prune_node(nodes, coords)
+
+def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=False):
+
+    prune_graph(nodes, start_coords, end_coords)
+    
+    explored_paths = [[start_coords]]
+    paths_from_start_to_end = []
+    
+    while explored_paths != []:
+        path_from_start_to_current = explored_paths.pop()
+        current_coords = path_from_start_to_current[-1]
+        if _print:
+            print(f'{current_coords}                    {path_from_start_to_current}')
+    
+        for edge in nodes[current_coords].connections:
+            neighbor_coords = edge.node_to_coords
+            if _print:
+                print(f'\t{neighbor_coords}', end='')
+            
+            if neighbor_coords in path_from_start_to_current or neighbor_coords == end_coords:
+                if neighbor_coords == end_coords:
+                    paths_from_start_to_end.append(copy.copy(path_from_start_to_current) + [neighbor_coords])
+                if _print:
+                    print('\n', end='')
+                continue
+
+            explored_paths.append(copy.copy(path_from_start_to_current) + [neighbor_coords])
+            if _print:
+                print(' - append')
+    paths_from_start_to_end.sort(key=len, reverse=True)
+    return paths_from_start_to_end
+
+def longest_path(nodes, start_coords, end_coords, _print=False):
+    paths_from_start_to_end = find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print)
+    longest_path = paths_from_start_to_end[0]
+    return len(longest_path), longest_path
+
+# ---------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     
     if ANIMATION_GIF_MODE:
         screenshotter = screenshot.mss.mss()
 
-    for inputfile in ['example.txt']: # ['example.txt', 'input.txt']:
+    for inputfile in ['input.txt']: # ['example.txt', 'input.txt']:
         example = inputfile == 'example.txt'
         if example:
             grid_width = 8
@@ -812,6 +883,18 @@ if __name__ == '__main__':
             ))
         print('\n\n')
         print(generate_print_str_graph(
+            nodes,
+            grid_width,
+            grid_height,
+            start_coords=start_node.coords,
+            end_coords=end_node.coords,
+            connected=False,
+            heightcolors=True
+        ))
+
+        prune_graph(nodes, start_node.coords, end_node.coords)
+        # TODO -- print this out
+        print(generate_annotated_print_str_graph(
             nodes,
             grid_width,
             grid_height,
@@ -875,10 +958,18 @@ if __name__ == '__main__':
         # print(generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, shortest_paths))
 
         
-        # ### Dijkstra's longest path
-        dlongest_path_len, dpath_from_start_to_end = dijkstras_longest_path(nodes, start_node.coords, end_node.coords)
-        print(f'Longest path length from S -> E: {dlongest_path_len}', end='\n\n')
-        print(generate_print_str_shortest_path(grid_width, grid_height, nodes, dpath_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+        # ### Dijkstra's longest path -- doesn't work
+        # dlongest_path_len, dpath_from_start_to_end = dijkstras_longest_path(nodes, start_node.coords, end_node.coords)
+        
+        # ### My longest path
+        # longest_path_len, path_from_start_to_end = longest_path(nodes, start_node.coords, end_node.coords)
+        # print(f'Longest path length from S -> E: {longest_path_len}', end='\n\n')
+        # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
+
+        # all_paths = find_all_paths_from_start_to_end(nodes, start_node.coords, end_node.coords)
+        # for path in all_paths:
+        #     print(f'Path length from S -> E: {len(path)}', end='\n\n')
+        #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
     if ANIMATION_GIF_MODE:
         screenshotter.close()

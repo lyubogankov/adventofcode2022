@@ -34,7 +34,7 @@ abdefghi
             inputfile='example.txt',
             edge_rule_fn=solution.part_one_edge_rule_fn
         )
-        shortest_path_len, _ = solution.dijstras_shortest_path(
+        shortest_path_len, _ = solution.dijkstras_shortest_path(
             nodes, start_node.coords, end_node.coords, print_stats=False)
         self.assertEqual(shortest_path_len, 31)
 
@@ -50,7 +50,7 @@ abdefghi
             inputfile='example.txt',
             edge_rule_fn=solution.part_one_edge_rule_fn
         )
-        shortest_path_len, path_from_start_to_end = solution.dijstras_shortest_path(
+        shortest_path_len, path_from_start_to_end = solution.dijkstras_shortest_path(
             nodes, start_node.coords, end_node.coords, print_stats=False
         )
         shortest_path_printout = solution.generate_print_str_shortest_path(
