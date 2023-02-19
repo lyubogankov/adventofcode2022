@@ -411,3 +411,9 @@ Five of the heuristics yeilded less optimal shortest paths with the `visited_set
     - Tried running dijkstra S->E and returning unvisited nodes -- those are the ones unreachable from start
         - That doesn't reduce the number of nodes in the graph by much, though, and doesn't address the problem of the `a`-pits
     - Ran dijkstra-like alg from S, looking for all nodes that are bidirectionally connected to start.  This gets rid of the `a`-pits, but also most of the hill!  No good.
+    - Got a working solution!  First dijkstra S->E, then iterate over remaining unvisited nodes and check whether they can reach end.  If not, prune them and their neighbors!
+        - first  tried prune_nodes -- look at the node-to-remove's connections, and remove node from those neighbors
+            - However -- this is not sufficient!  This only removed bidir connections, not the c->a connections (`a`-pits were still accessible!)
+            - Changed to try removing node from the four nodes to which it could be connected (N, E, S, W)
+    - Noticed that some sections of graph are dead-ends -- try to prune those, as well!
+        - 

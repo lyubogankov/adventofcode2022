@@ -11,7 +11,7 @@ from pprint import pprint
 # third party
 import numpy as np
 # local
-ANIMATION_GIF_MODE = True
+ANIMATION_GIF_MODE = False
 if ANIMATION_GIF_MODE:
     _file = os.path.dirname(f'{os.getcwd()}/{__file__}')
     sys.path.append(f'{os.path.dirname(_file)}/common')
@@ -130,10 +130,10 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
     return start_node, end_node, nodes
 
 ### printing ----------------------------------------------------------------------------------------------------------
-def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, end_coords=None, connected=False, heightcolors=False):
+def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, end_coords=None, connected=False, heightcolors=False, showpruned=False):
 
-    WIDTH_BETWEEN_CHARS_X = 5
-    WIDTH_BETWEEN_CHARS_Y = 2
+    WIDTH_BETWEEN_CHARS_X = 1
+    WIDTH_BETWEEN_CHARS_Y = 1
     ARROW_COLOR = '\033[38;5;39m'
     print_str = ''
 
@@ -146,34 +146,26 @@ def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, 
             # check whether the node to the left is connected to current node
             if x > 0 and connected:
                 left_neighbor = nodes[(x-1, y)]
-                neighb_to_node = DirectedEdge(
-                    weight=1,
-                    # node_from_coords=left_neighbor.coords,
-                    node_to_coords=curr_node.coords
-                )
-                node_to_neighb = DirectedEdge(
-                    weight=1,
-                    # node_from_coords=curr_node.coords,
-                    node_to_coords=left_neighbor.coords
-                )
+                neighb_to_node = DirectedEdge(weight=1, node_to_coords=    curr_node.coords)
+                node_to_neighb = DirectedEdge(weight=1, node_to_coords=left_neighbor.coords)
 
                 right_conn = neighb_to_node in left_neighbor.connections
                 left_conn = node_to_neighb in curr_node.connections
-                row_str += ' '
                 if left_conn or right_conn:
                     row_str += ARROW_COLOR
-                    row_str += '<' if left_conn else '-'
-                    row_str += '-'
-                    row_str += '>' if right_conn else '-'
+                    if left_conn and right_conn: row_str += '-'
+                    elif left_conn:              row_str += '<'
+                    elif right_conn:             row_str += '>'
                     row_str += RESET
                 else:
-                    row_str += ' '*(WIDTH_BETWEEN_CHARS_X - 2)
-                row_str += ' '
+                    row_str += ' '*(WIDTH_BETWEEN_CHARS_X)
 
             if (x, y) == start_coords:
                 row_str += 'S'
             elif (x, y) == end_coords:
                 row_str += 'E'
+            elif showpruned and curr_node.flags['pruned']:
+                row_str += f'{BLACK}{curr_node.height}{RESET}'
             elif heightcolors:
                 row_str += f'{height_color_map[curr_node.height]}{curr_node.height}{RESET}'
             else:
@@ -181,40 +173,27 @@ def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, 
 
         # if applicable, check last two lines for any connections
         if y > 0 and connected:
-            between_rows_str_top = ''
-            between_rows_str_bot = ''
+            between_rows_str = ''
             for x in range(grid_width):
                 curr_node = nodes[(x, y)]
                 bottom_neighbor = nodes[(x, y-1)]
-
-                neighb_to_node = DirectedEdge(
-                    weight=1,
-                    # node_from_coords=bottom_neighbor.coords,
-                    node_to_coords=curr_node.coords
-                )
-                node_to_neighb = DirectedEdge(
-                    weight=1,
-                    # node_from_coords=curr_node.coords,
-                    node_to_coords=bottom_neighbor.coords
-                )
+                neighb_to_node = DirectedEdge(weight=1, node_to_coords=      curr_node.coords)
+                node_to_neighb = DirectedEdge(weight=1, node_to_coords=bottom_neighbor.coords)
 
                 top_conn = neighb_to_node in bottom_neighbor.connections
                 bot_conn = node_to_neighb in curr_node.connections
                 if top_conn or bot_conn:
-                    between_rows_str_top += ARROW_COLOR
-                    between_rows_str_bot += ARROW_COLOR
-                    between_rows_str_top += '^' if top_conn else '|'
-                    between_rows_str_bot += 'v' if bot_conn else '|'
-                    between_rows_str_top += RESET
-                    between_rows_str_bot += RESET
+                    between_rows_str += ARROW_COLOR
+                    if top_conn and bot_conn: between_rows_str += '|'
+                    elif top_conn:            between_rows_str += '^'
+                    elif bot_conn:            between_rows_str += 'v'
+                    between_rows_str += RESET
                 else:
-                    between_rows_str_top += ''
-                    between_rows_str_top += ''
+                    between_rows_str += ' '
                 
                 if x < grid_width - 1:
-                    between_rows_str_top += ' '*WIDTH_BETWEEN_CHARS_X
-                    between_rows_str_bot += ' '*WIDTH_BETWEEN_CHARS_X
-            print_str = between_rows_str_top + '\n' + between_rows_str_bot + '\n' + print_str
+                    between_rows_str += ' '*WIDTH_BETWEEN_CHARS_X
+            print_str = between_rows_str + '\n' + print_str
         print_str = row_str + '\n' + print_str
     return print_str
 
@@ -801,11 +780,16 @@ def part_two(nodes, end_coords):
     return results[0]
 
 ## Longest Path -------------------------------------------------------------------------------------------------------
-def prune_node(nodes, coords_to_prune):
+def prune_node(grid_width, grid_height, nodes, coords_to_prune):
+    '''Remove this node from connection sets of all potential neighbor nodes, and clear its connections.'''
+    
     # remove node from neihbors' connections, if needed
-    for edge in nodes[coords_to_prune].connections:
-        neighbor_coords = edge.node_to_coords
-        nodes[neighbor_coords].connections.discard(DirectedEdge(1, coords_to_prune))
+    (x, y) = nodes[coords_to_prune].coords
+    if x > 0:               nodes[(x-1, y  )].connections.discard(DirectedEdge(1, coords_to_prune)) # S neighbor
+    if y > 0:               nodes[(x,   y-1)].connections.discard(DirectedEdge(1, coords_to_prune)) # W
+    if x < grid_width  - 1: nodes[(x+1, y  )].connections.discard(DirectedEdge(1, coords_to_prune)) # N
+    if y < grid_height - 1: nodes[(x,   y+1)].connections.discard(DirectedEdge(1, coords_to_prune)) # E
+
     # delete all outgoing connections from this node (empty the set)
     nodes[coords_to_prune].connections.clear()
     nodes[coords_to_prune].flags['pruned'] = True
@@ -830,7 +814,7 @@ def find_connected_nodes(nodes, start_coords, bidir):
         visited_coords.add(current_coords)
     return visited_coords
 
-def prune_graph(nodes, start_coords, end_coords, _animate=False, screenshotter=None):
+def prune_graph(grid_width, grid_height, nodes, start_coords, end_coords, prune_dead_ends, _animate=False, screenshotter=None):
     '''Prunes `nodes` graph in-place.  Remove nodes unreachable from start, that cannot reach end.'''
 
     def animate(iteration):
@@ -843,7 +827,7 @@ def prune_graph(nodes, start_coords, end_coords, _animate=False, screenshotter=N
 
     unreachable_from_start = dijkstras_shortest_path(nodes, start_coords=start_coords, end_coords=end_coords, return_unvisited=True)
     for coords in unreachable_from_start:
-        prune_node(nodes, coords)
+        prune_node(grid_width, grid_height, nodes, coords)
     if _animate: animate(iteration=0)
     
     visited_coords = set()
@@ -856,19 +840,38 @@ def prune_graph(nodes, start_coords, end_coords, _animate=False, screenshotter=N
         # can be reached -- all nodes bidirectionally connected to this one can ALSO reach end
         if path_len < math.inf:
             for bidir_connected_coords in find_connected_nodes(nodes, coords, bidir=True):
+                if bidir_connected_coords in visited_coords:
+                    continue
                 visited_coords.add(bidir_connected_coords)
+                # if this is a dead-end node, prune it.  Need to then re-evaluate the node to which it was connected (and so on).
+                if prune_dead_ends and len(nodes[bidir_connected_coords].connections) == 1:
+                    current_coords = bidir_connected_coords
+                    while len(nodes[current_coords].connections) == 1:
+                        neighbor_coords = list(nodes[current_coords].connections)[0].node_to_coords
+                        prune_node(grid_width, grid_height, nodes, current_coords)
+                        current_coords = neighbor_coords
+                        visited_coords.add(current_coords)
             continue
         # otherwise, can't -- prune this node and all the nodes it's connected to
         for unreachable_coords in find_connected_nodes(nodes, coords, bidir=False):
             visited_coords.add(unreachable_coords)
-            prune_node(nodes, unreachable_coords)
+            prune_node(grid_width, grid_height, nodes, unreachable_coords)
         unreachable_subgraph_count += 1
         if _animate: animate(iteration=unreachable_subgraph_count)
 
-def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=False):
+def prune_unreachable_nodes(grid_width, grid_height, nodes, start_coords, end_coords):
+    prune_graph(grid_width, gridh_height, nodes, start_coords, end_coords, prune_dead_ends=False)
 
-    prune_graph(nodes, start_coords, end_coords)
-    
+def prune_dead_end_nodes(grid_width, grid_height, nodes, start_coords, end_coords)
+    prune_graph(grid_width, gridh_height, nodes, start_coords, end_coords, prune_dead_ends=True )
+
+def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=False):
+    '''Find all possible paths from start -> end.
+
+    Before running this function, strongly recommend running:
+        1) `prune_graph(..., prune_dead_ends=False)`
+        2) `prune_graph(..., prune_dead_ends=True )`
+    '''
     explored_paths = [[start_coords]]
     paths_from_start_to_end = []
     
@@ -897,6 +900,12 @@ def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=Fal
     return paths_from_start_to_end
 
 def longest_path(nodes, start_coords, end_coords, _print=False):
+    '''Find longest path from start -> end.
+    
+    Before running this function, strongly recommend running:
+        1) `prune_graph(..., prune_dead_ends=False)`
+        2) `prune_graph(..., prune_dead_ends=True )`
+    '''
     paths_from_start_to_end = find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print)
     longest_path = paths_from_start_to_end[0]
     return len(longest_path), longest_path
@@ -923,27 +932,44 @@ if __name__ == '__main__':
             edge_rule_fn=part_one_edge_rule_fn
         )
         # print out the input heightmap (potentially as a graph, always w/ color-annotated height)
-        if example:  # input is too large to render like this
-            print(generate_print_str_graph(
-                grid_width,
-                grid_height,
-                nodes,
-                start_coords=start_node.coords,
-                end_coords=end_node.coords,
-                connected=True
-            ))
-        print('\n\n')
+        # if example:  # input is too large to render like this
         print(generate_print_str_graph(
             grid_width,
             grid_height,
             nodes,
             start_coords=start_node.coords,
             end_coords=end_node.coords,
-            connected=False,
-            heightcolors=True
+            connected=True,
+            heightcolors=True,
         ))
+        print('\n\n')
 
-        prune_graph(nodes, start_node.coords, end_node.coords, _animate=True, screenshotter=screenshotter)
+        # pruning step 1 -- remove nodes that can't reach end
+        prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords, prune_dead_ends=False)
+        print(generate_print_str_graph(
+            grid_width,
+            grid_height,
+            nodes,
+            start_coords=start_node.coords,
+            end_coords=end_node.coords,
+            connected=True,
+            heightcolors=True,
+            showpruned=True,
+        ))
+        print('\n\n')
+        # pruning step 2 -- remove dead-end nodes
+        prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords, prune_dead_ends=True )
+        print(generate_print_str_graph(
+            grid_width,
+            grid_height,
+            nodes,
+            start_coords=start_node.coords,
+            end_coords=end_node.coords,
+            connected=True,
+            heightcolors=True,
+            showpruned=True,
+        ))
+        print('\n\n')
 
         ##### PART TWO
         # best_path_len, best_path, coords = part_two(nodes, end_node.coords)
@@ -1001,8 +1027,14 @@ if __name__ == '__main__':
         
         # ### Dijkstra's longest path -- doesn't work
         # dlongest_path_len, dpath_from_start_to_end = dijkstras_longest_path(nodes, start_node.coords, end_node.coords)
-        
+
+
         # ### My longest path
+
+        # # testing graph pruning
+        # prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords, _animate=True, screenshotter=screenshotter)
+    
+        # prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords)
         # longest_path_len, path_from_start_to_end = longest_path(nodes, start_node.coords, end_node.coords)
         # print(f'Longest path length from S -> E: {longest_path_len}', end='\n\n')
         # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
