@@ -398,3 +398,16 @@ An inconsistent heuristic cannot guarantee that an optimal path will be found wi
 I implemented this in the A* routine, and now the table differentiates between new and total edges processed, as well as new and total nodes visited/processed.
 
 Five of the heuristics yeilded less optimal shortest paths with the `visited_set`, and all of them seem to be inconsistent since nodes processed $\neq$ visited, which means that nodes are being processed more than one time.
+
+
+
+## Bonus - longest path
+
+- Tried adapting Dijkstra's alg, but that didn't work!  It gets stuck in cycles (similar issue with running shortest-path Dijkstra on cyclic graph with negative edge weights)
+- Wrote 'naiive' method - find *all* paths from start -> end, and take the longest one (much higher computational complexity than Dijkstra, looked up on Wiki and it's an NP-hard problem)
+    - It worked on the example input (40 nodes with limited options) -- not many paths start -> end (how many?)
+    - It did not complete in a reasonable amt of time (~5 min) on the full input
+- Working on pruning graph
+    - Tried running dijkstra S->E and returning unvisited nodes -- those are the ones unreachable from start
+        - That doesn't reduce the number of nodes in the graph by much, though, and doesn't address the problem of the `a`-pits
+    - Ran dijkstra-like alg from S, looking for all nodes that are bidirectionally connected to start.  This gets rid of the `a`-pits, but also most of the hill!  No good.

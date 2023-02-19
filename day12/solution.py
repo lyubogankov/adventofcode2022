@@ -11,7 +11,7 @@ from pprint import pprint
 # third party
 import numpy as np
 # local
-ANIMATION_GIF_MODE = False
+ANIMATION_GIF_MODE = True
 if ANIMATION_GIF_MODE:
     _file = os.path.dirname(f'{os.getcwd()}/{__file__}')
     sys.path.append(f'{os.path.dirname(_file)}/common')
@@ -22,7 +22,8 @@ if ANIMATION_GIF_MODE:
         width=909,
         height=761-56,
         monitor=1,
-        framefolder='a_star'
+        savefolder='day12',
+        framefolder='longest_path',
     )
 
 ### colors
@@ -129,7 +130,7 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
     return start_node, end_node, nodes
 
 ### printing ----------------------------------------------------------------------------------------------------------
-def generate_print_str_graph(nodes, grid_width, grid_height, start_coords=None, end_coords=None, connected=False, heightcolors=False):
+def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, end_coords=None, connected=False, heightcolors=False):
 
     WIDTH_BETWEEN_CHARS_X = 5
     WIDTH_BETWEEN_CHARS_Y = 2
@@ -338,7 +339,7 @@ def generate_shortest_path_comparison_print_str(grid_width, grid_height, nodes, 
     return print_str
 
 ## Dijkstra's ---------------------------------------------------------------------------------------------------------
-def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _animate=False, screenshotter=None, return_unvisited=False):
+def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=False, _animate=False, screenshotter=None, return_unvisited=False):
     '''
     Arguments
         nodes: dictionary
@@ -360,9 +361,9 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
     
     Returns
         shortest_path_len: int
-            Number of steps in the shortest path
+            Number of steps in the shortest path  (infinity if end is unreachable from start)
         shortest_path: list of Nodes
-            From start -> end, each node visited.  Can be used to print the path.
+            From start -> end, each node visited.  Can be used to print the path.  (empty list if end unreachable from start)
     
         OR
         unvisited_set: set of tuples of integers
@@ -448,6 +449,8 @@ def dijkstras_shortest_path(nodes, start_coords, end_coords, print_stats=True, _
         print('Num edges processed: ', edges_processed)
         print('Num nodes processed: ', nodes_processed)
         print('Num nodes visited: ', len(nodes) - len(unvisited_coords))
+    if end_coords in unvisited_coords:
+        return math.inf, []
     shortest_path_len = tentative_distance_from_start[end_coords]
     path_from_start_to_end = nodes[end_coords].shortest_path_from_start + [end_coords]
     return shortest_path_len, path_from_start_to_end
@@ -799,20 +802,68 @@ def part_two(nodes, end_coords):
 
 ## Longest Path -------------------------------------------------------------------------------------------------------
 def prune_node(nodes, coords_to_prune):
-    for edge in nodes[coords_to_prune]:
+    # remove node from neihbors' connections, if needed
+    for edge in nodes[coords_to_prune].connections:
         neighbor_coords = edge.node_to_coords
-        # remove node from neihbor's connection, if needed
         nodes[neighbor_coords].connections.discard(DirectedEdge(1, coords_to_prune))
-        # remove neighbor from node's connection, if needed
-        nodes[coords_to_prune].connections.discard(DirectedEdge(1, neighbor_coords))
-    nodes[coords_to_prune].pruned = True
+    # delete all outgoing connections from this node (empty the set)
+    nodes[coords_to_prune].connections.clear()
+    nodes[coords_to_prune].flags['pruned'] = True
 
-def prune_graph(nodes, start_coords, end_coords):
-    '''Prunes `nodes` graph in-place -- removes all nodes that cannot reach either start or end.'''
+def find_connected_nodes(nodes, start_coords, bidir):
+    '''Traverse graph and find all nodes that are (bidirectionally) connected to start.
+    Beginning with start node, only look at nodes that are (bidirectionally) connected to current node.
+    '''
+    visited_coords = set()
+    exploration_boundary = {start_coords, }
+
+    while len(exploration_boundary) > 0:
+        current_coords = exploration_boundary.pop()
+
+        # check -- is the neighbor node (bidirectionally) connected to current node?
+        for edge in nodes[current_coords].connections:
+            neighb_coords = edge.node_to_coords
+            if neighb_coords in visited_coords:
+                continue
+            if not bidir or DirectedEdge(weight=1, node_to_coords=current_coords) in nodes[neighb_coords].connections:
+                exploration_boundary.add(neighb_coords)
+        visited_coords.add(current_coords)
+    return visited_coords
+
+def prune_graph(nodes, start_coords, end_coords, _animate=False, screenshotter=None):
+    '''Prunes `nodes` graph in-place.  Remove nodes unreachable from start, that cannot reach end.'''
+
+    def animate(iteration):
+        os.system('clear')  # linux only
+        print(generate_annotated_print_str(grid_width, grid_height, nodes, heightcolor=True,))
+        time.sleep(0.3)
+        # take screenshot
+        if ANIMATION_GIF_MODE:
+            screenshot.screenshot(screenshotter, params, sim_iteration=iteration)
+
     unreachable_from_start = dijkstras_shortest_path(nodes, start_coords=start_coords, end_coords=end_coords, return_unvisited=True)
-    unreachable_from_end   = dijkstras_shortest_path(nodes, start_coords=end_coords, end_coords=start_coords, return_unvisited=True)
-    for coords in unreachable_from_start.union(unreachable_from_end):
+    for coords in unreachable_from_start:
         prune_node(nodes, coords)
+    if _animate: animate(iteration=0)
+    
+    visited_coords = set()
+    unreachable_subgraph_count = 0
+    for coords in nodes:
+        if coords in unreachable_from_start or coords in visited_coords:
+            continue
+        # try to get from current coords -> end
+        path_len, _ = dijkstras_shortest_path(nodes, start_coords=coords, end_coords=end_coords)
+        # can be reached -- all nodes bidirectionally connected to this one can ALSO reach end
+        if path_len < math.inf:
+            for bidir_connected_coords in find_connected_nodes(nodes, coords, bidir=True):
+                visited_coords.add(bidir_connected_coords)
+            continue
+        # otherwise, can't -- prune this node and all the nodes it's connected to
+        for unreachable_coords in find_connected_nodes(nodes, coords, bidir=False):
+            visited_coords.add(unreachable_coords)
+            prune_node(nodes, unreachable_coords)
+        unreachable_subgraph_count += 1
+        if _animate: animate(iteration=unreachable_subgraph_count)
 
 def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=False):
 
@@ -874,35 +925,25 @@ if __name__ == '__main__':
         # print out the input heightmap (potentially as a graph, always w/ color-annotated height)
         if example:  # input is too large to render like this
             print(generate_print_str_graph(
-                nodes,
                 grid_width,
                 grid_height,
+                nodes,
                 start_coords=start_node.coords,
                 end_coords=end_node.coords,
                 connected=True
             ))
         print('\n\n')
         print(generate_print_str_graph(
-            nodes,
             grid_width,
             grid_height,
+            nodes,
             start_coords=start_node.coords,
             end_coords=end_node.coords,
             connected=False,
             heightcolors=True
         ))
 
-        prune_graph(nodes, start_node.coords, end_node.coords)
-        # TODO -- print this out
-        print(generate_annotated_print_str_graph(
-            nodes,
-            grid_width,
-            grid_height,
-            start_coords=start_node.coords,
-            end_coords=end_node.coords,
-            connected=False,
-            heightcolors=True
-        ))
+        prune_graph(nodes, start_node.coords, end_node.coords, _animate=True, screenshotter=screenshotter)
 
         ##### PART TWO
         # best_path_len, best_path, coords = part_two(nodes, end_node.coords)
