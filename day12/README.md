@@ -27,8 +27,6 @@ I briefly pondered writing my own algorithm, but abandoned that when I remembere
 
 #### Visualizing the input
 
-*Really, I generated these images after-the-fact, but structurally it makes the most sense here.*
-
 Previously, I thought only 8 colors could be used in the terminal, but discovered [otherwise](https://stackabuse.com/how-to-print-colored-text-in-python/#256colorsinrawpython) after some web searching.  Some Linux-based OSs support 256 colors in the terminal.  To check support, run the command  `echo $TERM` in the command prompt.  If the return value is `xterm-256color`, the OS supports 256 colors!!
 
 After consoluting a [cheat sheet](https://www.ditig.com/256-colors-cheat-sheet) for the colors and their codes, I colored the the elevations to get a nice gradient on the hills.  I used three rounds of ROYGBIV (rainbow) coloring for contrast between the different elevations:
@@ -41,9 +39,19 @@ In order to use Dijkstra's algorithm for this problem, I needed to turn the inpu
 
 I used `namedtuples` to make two data structures - `Nodes` and `DirectedEdges`.  This made the data structure code simpler but resulted in more complicated print routines.  I was able to modify `Nodes` because `tuples` can contain mutable containers, such as `lists`!
 
-Additionally, to validate my process, I wrote a function to visualize the directed graph.  The full input was too large to display within the command prompt, so here is a printout of the directed graph for the problem description example:
+Additionally, to validate my process, I wrote a function to visualize the directed graph.
 
-![Command-prompt printout of directed graph representation of problem example](../media/day12/example_directed_graph.png)
+This was my first take -- 5 horizontal spaces between characters and 3 lines between characters yielded an approximate square shape!
+
+![Command-prompt printout of directed graph representation of puzzle example](../media/day12/example_directed_graph.png)
+
+However, rendering the graph this way made it impossible to fit the puzzle input's graph onto the screen.  I shrank down the arrows as much as possible, and was able to fit the input graph:
+
+![Command-prompt printout of directed graph representation of puzzle input](../media/day12/input_directed_graph.png)
+
+Below is a zoomed-in portion of the hill: `|` and `-` are bidirectional connections, whereas `>`, `<`, `v` and `^` are one-way.
+
+![Cropped and zoomed-in portion of command-prompt printout of directed graph representation of puzzle input](../media/day12/input_directed_graph_zoomed.png)
 
 #### Trying to predict what might change for Part Two
 
@@ -415,5 +423,6 @@ Five of the heuristics yeilded less optimal shortest paths with the `visited_set
         - first  tried prune_nodes -- look at the node-to-remove's connections, and remove node from those neighbors
             - However -- this is not sufficient!  This only removed bidir connections, not the c->a connections (`a`-pits were still accessible!)
             - Changed to try removing node from the four nodes to which it could be connected (N, E, S, W)
-    - Noticed that some sections of graph are dead-ends -- try to prune those, as well!
-        - 
+    - Noticed that some sections of graph are dead-ends -- try to prune those, as well! (it worked!)
+    - Further noticed that some sections of the graph are only linked to the graph by a single node.  I want to remove those, because they cannot contribute to longest path (since each node can only be visited once).
+        - Can't just count edges (give examples)

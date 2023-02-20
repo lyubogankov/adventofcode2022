@@ -15,14 +15,14 @@ accszExk
 acctuvwj
 abdefghi
 '''
-        start_node, end_node, nodes = solution.parse_input_into_graph(
+        start_node, end_node, nodes, grid_width, grid_height = solution.parse_input_into_graph(
             inputfile='example.txt',
             edge_rule_fn=solution.part_one_edge_rule_fn
         )
         parsed_graph_print_str = solution.generate_print_str_graph(
-            nodes,
-            grid_width=8,
-            grid_height=5,
+            grid_width=grid_width,
+            grid_height=grid_height,
+            nodes=nodes,
             start_coords=start_node.coords,
             end_coords=end_node.coords,
             connected=False
@@ -30,7 +30,7 @@ abdefghi
         self.assertEqual(parsed_graph_print_str, example_grid_str)
 
     def test_partone_shortest_path(self):
-        start_node, end_node, nodes = solution.parse_input_into_graph(
+        start_node, end_node, nodes, grid_width, grid_height = solution.parse_input_into_graph(
             inputfile='example.txt',
             edge_rule_fn=solution.part_one_edge_rule_fn
         )
@@ -46,7 +46,7 @@ abdefghi
 ..v>>>^^
 ..>>>>>^
 '''
-        start_node, end_node, nodes = solution.parse_input_into_graph(
+        start_node, end_node, nodes, grid_width, grid_height = solution.parse_input_into_graph(
             inputfile='example.txt',
             edge_rule_fn=solution.part_one_edge_rule_fn
         )
@@ -54,8 +54,8 @@ abdefghi
             nodes, start_node.coords, end_node.coords, print_stats=False
         )
         shortest_path_printout = solution.generate_print_str_shortest_path(
-            grid_width=8,
-            grid_height=5,
+            grid_width=grid_width,
+            grid_height=grid_height,
             nodes=nodes,
             shortest_path_coords=path_from_start_to_end,
             arrowcolor=None
@@ -63,7 +63,7 @@ abdefghi
         self.assertEqual(shortest_path_printout, shortest_path_example)
 
     def test_parttwo_shortest_path_for_hiking(self):
-        start_node, end_node, nodes = solution.parse_input_into_graph(
+        start_node, end_node, nodes, grid_width, grid_height = solution.parse_input_into_graph(
             inputfile=self.EXAMPLE, edge_rule_fn=solution.part_one_edge_rule_fn
         )
         best_path_len, _, coords = solution.part_two(nodes, end_node.coords)

@@ -127,7 +127,7 @@ def parse_input_into_graph(inputfile, edge_rule_fn):
                     )
                     neighbor.connections.add(edge)
 
-    return start_node, end_node, nodes
+    return start_node, end_node, nodes, x+1, y+1
 
 ### printing ----------------------------------------------------------------------------------------------------------
 def generate_print_str_graph(grid_width, grid_height, nodes, start_coords=None, end_coords=None, connected=False, heightcolors=False, showpruned=False):
@@ -862,7 +862,7 @@ def prune_graph(grid_width, grid_height, nodes, start_coords, end_coords, prune_
 def prune_unreachable_nodes(grid_width, grid_height, nodes, start_coords, end_coords):
     prune_graph(grid_width, gridh_height, nodes, start_coords, end_coords, prune_dead_ends=False)
 
-def prune_dead_end_nodes(grid_width, grid_height, nodes, start_coords, end_coords)
+def prune_dead_end_nodes(grid_width, grid_height, nodes, start_coords, end_coords):
     prune_graph(grid_width, gridh_height, nodes, start_coords, end_coords, prune_dead_ends=True )
 
 def find_all_paths_from_start_to_end(nodes, start_coords, end_coords, _print=False):
@@ -918,21 +918,25 @@ if __name__ == '__main__':
 
     for inputfile in ['input.txt']: # ['example.txt', 'input.txt']:
         example = inputfile == 'example.txt'
-        if example:
-            grid_width = 8
-            grid_height = 5
-        else:
-            grid_width = 113
-            grid_height = 41
         print('\n---', inputfile)
 
-        start_node, end_node, nodes = parse_input_into_graph(
+        start_node, end_node, nodes, grid_width, grid_height = parse_input_into_graph(
             inputfile=inputfile,
             # for part one - "if height diff is higher than +1, can't traverse"
             edge_rule_fn=part_one_edge_rule_fn
         )
-        # print out the input heightmap (potentially as a graph, always w/ color-annotated height)
-        # if example:  # input is too large to render like this
+        # print out the input heightmap
+        print(generate_print_str_graph(
+            grid_width,
+            grid_height,
+            nodes,
+            start_coords=start_node.coords,
+            end_coords=end_node.coords,
+            connected=False,
+            heightcolors=True,
+        ))
+        print('\n\n')
+        # print out the input heightmap as a directed graph
         print(generate_print_str_graph(
             grid_width,
             grid_height,
@@ -1034,14 +1038,13 @@ if __name__ == '__main__':
         # # testing graph pruning
         # prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords, _animate=True, screenshotter=screenshotter)
     
-        # prune_graph(grid_width, grid_height, nodes, start_node.coords, end_node.coords)
         # longest_path_len, path_from_start_to_end = longest_path(nodes, start_node.coords, end_node.coords)
         # print(f'Longest path length from S -> E: {longest_path_len}', end='\n\n')
         # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
         # all_paths = find_all_paths_from_start_to_end(nodes, start_node.coords, end_node.coords)
-        # for path in all_paths:
-        #     print(f'Path length from S -> E: {len(path)}', end='\n\n')
+        # for i, path in enumerate(all_paths):
+        #     print(f'Path length from S -> E: {len(path)}  [{i+1} / {len(all_paths)}]', end='\n\n')
         #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
     if ANIMATION_GIF_MODE:
