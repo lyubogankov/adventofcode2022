@@ -518,11 +518,14 @@ def find_all_paths_from_start_to_end(nodes, start_coords, end_coords):
     return paths_from_start_to_end
 ```
 
-This worked for the example input:
+I looked up the longest path problem on Wikipedia, and to my surprise found that it is classified as an "NP-hard" problem.  In other words, there isn't a shortcut to finding the longest path other than finding every possible path and picking the longest.  That means this problem is more similar to that of the "travelling salesman" than to finding the shortest path!
 
-| directed graph | longest path |
+
+This approach worked for the example input:
+
+| directed graph | longest path (1/4) |
 | - | - |
-| ![](../media/day12/longest_path/example_graph.png) | ![](../media/day12/longest_path/example_longestpath.png) |
+| ![Command-prompt printout of puzzle example as directed graph](../media/day12/longest_path/example_graph.png) | ![Command-prompt printout of a longest path through puzzle input](../media/day12/longest_path/example_longestpath.png) |
 
 There are 30 possible paths from start -> end, and all of the variation occurs in the leftmost three columns (with all of the `a`, `b`, and `c` tiles) - 14 tiles, 19 bidirectional edges, and 3 directed edges.
 
@@ -531,33 +534,175 @@ I tried adding an additional column to the left of the existing graph:
 ```
  z    z    z     z     a    \
  z    z    z     a     a    |
- z    z    a     a     a     > new leftmost
- z    a    a     a     a    |  graph column
+ z    z    a     a     a     > new leftmost graph column
+ z    a    a     a     a    |  ('z' can't be reached, 'a' can)
  a    a    a     a     a    /
+
 30   46   78   122   197    - number of paths from start to end
 +0  +16  +48  + 92  +167    - number of paths relative to first
     +16
          +32
-              + 54
+              + 44
                     + 55
 ```
+
+The number of possible paths increases non-linearlly with each additional node added (which adds two bidirectional edges).
+
+However, when I tried running this algorithm on the puzzle input, the program did not terminate in a reasonable amount of time (~4 hours) - so back to the drawing board!
 
 
 #### Graph pruning
 
+Since adding new nodes to the graph usually increases the number of possible paths from start to end, I decided to attempt *pruning* the input graph to remove nodes that couldn't possibly be on a path from start to end.
 
-- Tried adapting Dijkstra's alg, but that didn't work!  It gets stuck in cycles (similar issue with running shortest-path Dijkstra on cyclic graph with negative edge weights)
-- Wrote 'naiive' method - find *all* paths from start -> end, and take the longest one (much higher computational complexity than Dijkstra, looked up on Wiki and it's an NP-hard problem)
-    - It worked on the example input (40 nodes with limited options) -- not many paths start -> end (how many?)
-    - It did not complete in a reasonable amt of time (~5 min) on the full input
-- Working on pruning graph
-    - Tried running dijkstra S->E and returning unvisited nodes -- those are the ones unreachable from start
-        - That doesn't reduce the number of nodes in the graph by much, though, and doesn't address the problem of the `a`-pits
-    - Ran dijkstra-like alg from S, looking for all nodes that are bidirectionally connected to start.  This gets rid of the `a`-pits, but also most of the hill!  No good.
-    - Got a working solution!  First dijkstra S->E, then iterate over remaining unvisited nodes and check whether they can reach end.  If not, prune them and their neighbors!
-        - first  tried prune_nodes -- look at the node-to-remove's connections, and remove node from those neighbors
-            - However -- this is not sufficient!  This only removed bidir connections, not the c->a connections (`a`-pits were still accessible!)
-            - Changed to try removing node from the four nodes to which it could be connected (N, E, S, W)
-    - Noticed that some sections of graph are dead-ends -- try to prune those, as well! (it worked!)
-    - Further noticed that some sections of the graph are only linked to the graph by a single node.  I want to remove those, because they cannot contribute to longest path (since each node can only be visited once).
-        - Can't just count edges (give examples)
+*It turned out that even after applying the pruning steps described below, the number of possible start -> end path combinations on the input graph is way too high to calculate in a reasonable amount of time, so I will not find the longest path for this graph.* :sweat:
+
+##### Nodes unreachable from start
+
+I wanted to ensure that nodes unreachable from the start were completely removed from the graph (no connections to any other nodes).  I did this by running Dijkstra's algorithm from start to end without early termination, so that all nodes are explored, and keeping track of the unvisited nodes.  Each unvisited node gets pruned!
+
+##### Nodes that cannot reach end (attempted shortcut - just bidirectional connections)
+
+Next, I wanted to address a much larger problem - nodes on the graph reachable from the start, but that could not reach the end.  In other words, pit trips.
+
+My first thought was to run Dijkstra's algorithm from start to end and keep track of all nodes that are bidirectionally, from start onwards.  This did get rid of the large `a`-pits, but also made it impossible to reach the end!  Clearly, this is not a general solution.
+
+![](../media/day12/longest_path/longest_path_prune_bidir.png)
+
+##### Nodes that cannot reach end
+
+To identify nodes that cannot reach the end (and therefore can't appear in any path from start to end), I took the following approach:
+
+1. Run Dijkstra's from start to end to identify nodes unreachable from start
+2. For each node in the graph reachable from the start and has not already been visited:
+    - Run Dijkstra's from current node to end
+        - If end is reachable
+            - Explore outwards from current node and find all nodes bidirectionally connected to this node -- they can all be on a path from start to end!
+            - Mark them all as visited
+        - If end is *un*reachable
+            - Explore outwards from current node and find all nodes that can reach current node (uni- and bidirectional connections) -- since one node can't reach the end, none of the others can, either!
+            - Mark them all as visited
+            - Prune them from the graph
+
+Here is an animation of this approach in action:
+
+![](../media/day12/longest_path/prune_unreachable.gif)
+
+Here is the resulting directed graph:
+
+![](../media/day12/longest_path/prune_attempt_2_after.png)
+
+##### Dead-ends (nodes with exactly one edge)
+
+After completing the pruning step above, I noticed that some there are dead-ends in the graph, sections that could not possible be on the path from start to end:
+
+<p align="center">
+  <img src="../media/day12/longest_path/prune_attempt_2_after_issue.png" />
+</p>
+
+In order to detect and prune these nodes, I checked for nodes that only have a single bidirecitonal connection and remove them.  Then, I check the node to which they were peviously connected to see if *it* now has a single connection:
+
+```python
+def prune_graph(grid_width, grid_height, nodes, start_coords, end_coords, prune_dead_ends):
+    '''Prunes `nodes` graph in-place.  Remove nodes unreachable from start, that cannot reach end.'''
+    ...
+
+    for coords in nodes:    
+        ...
+        # try to get from current coords -> end
+        path_len, _ = dijkstras_shortest_path(nodes, start_coords=coords, end_coords=end_coords)
+        # can be reached -- all nodes bidirectionally connected to this one can ALSO reach end
+        if path_len < math.inf:
+            for bidir_connected_coords in find_connected_nodes(nodes, coords, bidir=True):
+                ...
+                # if this is a dead-end node, prune it.  Need to then re-evaluate the node to which it was connected (and so on).
+                if prune_dead_ends and len(nodes[bidir_connected_coords].connections) == 1:
+                    current_coords = bidir_connected_coords
+                    while len(nodes[current_coords].connections) == 1:
+                        neighbor_coords = list(nodes[current_coords].connections)[0].node_to_coords
+                        prune_node(grid_width, grid_height, nodes, current_coords)
+                        current_coords = neighbor_coords
+                        visited_coords.add(current_coords)
+            ...
+        ...
+    ...
+```
+
+I didn't realize it during my implementation, but during the writeup I found that this approach is flawed!  Instead of checking whether a node has a single *bi*directional connection, I should have checked whether it has a single connection of *any* kind (uni- or bidirectional).  The code correctly pruned the little `c`-peninsulas, but also pruned this:
+
+<p align="center">
+  <img src="../media/day12/longest_path/prune_attempt_3-after_issue2.png" />
+</p>
+
+In theory, the longest path could go down from the `g` and back onto the `c`-plain!
+
+Overall, though, the algorithm did its job - no more tiny protrusions!
+
+![](../media/day12/longest_path/prune_attempt_3-after.png)
+
+##### Dead-ends (sections of graph with a bottleneck)
+
+After this step, I noticed further sections that could be pruned - they are connected to the rest of the graph by a single node or edge, so can't be part of the longest path.
+
+![](../media/day12/longest_path/prune_attempt_3-after_annotated.png)
+
+I haven't been able to come up with a general rule to detect these.  I need to be careful that my approach doesn't also remove cases like this, where a section of graph looks constrained but forms a cycle, and can therefore be used as a one-way path.
+
+<p align="center">
+  <img src="../media/day12/longest_path/prune_attempt_3-after_notice1.png" />
+</p>
+
+I considered counting the number of edges each node, but couldn't formulate a rule using this approach.
+
+I also thought about iterating over all nodes in the graph, and making a separate graph where just that node is pruned and seeing whether its connections could still reach the start.  This would be a very computationally heavy task, though - for each node in the graph, we'd have to run Dijkstra's algorithm up to 4 times.  This is a computationally expensive operation: 
+
+> O(4|V| * O(dijkstra's)) = O( |V| * ( |E| + |V|log|V| ) )
+
+
+##### Epilogue: pruning a single node from the graph
+
+This is the function I wrote to remove nodes from my graph dictionary:
+
+```python
+def prune_node(grid_width, grid_height, nodes, coords_to_prune):
+    '''Remove this node from connection sets of all potential neighbor nodes, and clear its connections.'''
+    
+    # remove node from neihbors' connections, if needed
+    (x, y) = nodes[coords_to_prune].coords
+    if x > 0:               nodes[(x-1, y  )].connections.discard(DirectedEdge(1, coords_to_prune)) # S neighbor
+    if y > 0:               nodes[(x,   y-1)].connections.discard(DirectedEdge(1, coords_to_prune)) # W
+    if x < grid_width  - 1: nodes[(x+1, y  )].connections.discard(DirectedEdge(1, coords_to_prune)) # N
+    if y < grid_height - 1: nodes[(x,   y+1)].connections.discard(DirectedEdge(1, coords_to_prune)) # E
+
+    # delete all outgoing connections from this node (empty the set)
+    nodes[coords_to_prune].connections.clear()
+    nodes[coords_to_prune].flags['pruned'] = True
+```
+
+The `set.discard` method is very useful, as it doesn't return a `KeyError` if the element is not present in the `set`!
+
+This function is specific to my problem, where each node can only be connected to 2-4 neighboring nodes within a grid.  If I didn't have coordinates to look up each node, I think I'd need to either traverse the graph to discover neighboring nodes with directional connections to current node, or to also keep a data structure based on edges (in addition to my node-based structure).
+
+###### Small aside - how to properly prune
+
+When first implementing this function, only checked the connections going *out from* the to-be-pruned node.
+
+![](../media/day12/longest_path/prune_attempt_1_after.png)
+
+This only handled bidirectional connections!  Notice that even though the `a`-pit nodes are pruned from the graph, the `c`-tiles on the edges of the pits still point to those nodes.  
+
+<!-- ![](../media/day12/longest_path/prune_attempt_1_after_issue.png) -->
+<p align="center">
+  <img src="../media/day12/longest_path/prune_attempt_1_after_issue.png" />
+</p>
+
+
+The function shown above fixes this issue - I look at all possible neighbors so I can also handle directional connections from neighbor -> node-to-prune.
+
+![](../media/day12/longest_path/prune_attempt_2_after.png)
+
+
+## Potential extensions
+
+1. Make GIFs out of the prune steps to more easily see changes
+2. Fix the [over-pruning](#dead-ends-nodes-with-exactly-one-edge)
