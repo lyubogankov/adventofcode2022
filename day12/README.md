@@ -659,6 +659,8 @@ I also thought about iterating over all nodes in the graph, and making a separat
 
 > O(4|V| * O(dijkstra's)) = O( |V| * ( |E| + |V|log|V| ) )
 
+*Later thought*: I only need to consider the nodes with 3 or fewer connections, which greatly reduces the number of nodes under consideration.  Furthermore, if a node can't be reached from start as a result of its neighbor being temporarily removed from the graph, that means all the nodes to which that node is still connected are *also* not reachable from the start.
+
 
 ##### Epilogue: pruning a single node from the graph
 
@@ -707,3 +709,5 @@ The function shown above fixes this issue - I look at all possible neighbors so 
 
 1. Make GIFs out of the prune steps to more easily see changes
 2. Fix the [over-pruning](#dead-ends-nodes-with-exactly-one-edge)
+3. Revisit [dead-end pruning](#dead-ends-sections-of-graph-with-a-bottleneck)
+4. Make a map generator!  Try different approaches, including random!  I've seen some YT videos on Perlin noise, wave function collapse, etc. in the context of procedural video game level generation.
