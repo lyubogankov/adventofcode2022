@@ -6,6 +6,7 @@
 
 Shortest-path algorithms ([Dijkstra's](#correct-implementation), [A*](#bonus---implementing-the-a-best-first-search-algorithm)) and more GIFs :)
 
+Also, [longest-path algorithm](#bonus---longest-path)!
 
 
 ## Part One

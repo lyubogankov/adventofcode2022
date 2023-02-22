@@ -39,6 +39,8 @@ Each puzzle consists of two related parts, but the description for the second pa
     - First started implementing unit testing (using Python's `unittest` module), which ended up being a huge help in understanding the puzzle.  Implemented command-prompt animation to view the rope moving!
 - [Day 11 (Monkey in the Middle)](/day11/)
     - Learned some basic `numpy` for optimization and modular arithmetic for solving the problem - part two was hard!
+- [Day 12 (Hill Climbing Algorithm)](/day12)
+    - Implemented Dijkstra's and A* shortest-path algorithms and made command-prompt animations to view algorithm progression; also tried to make a longest path algorithm!
 
 ## General problem structure & my problem solving strategies
 
