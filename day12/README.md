@@ -490,10 +490,58 @@ Clearly, this is very wrong!  The error I saw during debugging wasn't quite like
 
 This reminded me of what I had read on Wikipedia about Dijkstra's algorithm - that it could only handle finding the shortest path for graphs with *non-negative cycles*.  Finding the longest path also forms cycles of this kind, so the algorithm does not work!
 
-Mention that for shortest path we can "transform" the input graph to get all non-negative edge weights, but that doens't work for longest path.
-
 
 #### Attempt 2 - brute force
+
+I next tried the brute-force approach: find all possible paths from start to end, and then pick the longest!  As we look at each node, follow each edge and keep track of the path we've taken from the start:
+
+```python
+def find_all_paths_from_start_to_end(nodes, start_coords, end_coords):
+    explored_paths = [[start_coords]]
+    paths_from_start_to_end = []
+
+    while explored_paths != []:
+        path_from_start_to_current = explored_paths.pop()
+        current_coords = path_from_start_to_current[-1]
+
+        for edge in nodes[current_coords].connections:
+            neighbor_coords = edge.node_to_coords
+
+            if neighbor_coords in path_from_start_to_current or neighbor_coords == end_coords:
+                if neighbor_coords == end_coords:
+                    paths_from_start_to_end.append(copy.copy(path_from_start_to_current) + [neighbor_coords])
+                continue
+
+            explored_paths.append(copy.copy(path_from_start_to_current) + [neighbor_coords])
+            
+    paths_from_start_to_end.sort(key=len, reverse=True)
+    return paths_from_start_to_end
+```
+
+This worked for the example input:
+
+| directed graph | longest path |
+| - | - |
+| ![](../media/day12/longest_path/example_graph.png) | ![](../media/day12/longest_path/example_longestpath.png) |
+
+There are 30 possible paths from start -> end, and all of the variation occurs in the leftmost three columns (with all of the `a`, `b`, and `c` tiles) - 14 tiles, 19 bidirectional edges, and 3 directed edges.
+
+I tried adding an additional column to the left of the existing graph:
+
+```
+ z    z    z     z     a    \
+ z    z    z     a     a    |
+ z    z    a     a     a     > new leftmost
+ z    a    a     a     a    |  graph column
+ a    a    a     a     a    /
+30   46   78   122   197    - number of paths from start to end
++0  +16  +48  + 92  +167    - number of paths relative to first
+    +16
+         +32
+              + 54
+                    + 55
+```
+
 
 #### Graph pruning
 

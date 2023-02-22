@@ -916,7 +916,7 @@ if __name__ == '__main__':
     if ANIMATION_GIF_MODE:
         screenshotter = screenshot.mss.mss()
 
-    for inputfile in ['input.txt']: # ['example.txt', 'input.txt']:
+    for inputfile in ['example_plus5.txt']: # ['example.txt', 'input.txt']:
         example = inputfile == 'example.txt'
         print('\n---', inputfile)
 
@@ -1042,10 +1042,10 @@ if __name__ == '__main__':
         # print(f'Longest path length from S -> E: {longest_path_len}', end='\n\n')
         # print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path_from_start_to_end, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
-        # all_paths = find_all_paths_from_start_to_end(nodes, start_node.coords, end_node.coords)
-        # for i, path in enumerate(all_paths):
-        #     print(f'Path length from S -> E: {len(path)}  [{i+1} / {len(all_paths)}]', end='\n\n')
-        #     print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path, heightcolor=True, arrowcolor='\033[38;5;39m'))
+        all_paths = find_all_paths_from_start_to_end(nodes, start_node.coords, end_node.coords)
+        for i, path in enumerate(all_paths):
+            print(f'Path length from S -> E: {len(path)}  [{i+1} / {len(all_paths)}]', end='\n\n')
+            print(generate_print_str_shortest_path(grid_width, grid_height, nodes, path, heightcolor=True, arrowcolor='\033[38;5;39m'))
 
     if ANIMATION_GIF_MODE:
         screenshotter.close()
