@@ -123,7 +123,7 @@ Here's the shortest path found:
 
 ![Command prompt printout of shortest path between start & end](../media/day12/input_shortestpath_dijkstra_0.png)
 
-And here is the algorithm in action!  Making this GIF took a very long time on my laptop (old processor with integrated graphics and 8GB RAM), however it was fun to pick out the color scheme with my newly expanded 256-color palette.  I used a different colors than the height-annotated printout above to emphasize the hill's elevation profile!
+And here is the algorithm in action!  Making this GIF took a very long time on my laptop (old processor with integrated graphics and 8GB RAM), however it was fun to pick out the color scheme with my newly expanded 256-color palette.
 
 Notice how some of the nodes are inaccessible (`c`s surrounded by `a`s):
 
@@ -170,6 +170,8 @@ There are 61 `a`-tiles in the puzzle input, and among them the one at `(0, 25)` 
 While reading about Dijkstra's algorithm on Wikipedia, I came across the A* ("A-star") algorithm, which is described as a *best*-first search.  I decided to attempt an implementation!
 
 Its [Wikipedia article](https://en.wikipedia.org/wiki/A*_search_algorithm) generously provides a description of the algorithm, as well as commented pseudocode.  I used the pseudocode as a base (implemented in Python), and later augmented it to try out different definitions of "best".
+
+##### Data structure for storing shortest known path
 
 I really like the article's method for storing and reconstructing the shortest path from start to any visited node: using a map (`dict`), and for each node n (key) storing the prior node n-1 (value).  Then, to reconstruct shortest path from start, begin with the last node and work backwards.  This is *waaaaaaay* more space-efficient than in my Dijkstra's alg implementation, where I store the shortest path as a list on each node!
 
@@ -410,6 +412,91 @@ Five of the heuristics yeilded less optimal shortest paths with the `visited_set
 
 
 ## Bonus - longest path
+
+After spending so long thinking about the shortest path through a graph, I wondered whether I could find the **longest** path through the graph instead!
+
+#### Attempt 1 - adapting Dijkstra's algorithm
+
+##### First take
+
+- To set up the algorithm, we need to initialize the known distance from start to each node:
+
+    - Original: $\infty$ as initial value means each node is **maximally** far away, which is then **decreased** as we explore the graph
+    - Modified: $-\infty$ initial value means each node is **minimally** far away, which is then **increased** as we explore the graph?
+
+- As each node is explored, we consider each of its edges to other nodes and decide whether to update the known distance from start to node's neighbor through current edge:
+    - Original: update if path through current node and edge to neighbor is **shorter** than existing best (**shortest**) known path 
+    - Modified: update if path through current node and edge to neighbor is **longer** than existing best (**longest**) known path
+
+- After we finish looking at each node's edges, we are done with that node.  We need to pick the next node:
+    - Original: pick node with **smallest** known path from start
+    - Modified: pick node with **largest** known path from start
+
+##### Immediate problem...
+
+After making the modifications described above, I ran into a big problem!  Consider the three-node graph below:
+
+```mermaid
+graph LR;
+    A --> B;
+    B --> A;
+    B --> C;
+    C --> B;
+```
+
+Initial state:
+- Longest known path from start (`A`) to `A`: 0
+- Longest known path from start to `B`: $-\infty$
+- Longest known path from start to `C`: $-\infty$
+
+Assuming that all graph weights are equal and we begin on node `A`, which has a distance from itself of 0, here is how the exploration goes:
+1. Current node: `A` (start node)
+    - Look at edge from `A` to `B`, and update longest known distance fromn start to `B` ($-\infty$ to 1)
+
+        ```
+        Longest paths:
+        A: -
+        B: A -> B
+        C: ?
+        ```
+
+2. Pick remaining node with highest known distance from start: `B`
+    - Look at edge from `B` to `C`, and update longest known distance from start to `C` ($-\infty$ to 2)
+        ```
+        Longest paths:
+        A: -
+        B: A -> B
+        C: A -> B -> C
+        ```
+
+    - Look at edge from `B` to `A`, and update longest known distance from start to `A` (0 to 2) :skull:
+        ```
+        Longest paths:
+        A: A -> B -> A (?)
+        B: A -> B
+        C: A -> B -> C
+        ```
+
+3. Pick remaining node with highest known distance from start: `C`
+    - Look at edge from `C` to `B`, and update longest known distance from start to `B` (1 to 3) :skull:
+        ```
+        Longest paths:
+        A: A -> B -> A
+        B: A -> B -> C -> B (?)
+        C: A -> B -> C
+        ```
+
+Clearly, this is very wrong!  The error I saw during debugging wasn't quite like the one above - I don't store the path from start to each node on a per-node basis ([discussed during A* implementation](#data-structure-for-storing-shortest-known-path)) - instead, I only keep track of each node's predecessor along the path and can back-trace to the start.  However, instead of providing the path back to the start, my program hung because there were loops!  In the example above, `C` would point to `B`, but `B` would point to `C`.
+
+This reminded me of what I had read on Wikipedia about Dijkstra's algorithm - that it could only handle finding the shortest path for graphs with *non-negative cycles*.  Finding the longest path also forms cycles of this kind, so the algorithm does not work!
+
+Mention that for shortest path we can "transform" the input graph to get all non-negative edge weights, but that doens't work for longest path.
+
+
+#### Attempt 2 - brute force
+
+#### Graph pruning
+
 
 - Tried adapting Dijkstra's alg, but that didn't work!  It gets stuck in cycles (similar issue with running shortest-path Dijkstra on cyclic graph with negative edge weights)
 - Wrote 'naiive' method - find *all* paths from start -> end, and take the longest one (much higher computational complexity than Dijkstra, looked up on Wiki and it's an NP-hard problem)
