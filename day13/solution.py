@@ -206,8 +206,8 @@ class Packet:
     def __init__(self, value):
         self.value = value
     def __comparison(self, other, expected_comparison_outcome):
-        # if not isinstance(other, Packet):
-        #     raise NotImplemented
+        if not isinstance(other, Packet):
+            return NotImplemented
         return determine_order_correctness(lhs=self.value, rhs=other.value)[0] == expected_comparison_outcome
     def __lt__(self, other):
         return self.__comparison(other, expected_comparison_outcome=ORDER_CORRECT)
