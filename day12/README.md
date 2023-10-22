@@ -30,7 +30,7 @@ I briefly pondered writing my own algorithm, but abandoned that when I remembere
 
 Previously, I thought only 8 colors could be used in the terminal, but discovered [otherwise](https://stackabuse.com/how-to-print-colored-text-in-python/#256colorsinrawpython) after some web searching.  Some Linux-based OSs support 256 colors in the terminal.  To check support, run the command  `echo $TERM` in the command prompt.  If the return value is `xterm-256color`, the OS supports 256 colors!!
 
-After consoluting a [cheat sheet](https://www.ditig.com/256-colors-cheat-sheet) for the colors and their codes, I colored the the elevations to get a nice gradient on the hills.  I used three rounds of ROYGBIV (rainbow) coloring for contrast between the different elevations:
+After consulting a [cheat sheet](https://www.ditig.com/256-colors-cheat-sheet) for the colors and their codes, I colored the the elevations to get a nice gradient on the hills.  I used three rounds of ROYGBIV (rainbow) coloring for contrast between the different elevations:
 
 ![Command-prompt printout of larger, puzzle input tile map with height-based coloring](../media/day12/input_heightheatmap.png)
 
