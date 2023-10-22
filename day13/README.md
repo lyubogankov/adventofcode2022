@@ -4,7 +4,7 @@
 
 **tl;dr**:
 
-[Recursion vs iteration](#input-file-parsing), 
+[Recursion vs iteration](#input-file-parsing), [leveraging Python's data model](#sorting)
 
 
 ## Part One
@@ -77,4 +77,4 @@ Instead of looking at the packets in pairs to determine whether their ordering i
 
 #### Sorting
 
-At first, I thought I'd have to write my own sorting algorithm to support comparison between packets using the logic from Part One.  However, I realized that leverage Python's data model would allow me to write a small `Packet` class that implements rich comparison operators (`<`, `<=`, `==`, `>=`, `>`).  Once I implemented this class, I could sort a `list` of `Packets` by using Python's build-in sorting algorithm and neatly solve the problem!
+At first, I thought I'd have to write my own sorting algorithm to support comparison between packets using the logic from Part One.  However, I realized that leverage Python's data model would allow me to write a small `Packet` class that implements rich comparison operators (`<`, `<=`, `==`, `>=`, `>`).  Once I implemented this class, I could sort a `list` of `Packets` by using Python's built-in sorting algorithm and neatly solve the problem!
