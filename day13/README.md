@@ -4,7 +4,7 @@
 
 **tl;dr**:
 
-[Recursion vs iteration](#input-file-parsing),
+[Recursion vs iteration](#input-file-parsing), 
 
 
 ## Part One
@@ -68,4 +68,13 @@ It was fun writing a recursive function to solve the order correctness compariso
 
 ### Problem Breakdown
 
+Instead of looking at the packets in pairs to determine whether their ordering is correct, the task now is to:
+1. Add two special packets into our overall packet list, `[[2]]` and `[[6]]`
+2. Sort the overall packet list
+3. Compute the "decoder key" by multiplying the 1-based index of the two special packets from the sorted list
+
 ### Solution
+
+#### Sorting
+
+At first, I thought I'd have to write my own sorting algorithm to support comparison between packets using the logic from Part One.  However, I realized that leverage Python's data model would allow me to write a small `Packet` class that implements rich comparison operators (`<`, `<=`, `==`, `>=`, `>`).  Once I implemented this class, I could sort a `list` of `Packets` by using Python's build-in sorting algorithm and neatly solve the problem!
