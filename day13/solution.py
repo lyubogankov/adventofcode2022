@@ -200,7 +200,50 @@ def part_one_find_all_correct_pairs(packet_pairs, _print=False):
 def part_one_obtain_sum(packet_pairs, _print=False):
     return sum(part_one_find_all_correct_pairs(packet_pairs, _print=_print))
 
+### part two
+
+class Packet:
+    def __init__(self, value):
+        self.value = value
+    def __comparison(self, other, expected_comparison_outcome):
+        # if not isinstance(other, Packet):
+        #     raise NotImplemented
+        return determine_order_correctness(lhs=self.value, rhs=other.value)[0] == expected_comparison_outcome
+    def __lt__(self, other):
+        return self.__comparison(other, expected_comparison_outcome=ORDER_CORRECT)
+    def __le__(self, other):
+        return not self > other
+    def __eq__(self, other):
+        return self.__comparison(other, expected_comparison_outcome=ORDER_INDETERMINATE)
+    def __ge__(self, other):
+        return not self < other
+    def __gt__(self, other):
+        return self.__comparison(other, expected_comparison_outcome=ORDER_INCORRECT)
+    def __str__(self):
+        return str(self.value())
+    def __repr__(self):
+        return f'Packet({self.value})'
+
+def flatten_packet_pairs(packet_pairs):
+    """Flatten nested packet pair lists, and encapsulate each packet value within Packet class instance."""
+    flattened = []
+    for (lhs, rhs) in packet_pairs:
+        flattened += [Packet(lhs), Packet(rhs)]
+    return flattened
+
+def part_two_sort_and_calculate_decoder_key(packets):
+    packets.append(Packet([[2]]))
+    packets.append(Packet([[6]]))
+    sorted_packets = sorted(packets)
+    return (sorted_packets.index(Packet([[2]])) + 1) * (sorted_packets.index(Packet([[6]])) + 1)
+
 
 if __name__ == '__main__':
+    # part 1
     packet_pairs = parse_input_file_into_packet_pairs('input.txt', method='recursive', _print=False)
     print(f'Part one: sum of correct_order indices = {part_one_obtain_sum(packet_pairs)}')
+
+    # part 2
+    packets = flatten_packet_pairs(packet_pairs)
+    decoder_key = part_two_sort_and_calculate_decoder_key(packets)
+    print(f'Part two: decoder key (product of special packet indices) = {decoder_key}')

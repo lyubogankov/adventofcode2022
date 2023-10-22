@@ -1,4 +1,5 @@
 # std library
+import itertools
 import unittest
 # local
 import solution
@@ -117,6 +118,43 @@ class TestDay13(unittest.TestCase):
         packet_pairs = solution.parse_input_file_into_packet_pairs(self.EXAMPLE)
         correct_order_pair_numbers = solution.part_one_find_all_correct_pairs(packet_pairs)
         self.assertEqual([1, 2, 4, 6], correct_order_pair_numbers)
+
+    # part two
+
+    def test_packet_class(self):
+        """Ensuring that the `Packet` class produces expected results based on packet sorting rules"""
+        p1 = solution.Packet(1)
+        p2 = solution.Packet(2)
+        self.assertTrue( p1 == p1)
+        self.assertTrue( p1 != p2)
+        self.assertTrue( p1 <  p2)
+        self.assertTrue( p1 <= p2)
+        self.assertFalse(p1 >= p2)
+        self.assertFalse(p1 >  p2)
+
+    def test_packet_pair_flattening(self):
+        packet_pairs = solution.parse_input_file_into_packet_pairs(self.EXAMPLE)
+        packets = solution.flatten_packet_pairs(packet_pairs)
+        # do the number of packets match?
+        num_packets = len(packet_pairs)*2
+        self.assertEqual(num_packets, len(packets))
+        # are all packets present in the original pairs list present in the flattened version?
+        for (lhs, rhs) in packet_pairs:
+            self.assertTrue(solution.Packet(lhs) in packets)
+            self.assertTrue(solution.Packet(rhs) in packets)
+
+    def test_packet_sorting(self):
+        packet_pairs = solution.parse_input_file_into_packet_pairs(self.EXAMPLE)
+        packets = solution.flatten_packet_pairs(packet_pairs)
+        sorted_packets = sorted(packets)
+        self.assertEqual(len(packets), len(sorted_packets))
+        for (lhs, rhs) in itertools.pairwise(sorted_packets):
+            self.assertTrue(lhs <= rhs)
+
+    def test_part_two(self):
+        packet_pairs = solution.parse_input_file_into_packet_pairs(self.EXAMPLE)
+        packets = solution.flatten_packet_pairs(packet_pairs)
+        self.assertEqual(140, solution.part_two_sort_and_calculate_decoder_key(packets))
 
 if __name__ == '__main__':
     unittest.main()
