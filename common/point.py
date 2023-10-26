@@ -24,10 +24,11 @@ class Point_2D:
         if isinstance(k, int):
             return Point_2D(k*self.x, k*self.y)
 
-    def __iadd__(self, other):
-        self.x += other.x
-        self.y += other.y
-        return self
+    ## I want Point_2D to be immutable
+    # def __iadd__(self, other):
+    #     self.x += other.x
+    #     self.y += other.y
+    #     return self
 
     # heavily inspired by https://stackoverflow.com/q/390250
     def __eq__(self, other):

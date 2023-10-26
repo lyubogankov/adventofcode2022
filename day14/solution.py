@@ -94,7 +94,7 @@ def create_board(filepath: str, sand_origin: Point, printout=False):
                 board.add_rock(current_point)
                 if printout:
                     print('        added: ', current_point)
-                current_point += iterator
+                current_point = current_point + iterator
     return board
 
 

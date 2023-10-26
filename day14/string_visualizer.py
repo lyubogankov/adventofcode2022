@@ -21,6 +21,7 @@ def board_as_string(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
                 board_str += '.'
         if y < bottomright.y:
             board_str += '\n'
+    return board_str
 
 def print_board(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
     for line in board_as_string(board, sandunit, viewbounds).split('\n'):
