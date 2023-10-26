@@ -15,7 +15,7 @@ import math
 import sys
 
 sys.path.append(r'C:\Users\lg\Documents\code\adventofcode2022')
-from common.point import Point_2D as Point
+from common.point import Point_2D as Point  #nolint E402
 
 # pairwise = itertools.pairwise
 def pairwise(collection):
@@ -35,15 +35,13 @@ class Board:
         # keeping track of smallest/largest x/y
         # - used to determine when a sand block has "fallen off the board"
         # - may be useful to Visualizers
-        self.smallest_x = math.inf
-        self.smallest_y = math.inf
-        self.largest_x  = -math.inf
-        self.largest_y  = -math.inf
+        self.smallest_x = self.largest_x = sand_origin.x
+        self.smallest_y = self.largest_y = sand_origin.y
 
     def occupied_tiles(self):
         return self.rocks.union(self.settled_sand)
 
-    def add_rock(self, coords: Point):
+    def add_rock(self, coords: Point) -> None:
         self.rocks.add(coords)
         self.largest_x  = max(coords.x, self.largest_x)
         self.largest_y  = max(coords.y, self.largest_y)
@@ -54,6 +52,7 @@ class SandUnit:
     def __init__(self, starting_coords: Point):
         self.current_coords = starting_coords
         self.at_rest = False
+        self.falling_indefinitely = False
 
     def fall_step(self, board: Board):
         if (below := self.current_coords + Point(x=0, y=1)) not in board.occupied_tiles():
@@ -64,8 +63,9 @@ class SandUnit:
             self.current_coords = downright
         else:
             self.at_rest = True
+            board.settled_sand.add(self.current_coords)
 
-def create_board(filepath: str, sand_origin: Point, printout=False):
+def create_board(filepath: str, sand_origin: Point) -> Board:
     board = Board(sand_origin)
     with open(filepath, 'r') as input:
         lines = input.readlines()
@@ -84,26 +84,45 @@ def create_board(filepath: str, sand_origin: Point, printout=False):
                 iterator = Point(x=1, y=0) if start.x < end.x else Point(x=-1, y=0)
             else:
                 raise RuntimeError("ruh roh, didn't expect a line not parallel to x or y axis")
-            if printout:
-                print('start:    ', start)
-                print('end:      ', end)
-                print('iterator: ', iterator)
             # add rocks to the board!
             current_point = start
             while current_point != end + iterator:
                 board.add_rock(current_point)
-                if printout:
-                    print('        added: ', current_point)
                 current_point = current_point + iterator
     return board
 
+def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
+    moving_sand_unit.fall_step(board)
+    # detect if we're in "falling" state for current sand block
+    if moving_sand_unit.current_coords.x > board.largest_x \
+            or moving_sand_unit.current_coords.y > board.largest_y \
+            or moving_sand_unit.current_coords.x < board.smallest_x \
+            or moving_sand_unit.current_coords.y < board.smallest_y:
+        moving_sand_unit.falling_indefinitely = True
+
+def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, sand_unit_limit=math.inf):
+    frames = []
+    
+    board = create_board(inputfile, sand_origin)
+    frames.append(create_board_frame_fn(board, sand_unit=None))
+
+    num_sand_blocks_dropped = 0
+    while num_sand_blocks_dropped < sand_unit_limit:
+        # spawn a new sand unit from origin
+        sand_unit = SandUnit(board.sand_origin_pt)
+        frames.append(create_board_frame_fn(board, sand_unit))
+        # drop it!
+        while not sand_unit.at_rest and not sand_unit.falling_indefinitely:
+            simulate_time_step(board, moving_sand_unit=sand_unit)
+            frames.append(create_board_frame_fn(board, sand_unit))
+        # if this sand unit is in free fall, all others will also be
+        if sand_unit.falling_indefinitely:
+            break
+        
+        num_sand_blocks_dropped += 1
+
+    return frames
 
 """
-parsing:
-- per line, split by the arrow.  Iterate pairwise over the x,y coords - these are the lines of rock.
-
-? how to represent the board, as well as lines of rock?  I'll need to check position of sand vs rocks.
-    - set of (point, type) tuples?
-    - keep track of the bounds - smallest/largest x, y for in case the display wants to use that info.
-        For the unit test printouts, I'll need to manually specify the display view coord window to match
+want: frame-by-frame visualizaiton
 """

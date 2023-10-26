@@ -1,7 +1,9 @@
+from functools import partial
+
 import solution
 from solution import Board, SandUnit, Point
 
-def board_as_string(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
+def board_as_string(board: Board, sand_unit: SandUnit, viewbounds: tuple[Point]):
     """
     viewbounds: expecting tuple (topleft, bottomright) containing view bounds
     """
@@ -13,7 +15,7 @@ def board_as_string(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
             curr = Point(x, y)
             if curr in board.rocks:
                 board_str += '#'
-            elif curr in board.settled_sand or (sandunit and curr == sandunit.current_coords):
+            elif curr in board.settled_sand or (sand_unit and curr == sand_unit.current_coords):
                 board_str += 'o'
             elif curr == board.sand_origin_pt:
                 board_str += '+'
@@ -23,10 +25,14 @@ def board_as_string(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
             board_str += '\n'
     return board_str
 
-def print_board(board: Board, sandunit: SandUnit, viewbounds: tuple[Point]):
-    for line in board_as_string(board, sandunit, viewbounds).split('\n'):
-        print(line)
-
 if __name__ == '__main__':
-    board = solution.create_board(filepath='example.txt', sand_origin=Point(500, 0))
-    print_board(board, sandunit=None, viewbounds=(Point(494, 0), Point(503, 9)))
+    
+    # board = solution.create_board(filepath='example.txt', sand_origin=Point(500, 0))
+    # print_board(board, sand_unit=None, viewbounds=(Point(494, 0), Point(503, 9)))
+    create_board_frame_fn = partial(board_as_string, viewbounds=(Point(494, 0), Point(503, 9)))
+    for i, frame in enumerate(solution.run_simulation(
+            inputfile='example.txt',
+            sand_origin=Point(500, 0),
+            create_board_frame_fn=create_board_frame_fn)):
+        print(f'===================================== {i+1} ===')
+        print(frame, end='\n\n')
