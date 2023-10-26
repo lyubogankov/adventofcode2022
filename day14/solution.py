@@ -100,10 +100,11 @@ def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
             or moving_sand_unit.current_coords.y < board.smallest_y:
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, sand_unit_limit=math.inf):
+def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, board: Board = None, sand_unit_limit=math.inf):
     frames = []
     
-    board = create_board(inputfile, sand_origin)
+    if board is None:
+        board = create_board(inputfile, sand_origin)
     frames.append(create_board_frame_fn(board, sand_unit=None))
 
     num_sand_blocks_dropped = 0
@@ -123,6 +124,4 @@ def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, sa
 
     return frames
 
-"""
-want: frame-by-frame visualizaiton
-"""
+    # TODO: after the sim is run, use a "tracer" sand unit to see the path of falling sand!

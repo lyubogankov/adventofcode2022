@@ -32,7 +32,6 @@ class TestDay14(unittest.TestCase):
         self.assertEqual(example_output, board_str)
 
     def test_simulation(self):
-        board = solution.create_board(filepath=self.EXAMPLE, sand_origin=Point(500, 0))
         expected_printouts = [
 """......+...
 ..........
@@ -90,7 +89,14 @@ class TestDay14(unittest.TestCase):
 #########.""",
         ]
         for expected_printout, number_of_grains_fallen in zip(expected_printouts, [1, 2, 5, 22, 24]):
-            # simulate board state up to current point, then compare expected printout vs generated!
+            frames = solution.run_simulation(
+                inputfile=self.EXAMPLE,
+                sand_origin=Point(x=500, y=0),
+                create_board_frame_fn=string_visualizer.create_board_frame_fn,
+                sand_unit_limit=number_of_grains_fallen
+            )
+            with self.subTest(i=number_of_grains_fallen):
+                self.assertEqual(expected_printout, frames[-1])
 
 if __name__ == '__main__':
     unittest.main()
