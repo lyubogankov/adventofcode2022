@@ -15,7 +15,7 @@ import math
 import sys
 
 sys.path.append(r'C:\Users\lg\Documents\code\adventofcode2022')
-from common.point import Point_2D as Point  #nolint E402
+from common.point import BoundingBox, Point_2D as Point #nolint E402
 
 # pairwise = itertools.pairwise
 def pairwise(collection):
@@ -125,3 +125,12 @@ def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, bo
     return frames
 
     # TODO: after the sim is run, use a "tracer" sand unit to see the path of falling sand!
+
+def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: BoundingBox):
+    """Need to pass in a board that is already in a "completed" state"""
+    sand_unit = SandUnit(board.sand_origin_pt)
+    fall_path = []
+    while sand_unit in viewbounds:
+        fall_path.append(sand_unit.current_coords)
+        sand_unit.fall_step(board)
+    return fall_path

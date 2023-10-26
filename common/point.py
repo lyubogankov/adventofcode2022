@@ -42,3 +42,28 @@ class Point_2D:
     def __hash__(self):
         key = (self.x, self.y)
         return hash(key)
+
+class BoundingBox:
+    def __init__(self, topleft: Point_2D, bottomright: Point_2D):
+        self.topleft = topleft
+        self.bottomright = bottomright
+        # checking axis orientations
+        self.x__right_gt_left = topleft.x < bottomright.x
+        self.y__bottom_gt_left = topleft.y < bottomright.y
+    
+    # in operator
+    def __contains__(self, item):
+        pass
+        # TODO: how to represent this in a coordinate-system agnostic manner??
+        #   right now I can only think of how to use it for my particular case,
+        #   where
+        #       left = -x, right = +x
+        #       top  = -y, bot   = +y
+        #
+        #   I suppose that since each axis has two possible configurations, there are
+        #   four combinations.  Perhaps I can test for it in the constructor and set
+        #   flag variables to help with the __contains__ check
+        #       l -x r +x | t -y t +y
+        #       l -x r +x | t +y t -y
+        #       l +x r -x | t -y t +y
+        #       l +x r -x | t +y t -y
