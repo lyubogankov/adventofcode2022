@@ -12,7 +12,7 @@ def board_as_string(board: Board, sand_unit: SandUnit, viewbounds: BoundingBox, 
     for y in range(topleft.y, bottomright.y + 1):
         for x in range(topleft.x, bottomright.x + 1):
             curr = Point(x, y)
-            if curr in board.rocks:
+            if curr in board.rocks or curr.y == board.cave_floor_y:
                 board_str += '#'
             elif curr in board.settled_sand or (sand_unit and curr == sand_unit.current_coords):
                 board_str += 'o'

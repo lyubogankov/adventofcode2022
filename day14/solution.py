@@ -103,7 +103,7 @@ def create_board(filepath: str, sand_origin: Point) -> Board:
 
 def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     moving_sand_unit.fall_step(board)
-    if moving_sand_unit.current_coords not in board.rock_bounding_box:
+    if board.cave_floor_y == math.inf and moving_sand_unit.current_coords not in board.rock_bounding_box:
         moving_sand_unit.falling_indefinitely = True
 
 def run_simulation(create_board_frame_fn, 
@@ -159,6 +159,9 @@ def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SA
     return board
 
 if __name__ == '__main__':
-    ### part one - how many sand units come to rest?
+    ### part one - how many sand units come to rest with abyss?
     board = obtain_part_one_simulated_board(inputfile='input.txt')
-    print(f'Number of sand units at rest: {len(board.settled_sand)}')
+    print(f'[1] Number of sand units at rest: {len(board.settled_sand)}')
+    ### part two - how many sand units come to rest with cave floor?
+    board = obtain_part_two_simulated_board(inputfile='input.txt')
+    print(f'[2] Number of sand units at rest: {len(board.settled_sand)}')

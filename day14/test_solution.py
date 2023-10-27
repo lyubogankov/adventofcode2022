@@ -142,5 +142,9 @@ class TestDay14(unittest.TestCase):
         board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)))
         self.assertEqual(board_str, expected)
 
+    def test_part_two_answer(self):
+        board = solution.obtain_part_two_simulated_board(inputfile=self.EXAMPLE)
+        self.assertEqual(len(board.settled_sand), 93)
+
 if __name__ == '__main__':
     unittest.main()
