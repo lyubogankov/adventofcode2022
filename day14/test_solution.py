@@ -13,12 +13,12 @@ class TestDay14(unittest.TestCase):
     INPUT   = 'input.txt'
 
     def test_file_parsing(self):
-        board = solution.create_board(filepath=self.EXAMPLE, sand_origin=Point(500, 0))
+        board = solution.create_board(filepath=self.EXAMPLE, sand_origin=solution.PUZZLE_SAND_ORIGIN)
         self.assertEqual(len(board.rocks), 20)
         self.assertEqual(len(board.settled_sand), 0)
 
     def test_string_visualization_initial_state(self):
-        board = solution.create_board(filepath=self.EXAMPLE, sand_origin=Point(500, 0))
+        board = solution.create_board(filepath=self.EXAMPLE, sand_origin=solution.PUZZLE_SAND_ORIGIN)
         board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
         example_output = \
 """......+...
@@ -120,6 +120,27 @@ class TestDay14(unittest.TestCase):
             viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
         )
         self.assertEqual(expected, falling_path_output)
+
+    def test_part_one_answer(self):
+        board = solution.obtain_part_one_simulated_board(inputfile=self.EXAMPLE)
+        self.assertEqual(24, len(board.settled_sand))
+
+    def test_part_two_printout(self):
+        expected = """............o............
+...........ooo...........
+..........ooooo..........
+.........ooooooo.........
+........oo#ooo##o........
+.......ooo#ooo#ooo.......
+......oo###ooo#oooo......
+.....oooo.oooo#ooooo.....
+....oooooooooo#oooooo....
+...ooo#########ooooooo...
+..ooooo.......ooooooooo..
+#########################"""
+        board = solution.obtain_part_two_simulated_board(inputfile=self.EXAMPLE)
+        board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)))
+        self.assertEqual(board_str, expected)
 
 if __name__ == '__main__':
     unittest.main()

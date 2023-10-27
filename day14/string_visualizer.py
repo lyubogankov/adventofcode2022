@@ -26,10 +26,10 @@ def board_as_string(board: Board, sand_unit: SandUnit, viewbounds: BoundingBox, 
             board_str += '\n'
     return board_str
 
-def animate_frames(create_board_frame_fn, frame_delay=0.3):
+def animate_frames(create_board_frame_fn, inputfile: str, sand_origin: Point, frame_delay=0.3):
     for i, frame in enumerate(solution.run_simulation(
-            inputfile='example.txt',
-            sand_origin=Point(500, 0),
+            inputfile=inputfile,
+            sand_origin=sand_origin,
             create_board_frame_fn=create_board_frame_fn)):
         os.system('cls')  # windows only
         print(frame)
@@ -46,9 +46,17 @@ def generate_falling_sand_block_path(inputfile: str, sand_origin: Point, viewbou
     return board_as_string(board, sand_unit=None, viewbounds=viewbounds, fall_path=fall_path_points)
 
 if __name__ == '__main__':
-    # animate_frames()
-    print(generate_falling_sand_block_path(
-        inputfile='example.txt',
-        sand_origin=Point(x=500, y=0),
-        viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
-    ))
+    # animate_frames(
+    #     inputfile='example.txt',
+    #     sand_origin=solution.PUZZLE_SAND_ORIGIN,
+    #     create_board_frame_fn=partial(board_as_string, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
+    # )
+
+    # print(generate_falling_sand_block_path(
+    #     inputfile='example.txt',
+    #     sand_origin=Point(x=500, y=0),
+    #     viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
+    # ))
+
+    board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
+    print(board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))

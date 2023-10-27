@@ -22,6 +22,8 @@ def pairwise(collection):
     for i in range(0, len(collection) - 1):
         yield (collection[i], collection[i+1])
 
+PUZZLE_SAND_ORIGIN = Point(500, 0)
+
 # this is the internal representation of the 2D cave slice
 class Board:
     """Program representation of 2D cave slice.
@@ -37,9 +39,13 @@ class Board:
         # - may be useful to Visualizers
         self.smallest_x = self.largest_x = sand_origin.x
         self.smallest_y = self.largest_y = sand_origin.y
+        self.cave_floor_y = math.inf # by default, no floor = abyss
 
     def occupied_tiles(self):
         return self.rocks.union(self.settled_sand)
+
+    def is_tile_occupied(self, tile: Point):
+        return tile in self.occupied_tiles() or tile.y == self.cave_floor_y
 
     def add_rock(self, coords: Point) -> None:
         self.rocks.add(coords)
@@ -59,11 +65,11 @@ class SandUnit:
         self.falling_indefinitely = False
 
     def fall_step(self, board: Board):
-        if (below := self.current_coords + Point(x=0, y=1)) not in board.occupied_tiles():
+        if not board.is_tile_occupied(below := self.current_coords + Point(x=0, y=1)):
             self.current_coords = below
-        elif (downleft := self.current_coords + Point(x=-1, y=1)) not in board.occupied_tiles():
+        elif not board.is_tile_occupied(downleft := self.current_coords + Point(x=-1, y=1)):
             self.current_coords = downleft
-        elif (downright := self.current_coords + Point(x=1, y=1)) not in board.occupied_tiles():
+        elif not board.is_tile_occupied(downright := self.current_coords + Point(x=1, y=1)):
             self.current_coords = downright
         else:
             self.at_rest = True
@@ -100,7 +106,10 @@ def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     if moving_sand_unit.current_coords not in board.rock_bounding_box:
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation(create_board_frame_fn, board: Board = None, inputfile: str = "", sand_origin: Point = None, sand_unit_limit=math.inf):
+def run_simulation(create_board_frame_fn, 
+                    board: Board = None, 
+                    inputfile: str = "", sand_origin: Point = PUZZLE_SAND_ORIGIN, 
+                    sand_unit_limit=math.inf):
     frames = []
     if board is None:
         board = create_board(inputfile, sand_origin)
@@ -117,6 +126,9 @@ def run_simulation(create_board_frame_fn, board: Board = None, inputfile: str = 
         # if this sand unit is in free fall, all others will also be
         if sand_unit.falling_indefinitely:
             break
+        # part 2 stipulation: if sand covers origin point, no more sand can fall down
+        if sand_unit.current_coords == board.sand_origin_pt:
+            break
         num_sand_blocks_dropped += 1
     return frames
 
@@ -129,11 +141,24 @@ def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: Boun
         sand_unit.fall_step(board)
     return fall_path
 
-if __name__ == '__main__':
-    # part one - how many sand units come to rest?
-    board = create_board('input.txt', sand_origin=Point(500, 0))
+def obtain_part_one_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
+    board = create_board(filepath=inputfile, sand_origin=sand_origin)
     run_simulation(
         board=board,
         create_board_frame_fn=lambda board, sand_unit: None
     )
+    return board
+
+def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
+    board = create_board(filepath=inputfile, sand_origin=sand_origin)
+    board.cave_floor_y = board.largest_y + 2
+    run_simulation(
+        board=board,
+        create_board_frame_fn=lambda board, sand_unit: None
+    )
+    return board
+
+if __name__ == '__main__':
+    ### part one - how many sand units come to rest?
+    board = obtain_part_one_simulated_board(inputfile='input.txt')
     print(f'Number of sand units at rest: {len(board.settled_sand)}')
