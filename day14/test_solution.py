@@ -1,10 +1,12 @@
 # std library
+from functools import partial
 import unittest
 # local
 import solution
 import string_visualizer
 
 Point = solution.Point
+BoundingBox = solution.BoundingBox
 
 class TestDay14(unittest.TestCase):
     EXAMPLE = 'example.txt'
@@ -17,7 +19,7 @@ class TestDay14(unittest.TestCase):
 
     def test_string_visualization_initial_state(self):
         board = solution.create_board(filepath=self.EXAMPLE, sand_origin=Point(500, 0))
-        board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=(Point(494, 0), Point(503, 9)))
+        board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
         example_output = \
 """......+...
 ..........
@@ -92,11 +94,32 @@ class TestDay14(unittest.TestCase):
             frames = solution.run_simulation(
                 inputfile=self.EXAMPLE,
                 sand_origin=Point(x=500, y=0),
-                create_board_frame_fn=string_visualizer.create_board_frame_fn,
+                create_board_frame_fn=partial(string_visualizer.board_as_string, viewbounds=BoundingBox(Point(494, 0), Point(503, 9))),
                 sand_unit_limit=number_of_grains_fallen
             )
             with self.subTest(i=number_of_grains_fallen):
                 self.assertEqual(expected_printout, frames[-1])
+
+    def test_falling_path_printout(self):
+        expected = """.......+...
+.......~...
+......~o...
+.....~ooo..
+....~#ooo##
+...~o#ooo#.
+..~###ooo#.
+..~..oooo#.
+.~o.ooooo#.
+~#########.
+~..........
+~..........
+~.........."""
+        falling_path_output = string_visualizer.generate_falling_sand_block_path(
+            inputfile=self.EXAMPLE,
+            sand_origin=Point(x=500, y=0),
+            viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
+        )
+        self.assertEqual(expected, falling_path_output)
 
 if __name__ == '__main__':
     unittest.main()

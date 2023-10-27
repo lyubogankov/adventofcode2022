@@ -47,6 +47,10 @@ class Board:
         self.largest_y  = max(coords.y, self.largest_y)
         self.smallest_x = min(coords.x, self.smallest_x)
         self.smallest_y = min(coords.y, self.smallest_y)
+        self.rock_bounding_box = BoundingBox(
+            topleft=Point(self.smallest_x, self.smallest_y),
+            bottomright=Point(self.largest_x, self.largest_y)
+        )
 
 class SandUnit:
     def __init__(self, starting_coords: Point):
@@ -93,20 +97,14 @@ def create_board(filepath: str, sand_origin: Point) -> Board:
 
 def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     moving_sand_unit.fall_step(board)
-    # detect if we're in "falling" state for current sand block
-    if moving_sand_unit.current_coords.x > board.largest_x \
-            or moving_sand_unit.current_coords.y > board.largest_y \
-            or moving_sand_unit.current_coords.x < board.smallest_x \
-            or moving_sand_unit.current_coords.y < board.smallest_y:
+    if moving_sand_unit.current_coords not in board.rock_bounding_box:
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, board: Board = None, sand_unit_limit=math.inf):
+def run_simulation(create_board_frame_fn, board: Board = None, inputfile: str = "", sand_origin: Point = None, sand_unit_limit=math.inf):
     frames = []
-    
     if board is None:
         board = create_board(inputfile, sand_origin)
     frames.append(create_board_frame_fn(board, sand_unit=None))
-
     num_sand_blocks_dropped = 0
     while num_sand_blocks_dropped < sand_unit_limit:
         # spawn a new sand unit from origin
@@ -119,18 +117,14 @@ def run_simulation(inputfile: str, sand_origin: Point, create_board_frame_fn, bo
         # if this sand unit is in free fall, all others will also be
         if sand_unit.falling_indefinitely:
             break
-        
         num_sand_blocks_dropped += 1
-
     return frames
-
-    # TODO: after the sim is run, use a "tracer" sand unit to see the path of falling sand!
 
 def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: BoundingBox):
     """Need to pass in a board that is already in a "completed" state"""
     sand_unit = SandUnit(board.sand_origin_pt)
     fall_path = []
-    while sand_unit in viewbounds:
+    while sand_unit.current_coords in viewbounds:
         fall_path.append(sand_unit.current_coords)
         sand_unit.fall_step(board)
     return fall_path
