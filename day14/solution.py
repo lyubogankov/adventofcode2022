@@ -106,23 +106,26 @@ def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     if board.cave_floor_y == math.inf and moving_sand_unit.current_coords not in board.rock_bounding_box:
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation(create_board_frame_fn, 
+def run_simulation(create_board_frame_fn = None,
                     board: Board = None, 
                     inputfile: str = "", sand_origin: Point = PUZZLE_SAND_ORIGIN, 
                     sand_unit_limit=math.inf):
     frames = []
     if board is None:
         board = create_board(inputfile, sand_origin)
-    frames.append(create_board_frame_fn(board, sand_unit=None))
+    if create_board_frame_fn:
+        frames.append(create_board_frame_fn(board, sand_unit=None))
     num_sand_blocks_dropped = 0
     while num_sand_blocks_dropped < sand_unit_limit:
         # spawn a new sand unit from origin
         sand_unit = SandUnit(board.sand_origin_pt)
-        frames.append(create_board_frame_fn(board, sand_unit))
+        if create_board_frame_fn:
+            frames.append(create_board_frame_fn(board, sand_unit))
         # drop it!
         while not sand_unit.at_rest and not sand_unit.falling_indefinitely:
             simulate_time_step(board, moving_sand_unit=sand_unit)
-            frames.append(create_board_frame_fn(board, sand_unit))
+            if create_board_frame_fn:
+                frames.append(create_board_frame_fn(board, sand_unit))
         # if this sand unit is in free fall, all others will also be
         if sand_unit.falling_indefinitely:
             break
@@ -143,19 +146,13 @@ def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: Boun
 
 def obtain_part_one_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
     board = create_board(filepath=inputfile, sand_origin=sand_origin)
-    run_simulation(
-        board=board,
-        create_board_frame_fn=lambda board, sand_unit: None
-    )
+    run_simulation(board=board)
     return board
 
 def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
     board = create_board(filepath=inputfile, sand_origin=sand_origin)
     board.cave_floor_y = board.largest_y + 2
-    run_simulation(
-        board=board,
-        create_board_frame_fn=lambda board, sand_unit: None
-    )
+    run_simulation(board=board)
     return board
 
 if __name__ == '__main__':

@@ -39,7 +39,7 @@ def generate_falling_sand_block_path(inputfile: str, sand_origin: Point, viewbou
     # get a fresh board
     board = solution.create_board(filepath=inputfile, sand_origin=sand_origin)
     # run the sim to obtain final board state
-    solution.run_simulation(board=board, create_board_frame_fn=lambda board, sand_unit: None)
+    solution.run_simulation(board=board)
     # trace fall path
     fall_path_points = solution.obtain_path_of_indefinitely_falling_sand_unit(board, viewbounds)
     # generate / return string!
