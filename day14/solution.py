@@ -41,11 +41,10 @@ class Board:
         self.smallest_y = self.largest_y = sand_origin.y
         self.cave_floor_y = math.inf # by default, no floor = abyss
 
-    def occupied_tiles(self):
-        return self.rocks.union(self.settled_sand)
-
     def is_tile_occupied(self, tile: Point):
-        return tile in self.occupied_tiles() or tile.y == self.cave_floor_y
+        return tile in self.rocks \
+            or tile in self.settled_sand \
+            or tile.y == self.cave_floor_y
 
     def add_rock(self, coords: Point) -> None:
         self.rocks.add(coords)
@@ -162,3 +161,9 @@ if __name__ == '__main__':
     ### part two - how many sand units come to rest with cave floor?
     board = obtain_part_two_simulated_board(inputfile='input.txt')
     print(f'[2] Number of sand units at rest: {len(board.settled_sand)}')
+
+    # import cProfile
+    # cProfile.run("obtain_part_two_simulated_board(inputfile='example.txt', sand_origin=Point(500, -35))", 'sim_stats')
+    # import pstats
+    # p = pstats.Stats('sim_stats')
+    # p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()
