@@ -128,3 +128,12 @@ def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: Boun
         fall_path.append(sand_unit.current_coords)
         sand_unit.fall_step(board)
     return fall_path
+
+if __name__ == '__main__':
+    # part one - how many sand units come to rest?
+    board = create_board('input.txt', sand_origin=Point(500, 0))
+    run_simulation(
+        board=board,
+        create_board_frame_fn=lambda board, sand_unit: None
+    )
+    print(f'Number of sand units at rest: {len(board.settled_sand)}')
