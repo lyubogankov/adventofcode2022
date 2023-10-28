@@ -31,9 +31,6 @@ def calculate_screen_width_height_tilesize(board, boundingbox):
     else:
         screen_height = MAX_HEIGHT
         screen_width = MAX_HEIGHT * board_aspect_ratio
-        if isinstance(screen_width, float):
-            screen_width = int(screen_width)
-            screen_height = screen_width / board_aspect_ratio
 
     def board_to_screen_x(board_x):
         return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
@@ -58,44 +55,19 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
     board.viewport = boundingbox
 
     board_aspect_ratio = boundingbox.width() / boundingbox.height()
-
-    # want to preserve aspect ratio of board -- want tiles to be square.
-    # MAX_WIDTH = 1500
-    # MAX_HEIGHT = 800
-    # if (preferred_width:= boundingbox.width()*50) <= MAX_WIDTH:
-    #     screen_width = preferred_width
-    # else:
-    #     screen_width = MAX_WIDTH
-    # width_preferred_height = screen_width / board_aspect_ratio
-
-    # if width_preferred_height <= MAX_HEIGHT:
-    #     screen_height = width_preferred_height
-    # else:
-    #     screen_height = MAX_HEIGHT
-    #     screen_width = MAX_HEIGHT * board_aspect_ratio
-    #     if isinstance(screen_width, float):
-    #         screen_width = int(screen_width)
-    #         screen_height = screen_width / board_aspect_ratio
-
-    # def board_to_screen_x(board_x):
-    #     return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
-    # def board_to_screen_y(board_y):
-    #     return (board_y - boundingbox.topleft.y)*(screen_height / boundingbox.height())
-
-    # screen_tile_px = board_to_screen_x(boundingbox.bottomright.x) / boundingbox.width()
     screen_width, screen_height, screen_tile_px = calculate_screen_width_height_tilesize(board, boundingbox)
     def board_to_screen_x(board_x):
         return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
     def board_to_screen_y(board_y):
         return (board_y - boundingbox.topleft.y)*(screen_height / boundingbox.height())
 
-    print('topleft', boundingbox.topleft)
-    print('bottomright', boundingbox.bottomright)
-    print('bb width', boundingbox.width())
-    print('bb height', boundingbox.height())
-    print('screen width', screen_width)
-    print('screen height', screen_height)
-    print('tile size', screen_tile_px)
+    # print('topleft', boundingbox.topleft)
+    # print('bottomright', boundingbox.bottomright)
+    # print('bb width', boundingbox.width())
+    # print('bb height', boundingbox.height())
+    # print('screen width', screen_width)
+    # print('screen height', screen_height)
+    # print('tile size', screen_tile_px)
 
     ### pygame setup
     pygame.init()

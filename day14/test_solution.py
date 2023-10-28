@@ -91,9 +91,9 @@ class TestDay14(unittest.TestCase):
 #########.""",
         ]
         for expected_printout, number_of_grains_fallen in zip(expected_printouts, [1, 2, 5, 22, 24]):
+            board = solution.create_board(filepath=self.EXAMPLE, sand_origin=solution.PUZZLE_SAND_ORIGIN)
             frames = solution.run_simulation(
-                inputfile=self.EXAMPLE,
-                sand_origin=Point(x=500, y=0),
+                board=board,
                 create_board_frame_fn=partial(string_visualizer.board_as_string, viewbounds=BoundingBox(Point(494, 0), Point(503, 9))),
                 sand_unit_limit=number_of_grains_fallen
             )
