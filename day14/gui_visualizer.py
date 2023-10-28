@@ -39,10 +39,7 @@ def calculate_screen_width_height_tilesize(board, boundingbox):
         return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
     tile_size = int(board_to_screen_x(boundingbox.bottomright.x) / boundingbox.width())
 
-    board_tile_width = screen_width  / boundingbox.width()
-    board_tile_height = screen_height  / boundingbox.height()
-
-    return board_tile_width*tile_size, board_tile_height*tile_size, tile_size    
+    return boundingbox.width()*tile_size, boundingbox.height()*tile_size, tile_size    
 
 def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=60):
     """
