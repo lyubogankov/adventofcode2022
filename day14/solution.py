@@ -108,27 +108,65 @@ def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
             and moving_sand_unit.current_coords not in (board.viewport if board.viewport else board.rock_bounding_box):
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation_frame_generator(board: Board,  sand_unit_limit=math.inf, create_board_frame_fn = None):
+# def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, sand_unit_limit=math.inf, time_steps_between_sand_unit_drops=None):
+#     if create_board_frame_fn:
+#         yield create_board_frame_fn(board, sand_unit=None)
+    
+#     num_sand_blocks_dropped = 0
+#     time_step = 0
+#     while num_sand_blocks_dropped < sand_unit_limit:
+#         # spawn a new sand unit from origin
+#         sand_unit = SandUnit(board.sand_origin_pt)
+#         if create_board_frame_fn:
+#             yield create_board_frame_fn(board, sand_unit)
+#         time_step += 1
+#         # drop it!
+#         while not sand_unit.at_rest and not sand_unit.falling_indefinitely:
+#             simulate_time_step(board, moving_sand_unit=sand_unit)
+#             if create_board_frame_fn:
+#                 yield create_board_frame_fn(board, sand_unit)
+#             time_step += 1
+#         # if this sand unit is in free fall, all others will also be
+#         if sand_unit.falling_indefinitely:
+#             break
+#         # part 2 stipulation: if sand covers origin point, no more sand can fall down
+#         if sand_unit.current_coords == board.sand_origin_pt:
+#             break
+#         num_sand_blocks_dropped += 1
+
+def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, sand_unit_limit=math.inf, time_steps_between_sand_unit_drops=None):
     if create_board_frame_fn:
-        yield create_board_frame_fn(board, sand_unit=None)
+        yield create_board_frame_fn(board, sand_units=[])
+    
     num_sand_blocks_dropped = 0
-    while num_sand_blocks_dropped < sand_unit_limit:
-        # spawn a new sand unit from origin
-        sand_unit = SandUnit(board.sand_origin_pt)
-        if create_board_frame_fn:
-            yield create_board_frame_fn(board, sand_unit)
-        # drop it!
-        while not sand_unit.at_rest and not sand_unit.falling_indefinitely:
+    time_step = 0
+
+    falling_sand_units = []
+    
+    while True:
+        # simulate time step - move all currently falling sand units, if needed spawn a new one
+        for sand_unit in falling_sand_units:
             simulate_time_step(board, moving_sand_unit=sand_unit)
-            if create_board_frame_fn:
-                yield create_board_frame_fn(board, sand_unit)
-        # if this sand unit is in free fall, all others will also be
-        if sand_unit.falling_indefinitely:
+        if time_steps_between_sand_unit_drops and time_step % time_steps_between_sand_unit_drops == 0 \
+                and num_sand_blocks_dropped <= sand_unit_limit:
+            falling_sand_units.append(SandUnit(board.sand_origin_pt))
+            num_sand_blocks_dropped += 1
+        time_step += 1
+
+        # now, remove the units that are not at rest
+        falling_sand_units = [s for s in falling_sand_units if not s.at_rest]
+
+        # create simulation frame
+        if create_board_frame_fn:
+            yield create_board_frame_fn(board, sand_units=falling_sand_units)
+
+        # test for loop break conditions
+        if any(s.falling_indefinitely for s in falling_sand_units):
             break
-        # part 2 stipulation: if sand covers origin point, no more sand can fall down
         if sand_unit.current_coords == board.sand_origin_pt:
             break
-        num_sand_blocks_dropped += 1
+        if falling_sand_units == []:
+            break
 
 def run_simulation(board: Board, sand_unit_limit=math.inf, create_board_frame_fn = None):
     return list(run_simulation_frame_generator(board, sand_unit_limit, create_board_frame_fn))
