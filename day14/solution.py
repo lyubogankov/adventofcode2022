@@ -15,7 +15,7 @@ import math
 import sys
 
 sys.path.append(r'C:\Users\lg\Documents\code\adventofcode2022')
-from common.point import BoundingBox, Point_2D as Point #nolint E402
+from common.point import BoundingBox, Point_2D as Point #noqa: E402
 
 # pairwise = itertools.pairwise
 def pairwise(collection):
@@ -74,7 +74,7 @@ class SandUnit:
             self.at_rest = True
             board.settled_sand.add(self.current_coords)
 
-def create_board(filepath: str, sand_origin: Point) -> Board:
+def create_board(filepath: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
     board = Board(sand_origin)
     with open(filepath, 'r') as input:
         lines = input.readlines()
@@ -105,26 +105,20 @@ def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     if board.cave_floor_y == math.inf and moving_sand_unit.current_coords not in board.rock_bounding_box:
         moving_sand_unit.falling_indefinitely = True
 
-def run_simulation(create_board_frame_fn = None,
-                    board: Board = None, 
-                    inputfile: str = "", sand_origin: Point = PUZZLE_SAND_ORIGIN, 
-                    sand_unit_limit=math.inf):
-    frames = []
-    if board is None:
-        board = create_board(inputfile, sand_origin)
+def run_simulation_frame_generator(board: Board,  sand_unit_limit=math.inf, create_board_frame_fn = None):
     if create_board_frame_fn:
-        frames.append(create_board_frame_fn(board, sand_unit=None))
+        yield create_board_frame_fn(board, sand_unit=None)
     num_sand_blocks_dropped = 0
     while num_sand_blocks_dropped < sand_unit_limit:
         # spawn a new sand unit from origin
         sand_unit = SandUnit(board.sand_origin_pt)
         if create_board_frame_fn:
-            frames.append(create_board_frame_fn(board, sand_unit))
+            yield create_board_frame_fn(board, sand_unit)
         # drop it!
         while not sand_unit.at_rest and not sand_unit.falling_indefinitely:
             simulate_time_step(board, moving_sand_unit=sand_unit)
             if create_board_frame_fn:
-                frames.append(create_board_frame_fn(board, sand_unit))
+                yield create_board_frame_fn(board, sand_unit)
         # if this sand unit is in free fall, all others will also be
         if sand_unit.falling_indefinitely:
             break
@@ -132,7 +126,9 @@ def run_simulation(create_board_frame_fn = None,
         if sand_unit.current_coords == board.sand_origin_pt:
             break
         num_sand_blocks_dropped += 1
-    return frames
+
+def run_simulation(board: Board, sand_unit_limit=math.inf, create_board_frame_fn = None):
+    return list(run_simulation_frame_generator(board, sand_unit_limit, create_board_frame_fn))
 
 def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: BoundingBox):
     """Need to pass in a board that is already in a "completed" state"""
@@ -148,9 +144,13 @@ def obtain_part_one_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SA
     run_simulation(board=board)
     return board
 
-def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
+def obtain_part_two_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN, floor_offset=2) -> Board:
     board = create_board(filepath=inputfile, sand_origin=sand_origin)
-    board.cave_floor_y = board.largest_y + 2
+    board.cave_floor_y = board.largest_y + floor_offset
+    return board
+
+def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SAND_ORIGIN, floor_offset=2) -> Board:
+    board = obtain_part_two_board(inputfile, sand_origin, floor_offset)
     run_simulation(board=board)
     return board
 

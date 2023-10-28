@@ -62,3 +62,9 @@ class BoundingBox:
     # in operator
     def __contains__(self, item: Point_2D):
         return item.x  in self.xrange and item.y in self.yrange
+
+    def width(self):
+        return abs(self.bottomright.x - self.topleft.x)
+
+    def height(self):
+        return abs(self.bottomright.y - self.topleft.y)
