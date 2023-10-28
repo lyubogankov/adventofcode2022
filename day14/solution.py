@@ -40,6 +40,8 @@ class Board:
         self.smallest_x = self.largest_x = sand_origin.x
         self.smallest_y = self.largest_y = sand_origin.y
         self.cave_floor_y = math.inf # by default, no floor = abyss
+        self.rock_bounding_box = None
+        self.viewport = None # user-set, overrides self.rock_bounding_box
 
     def is_tile_occupied(self, tile: Point):
         return tile in self.rocks \
@@ -102,7 +104,8 @@ def create_board(filepath: str, sand_origin: Point=PUZZLE_SAND_ORIGIN) -> Board:
 
 def simulate_time_step(board: Board, moving_sand_unit: SandUnit):
     moving_sand_unit.fall_step(board)
-    if board.cave_floor_y == math.inf and moving_sand_unit.current_coords not in board.rock_bounding_box:
+    if board.cave_floor_y == math.inf \
+            and moving_sand_unit.current_coords not in (board.viewport if board.viewport else board.rock_bounding_box):
         moving_sand_unit.falling_indefinitely = True
 
 def run_simulation_frame_generator(board: Board,  sand_unit_limit=math.inf, create_board_frame_fn = None):
