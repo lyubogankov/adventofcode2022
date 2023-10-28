@@ -1,5 +1,7 @@
 *.pyc
+
 aoc_venv/
+venv*
 
 *.png
 *.xcf
