@@ -143,7 +143,7 @@ def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN):
 if __name__ == '__main__':
     # animate_part_one_example()
     # animate_part_two_example()
-    animate_part_one_example(framerate=10, time_steps_between_sand_unit_drops=3)
+    animate_part_one_example(framerate=1, time_steps_between_sand_unit_drops=3)
 
 """
 TODO
