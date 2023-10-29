@@ -11,7 +11,7 @@ if sys.platform == 'win32':
 elif sys.platform == 'linux':
     CLEAR_SCREEN_CMD = 'clear'
 
-def board_as_string(board: Board, sand_unit: SandUnit, viewbounds: BoundingBox, fall_path=[]):
+def board_as_string(board: Board, sand_units, viewbounds: BoundingBox, fall_path=[]):
     board_str = ""
     # top -> bottom, left -> right
     topleft, bottomright = viewbounds.topleft, viewbounds.bottomright
@@ -20,7 +20,7 @@ def board_as_string(board: Board, sand_unit: SandUnit, viewbounds: BoundingBox, 
             curr = Point(x, y)
             if curr in board.rocks or curr.y == board.cave_floor_y:
                 board_str += '#'
-            elif curr in board.settled_sand or (sand_unit and curr == sand_unit.current_coords):
+            elif curr in board.settled_sand or (sand_units and any(curr == s.current_coords for s in sand_units)):
                 board_str += 'o'
             elif curr == board.sand_origin_pt:
                 board_str += '+'
@@ -48,7 +48,7 @@ def generate_falling_sand_block_path(inputfile: str, viewbounds: BoundingBox, sa
     # trace fall path
     fall_path_points = solution.obtain_path_of_indefinitely_falling_sand_unit(board, viewbounds)
     # generate / return string!
-    return board_as_string(board, sand_unit=None, viewbounds=viewbounds, fall_path=fall_path_points)
+    return board_as_string(board, sand_units=[], viewbounds=viewbounds, fall_path=fall_path_points)
 
 if __name__ == '__main__':
     
@@ -68,4 +68,4 @@ if __name__ == '__main__':
 
     ## part two ending state
     board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
-    print(board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))
+    print(board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))

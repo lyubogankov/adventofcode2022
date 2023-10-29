@@ -143,14 +143,14 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
 
     falling_sand_units = []
     
-    while num_sand_blocks_dropped <= sand_unit_limit or falling_sand_units:
+    while num_sand_blocks_dropped < sand_unit_limit or falling_sand_units:
         # simulate time step - move all currently falling sand units, if needed spawn a new one
         for sand_unit in falling_sand_units:
             simulate_time_step(board, moving_sand_unit=sand_unit)
 
         if ((time_steps_between_sand_unit_drops and time_step % time_steps_between_sand_unit_drops == 0) \
                 or falling_sand_units == []) \
-                and num_sand_blocks_dropped <= sand_unit_limit:
+                and num_sand_blocks_dropped < sand_unit_limit:
             falling_sand_units.append(SandUnit(board.sand_origin_pt))
             num_sand_blocks_dropped += 1
         time_step += 1
@@ -165,11 +165,11 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
         # test for loop break conditions
         if any(s.falling_indefinitely for s in falling_sand_units):
             break
-        if sand_unit.current_coords == board.sand_origin_pt:
+        if board.sand_origin_pt in board.settled_sand:
             break
 
-def run_simulation(board: Board, sand_unit_limit=math.inf, create_board_frame_fn = None):
-    return list(run_simulation_frame_generator(board, sand_unit_limit, create_board_frame_fn))
+def run_simulation(board: Board, create_board_frame_fn = None, sand_unit_limit=math.inf, time_steps_between_sand_unit_drops=None):
+    return list(run_simulation_frame_generator(board, create_board_frame_fn, sand_unit_limit, time_steps_between_sand_unit_drops))
 
 def obtain_path_of_indefinitely_falling_sand_unit(board: Board, viewbounds: BoundingBox):
     """Need to pass in a board that is already in a "completed" state"""

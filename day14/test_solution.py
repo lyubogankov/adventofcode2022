@@ -19,7 +19,7 @@ class TestDay14(unittest.TestCase):
 
     def test_string_visualization_initial_state(self):
         board = solution.create_board(filepath=self.EXAMPLE, sand_origin=solution.PUZZLE_SAND_ORIGIN)
-        board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
+        board_str = string_visualizer.board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
         example_output = \
 """......+...
 ..........
@@ -139,7 +139,7 @@ class TestDay14(unittest.TestCase):
 ..ooooo.......ooooooooo..
 #########################"""
         board = solution.obtain_part_two_simulated_board(inputfile=self.EXAMPLE)
-        board_str = string_visualizer.board_as_string(board, sand_unit=None, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)))
+        board_str = string_visualizer.board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11)))
         self.assertEqual(board_str, expected)
 
     def test_part_two_answer(self):
