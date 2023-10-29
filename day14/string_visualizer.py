@@ -53,19 +53,19 @@ def generate_falling_sand_block_path(inputfile: str, viewbounds: BoundingBox, sa
 if __name__ == '__main__':
     
     ## part one command line animation
-    # board = solution.create_board(filepath='example.txt')
-    # animate_frames(board, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
+    board = solution.create_board(filepath='example.txt')
+    animate_frames(board, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
 
     ## part one falling sand unit path
-    print(generate_falling_sand_block_path(
-        inputfile='example.txt',
-        viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
-    ))
+    # print(generate_falling_sand_block_path(
+    #     inputfile='example.txt',
+    #     viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
+    # ))
 
     ## part two command line animation
     # board = solution.obtain_part_two_board(inputfile='example.txt')
     # animate_frames(board=board, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)), frame_delay=0.005)
 
     ## part two ending state
-    board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
-    print(board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))
+    # board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
+    # print(board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))
