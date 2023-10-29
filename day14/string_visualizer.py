@@ -32,10 +32,11 @@ def board_as_string(board: Board, sand_units, viewbounds: BoundingBox, fall_path
             board_str += '\n'
     return board_str
 
-def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3):
+def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3, time_steps_between_sand_unit_drops=None):
     for i, frame in enumerate(solution.run_simulation(
             board=board,
-            create_board_frame_fn=partial(board_as_string, viewbounds=viewbounds))):
+            create_board_frame_fn=partial(board_as_string, viewbounds=viewbounds),
+            time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops)):
         os.system(CLEAR_SCREEN_CMD)
         print(frame)
         time.sleep(frame_delay)
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     
     ## part one command line animation
     board = solution.create_board(filepath='example.txt')
-    animate_frames(board, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)))
+    animate_frames(board, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)), time_steps_between_sand_unit_drops=2)
 
     ## part one falling sand unit path
     # print(generate_falling_sand_block_path(

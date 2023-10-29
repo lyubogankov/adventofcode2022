@@ -139,6 +139,8 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
         # test for loop break conditions
         if any(s.falling_indefinitely for s in falling_sand_units):
             sand_unit_limit = num_sand_blocks_dropped
+        if falling_sand_units and all(s.falling_indefinitely for s in falling_sand_units):
+            break
         if board.sand_origin_pt in board.settled_sand:
             break
 
