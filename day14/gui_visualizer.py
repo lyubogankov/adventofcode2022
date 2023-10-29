@@ -158,9 +158,9 @@ def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60
     )
 
 if __name__ == '__main__':
-    # animate_part_one_example(time_steps_between_sand_unit_drops=2)
+    animate_part_one_example(time_steps_between_sand_unit_drops=None)
     # animate_part_two_example(time_steps_between_sand_unit_drops=2)
-    animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
+    # animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
     # animate_part_two_input(framerate=100, time_steps_between_sand_unit_drops=2)
 
 """
