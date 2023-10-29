@@ -189,7 +189,7 @@ def obtain_board_bb(board: Board) -> BoundingBox:
     rockbb = board.rock_bounding_box
     return BoundingBox(
         Point(min(sandbb.topleft.x, rockbb.topleft.x),         min(sandbb.topleft.y, rockbb.topleft.y)),
-        Point(max(sandbb.bottomright.x, rockbb.bottomright.x), max(sandbb.bottomright.x, rockbb.bottomright.x))
+        Point(max(sandbb.bottomright.x, rockbb.bottomright.x), max(sandbb.bottomright.y, rockbb.bottomright.y) if board.cave_floor_y == math.inf else max(sandbb.bottomright.y, rockbb.bottomright.y, board.cave_floor_y))
     )
 
 if __name__ == '__main__':
