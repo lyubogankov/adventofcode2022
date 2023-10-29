@@ -11,6 +11,7 @@
 
 """
 # import itertools
+import copy
 import math
 import sys
 
@@ -170,6 +171,26 @@ def obtain_part_two_simulated_board(inputfile: str, sand_origin: Point=PUZZLE_SA
     board = obtain_part_two_board(inputfile, sand_origin, floor_offset)
     run_simulation(board=board)
     return board
+
+def run_simulation_to_obtain_sand_bounds(board: Board) -> BoundingBox:
+    _board = copy.deepcopy(board)
+    run_simulation(_board, time_steps_between_sand_unit_drops=2)
+    smallest_sand_x = smallest_sand_y = math.inf
+    largest_sand_x = largest_sand_y = -math.inf
+    for sandgrain in _board.settled_sand:
+        smallest_sand_x = min(smallest_sand_x, sandgrain.x)
+        smallest_sand_y = min(smallest_sand_y, sandgrain.y)
+        largest_sand_x  = max(largest_sand_x, sandgrain.x)
+        largest_sand_y  = max(largest_sand_y, sandgrain.y)
+    return BoundingBox(Point(smallest_sand_x, smallest_sand_y), Point(largest_sand_x, largest_sand_y))
+
+def obtain_board_bb(board: Board) -> BoundingBox:
+    sandbb = run_simulation_to_obtain_sand_bounds(board)
+    rockbb = board.rock_bounding_box
+    return BoundingBox(
+        Point(min(sandbb.topleft.x, rockbb.topleft.x),         min(sandbb.topleft.y, rockbb.topleft.y)),
+        Point(max(sandbb.bottomright.x, rockbb.bottomright.x), max(sandbb.bottomright.x, rockbb.bottomright.x))
+    )
 
 if __name__ == '__main__':
     ### part one - how many sand units come to rest with abyss?

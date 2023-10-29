@@ -47,15 +47,7 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
 
     # run the simulation to see if the sand spills over the rock bounding box (like for input, pt 2)
     print('Performing preliminary simulation before visualization to confirm view bounds...')
-    boardcopy = copy.deepcopy(board)
-    solution.run_simulation(boardcopy, time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops)
-    smallest_sand_x = smallest_sand_y = math.inf
-    largest_sand_x = largest_sand_y = -math.inf
-    for sandgrain in boardcopy.settled_sand:
-        smallest_sand_x = min(smallest_sand_x, sandgrain.x)
-        smallest_sand_y = min(smallest_sand_y, sandgrain.y)
-        largest_sand_x  = max(largest_sand_x, sandgrain.x)
-        largest_sand_y  = max(largest_sand_y, sandgrain.y)
+    boardbb = solution.obtain_board_bb(board)
 
     ### start the simulation
     framegen = solution.run_simulation_frame_generator(
@@ -65,15 +57,7 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
     )
 
     ### calculating screen size
-    bb = viewbounds if viewbounds else board.rock_bounding_box
-
-    if largest_sand_x > bb.bottomright.x or largest_sand_y > bb.bottomright.y \
-            or smallest_sand_x < bb.topleft.x or smallest_sand_y < bb.topleft.y:
-        bb = BoundingBox(
-            topleft=Point(smallest_sand_x, smallest_sand_y),
-            bottomright=Point(largest_sand_x, largest_sand_y)
-        )
-
+    bb = viewbounds if viewbounds else boardbb
     boundingbox = BoundingBox(
         topleft = bb.topleft - Point(1, 1),
         bottomright = bb.bottomright + Point(x=2, y=2 + ((board.cave_floor_y - board.rock_bounding_box.bottomright.y) if board.cave_floor_y < math.inf else 0))

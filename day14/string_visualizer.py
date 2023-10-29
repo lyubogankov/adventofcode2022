@@ -33,6 +33,15 @@ def board_as_string(board: Board, sand_units, viewbounds: BoundingBox, fall_path
     return board_str
 
 def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3, time_steps_between_sand_unit_drops=None):
+    """Animates simulation frames using command prompt stdout!
+    
+    `board` - representation of board.  Should be initial state for full animation.
+
+    `viewbounds` - board coordinates to display (could be subset of board).
+        If `None`, viewbounds will be automatically calculated to fit all rock/sand units.
+    """
+    if viewbounds is None:
+        viewbounds = solution.obtain_board_bb(board)
     for i, frame in enumerate(solution.run_simulation(
             board=board,
             create_board_frame_fn=partial(board_as_string, viewbounds=viewbounds),
