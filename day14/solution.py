@@ -143,11 +143,13 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
 
     falling_sand_units = []
     
-    while True:
+    while num_sand_blocks_dropped <= sand_unit_limit or falling_sand_units:
         # simulate time step - move all currently falling sand units, if needed spawn a new one
         for sand_unit in falling_sand_units:
             simulate_time_step(board, moving_sand_unit=sand_unit)
-        if time_steps_between_sand_unit_drops and time_step % time_steps_between_sand_unit_drops == 0 \
+
+        if ((time_steps_between_sand_unit_drops and time_step % time_steps_between_sand_unit_drops == 0) \
+                or falling_sand_units == []) \
                 and num_sand_blocks_dropped <= sand_unit_limit:
             falling_sand_units.append(SandUnit(board.sand_origin_pt))
             num_sand_blocks_dropped += 1
@@ -164,8 +166,6 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
         if any(s.falling_indefinitely for s in falling_sand_units):
             break
         if sand_unit.current_coords == board.sand_origin_pt:
-            break
-        if falling_sand_units == []:
             break
 
 def run_simulation(board: Board, sand_unit_limit=math.inf, create_board_frame_fn = None):
