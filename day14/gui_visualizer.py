@@ -1,3 +1,4 @@
+import copy
 import functools
 import math
 
@@ -44,6 +45,18 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
     `viewbounds` overrides use of `board.rock_bounding_box`
     """
 
+    # run the simulation to see if the sand spills over the rock bounding box (like for input, pt 2)
+    print('Performing preliminary simulation before visualization to confirm view bounds...')
+    boardcopy = copy.deepcopy(board)
+    solution.run_simulation(boardcopy, time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops)
+    smallest_sand_x = smallest_sand_y = math.inf
+    largest_sand_x = largest_sand_y = -math.inf
+    for sandgrain in boardcopy.settled_sand:
+        smallest_sand_x = min(smallest_sand_x, sandgrain.x)
+        smallest_sand_y = min(smallest_sand_y, sandgrain.y)
+        largest_sand_x  = max(largest_sand_x, sandgrain.x)
+        largest_sand_y  = max(largest_sand_y, sandgrain.y)
+
     ### start the simulation
     framegen = solution.run_simulation_frame_generator(
         board,
@@ -53,13 +66,20 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
 
     ### calculating screen size
     bb = viewbounds if viewbounds else board.rock_bounding_box
+
+    if largest_sand_x > bb.bottomright.x or largest_sand_y > bb.bottomright.y \
+            or smallest_sand_x < bb.topleft.x or smallest_sand_y < bb.topleft.y:
+        bb = BoundingBox(
+            topleft=Point(smallest_sand_x, smallest_sand_y),
+            bottomright=Point(largest_sand_x, largest_sand_y)
+        )
+
     boundingbox = BoundingBox(
         topleft = bb.topleft - Point(1, 1),
-        bottomright = bb.bottomright + Point(2, 2)
+        bottomright = bb.bottomright + Point(x=2, y=2 + ((board.cave_floor_y - board.rock_bounding_box.bottomright.y) if board.cave_floor_y < math.inf else 0))
     )
     board.viewport = boundingbox
 
-    board_aspect_ratio = boundingbox.width() / boundingbox.height()
     screen_width, screen_height, screen_tile_px = calculate_screen_width_height_tilesize(board, boundingbox)
     def board_to_screen_x(board_x):
         return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
@@ -70,7 +90,7 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
             surface=screen, color=color, 
             rect=(board_to_screen_x(board_toplx), board_to_screen_y(board_toply), screen_tile_px, screen_tile_px)
         )
-    draw_rock = functools.partial(draw_square, 'gray')
+    draw_rock = functools.partial(draw_square, 'gray35')
     draw_sand = functools.partial(draw_square, 'gold3')
 
     ### pygame setup
@@ -83,9 +103,17 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
     simulation_running = True
 
     while running:
+        # checking for quit
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+        # framerate up/down
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            framerate += 1
+        if keys[pygame.K_s]:
+            framerate -= 1
 
         ### rendering!
         # for now, keeping it simple - clearing screen per frame
@@ -158,10 +186,10 @@ def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60
     )
 
 if __name__ == '__main__':
-    animate_part_one_example(time_steps_between_sand_unit_drops=None)
+    # animate_part_one_example(time_steps_between_sand_unit_drops=None)
     # animate_part_two_example(time_steps_between_sand_unit_drops=2)
     # animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
-    # animate_part_two_input(framerate=100, time_steps_between_sand_unit_drops=2)
+    animate_part_two_input(framerate=60, time_steps_between_sand_unit_drops=2)
 
 """
 DONE
@@ -170,8 +198,6 @@ This will greatly speed up the simulation of the big input.  I can store a list 
 sand units.
 
 TODO
-
 2. Simulate inputs on my landscape 1080p monitor!
-
 3. Save images from simulation and make a gif :)
 """
