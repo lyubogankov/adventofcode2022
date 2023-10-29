@@ -1,3 +1,4 @@
+import functools
 import math
 
 import pygame
@@ -38,13 +39,17 @@ def calculate_screen_width_height_tilesize(board, boundingbox):
 
     return boundingbox.width()*tile_size, boundingbox.height()*tile_size, tile_size    
 
-def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=60):
+def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=60, time_steps_between_sand_unit_drops=None):
     """
     `viewbounds` overrides use of `board.rock_bounding_box`
     """
 
     ### start the simulation
-    framegen = solution.run_simulation_frame_generator(board, create_board_frame_fn=lambda board, sand_unit: sand_unit)
+    framegen = solution.run_simulation_frame_generator(
+        board,
+        create_board_frame_fn=lambda board, sand_units: sand_units,
+        time_steps_between_sand_unit_drops = time_steps_between_sand_unit_drops
+    )
 
     ### calculating screen size
     bb = viewbounds if viewbounds else board.rock_bounding_box
@@ -60,14 +65,13 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
         return (board_x - boundingbox.topleft.x)*(screen_width  / boundingbox.width())
     def board_to_screen_y(board_y):
         return (board_y - boundingbox.topleft.y)*(screen_height / boundingbox.height())
-
-    # print('topleft', boundingbox.topleft)
-    # print('bottomright', boundingbox.bottomright)
-    # print('bb width', boundingbox.width())
-    # print('bb height', boundingbox.height())
-    # print('screen width', screen_width)
-    # print('screen height', screen_height)
-    # print('tile size', screen_tile_px)
+    def draw_square(color, board_toplx, board_toply):
+        pygame.draw.rect(
+            surface=screen, color=color, 
+            rect=(board_to_screen_x(board_toplx), board_to_screen_y(board_toply), screen_tile_px, screen_tile_px)
+        )
+    draw_rock = functools.partial(draw_square, 'gray')
+    draw_sand = functools.partial(draw_square, 'gold3')
 
     ### pygame setup
     pygame.init()
@@ -88,50 +92,41 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
         screen.fill('black')
 
         # sand source
-        pygame.draw.rect(
-            surface=screen, color='magenta', 
-            rect=(board_to_screen_x(board.sand_origin_pt.x), board_to_screen_y(board.sand_origin_pt.y), screen_tile_px, screen_tile_px)
-        )
+        draw_square(color='magenta', board_toplx=board.sand_origin_pt.x, board_toply=board.sand_origin_pt.y)
 
         # rocks
         for rock in board.rocks:
-            pygame.draw.rect(
-                surface=screen, color='gray', 
-                rect=(board_to_screen_x(rock.x), board_to_screen_y(rock.y), screen_tile_px, screen_tile_px)
-            )
+            draw_rock(rock.x, rock.y)
         if board.cave_floor_y < math.inf:
-            for x in range(0, screen_width, int(screen_tile_px)):
-                pygame.draw.rect(
-                    surface=screen, color='gray', 
-                    rect=(x, board_to_screen_y(board.cave_floor_y), screen_tile_px, screen_tile_px)
-                )
+            # for x in range(0, screen_width, int(screen_tile_px)):
+            for x in range(boundingbox.topleft.x, boundingbox.bottomright.x):
+                draw_rock(x, board.cave_floor_y)
         # sand
         for sand in board.settled_sand:
-            pygame.draw.rect(
-                surface=screen, color='gold3',
-                rect=(board_to_screen_x(sand.x), board_to_screen_y(sand.y), screen_tile_px, screen_tile_px)
-            )
+            draw_sand(sand.x, sand.y)
 
         # # next simulation frame
         if simulation_running:
             try:
-                falling_sand_unit = next(framegen)
+                falling_sand_units = next(framegen)
             except StopIteration:
                 simulation_running = False
-        if falling_sand_unit:
+        for falling_sand_unit in falling_sand_units:
             fallingsand = falling_sand_unit.current_coords
-            pygame.draw.rect(
-                surface=screen, color='gold3',
-                rect=(board_to_screen_x(fallingsand.x), board_to_screen_y(fallingsand.y), screen_tile_px, screen_tile_px)
-            )
+            draw_sand(fallingsand.x, fallingsand.y)
 
         ### display to window
         pygame.display.flip()
         dt = clock.tick(framerate) / 1000        
 
-def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN):
+def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
     board = solution.create_board(filepath='example.txt', sand_origin=sand_origin)
-    animate_frames(board, viewbounds=BoundingBox(board.rock_bounding_box.topleft, board.rock_bounding_box.bottomright + Point(0, 2)))
+    animate_frames(
+        board,
+        viewbounds=BoundingBox(board.rock_bounding_box.topleft, board.rock_bounding_box.bottomright + Point(0, 2)),
+        framerate=framerate,
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+    )
 
 def animate_part_two_example(sand_origin=solution.PUZZLE_SAND_ORIGIN):
     board = solution.obtain_part_two_board(inputfile='example.txt', sand_origin=sand_origin)
@@ -148,7 +143,7 @@ def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN):
 if __name__ == '__main__':
     # animate_part_one_example()
     # animate_part_two_example()
-    animate_part_one_input(framerate=100)
+    animate_part_one_example(framerate=10, time_steps_between_sand_unit_drops=3)
 
 """
 TODO
