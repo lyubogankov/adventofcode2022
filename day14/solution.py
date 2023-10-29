@@ -129,12 +129,12 @@ def run_simulation_frame_generator(board: Board, create_board_frame_fn = None, s
             num_sand_blocks_dropped += 1
         time_step += 1
 
-        # now, remove the units that are not at rest
-        falling_sand_units = [s for s in falling_sand_units if not s.at_rest]
-
         # create simulation frame
         if create_board_frame_fn:
             yield create_board_frame_fn(board, sand_units=falling_sand_units)
+
+        # now, remove the units that are not at rest
+        falling_sand_units = [s for s in falling_sand_units if not s.at_rest]
 
         # test for loop break conditions
         if any(s.falling_indefinitely for s in falling_sand_units):

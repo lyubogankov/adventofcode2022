@@ -111,15 +111,19 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
                 falling_sand_units = next(framegen)
             except StopIteration:
                 simulation_running = False
+        any_sand_indefinitely_falling = any(s.falling_indefinitely for s in falling_sand_units)
         for falling_sand_unit in falling_sand_units:
             fallingsand = falling_sand_unit.current_coords
-            draw_sand(fallingsand.x, fallingsand.y)
+            if not any_sand_indefinitely_falling:
+                draw_sand(fallingsand.x, fallingsand.y)
+            else:
+                draw_square('red', fallingsand.x, fallingsand.y)
 
         ### display to window
         pygame.display.flip()
         dt = clock.tick(framerate) / 1000        
 
-def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
+def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None):
     board = solution.create_board(filepath='example.txt', sand_origin=sand_origin)
     animate_frames(
         board,
@@ -128,29 +132,44 @@ def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=
         time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
     )
 
-def animate_part_two_example(sand_origin=solution.PUZZLE_SAND_ORIGIN):
+def animate_part_two_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None):
     board = solution.obtain_part_two_board(inputfile='example.txt', sand_origin=sand_origin)
-    animate_frames(board, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)))
+    animate_frames(
+        board,
+        viewbounds=BoundingBox(Point(488, 0), Point(512, 11)),
+        framerate=framerate,
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+    )
 
-def animate_part_one_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60):
+def animate_part_one_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
     board = solution.create_board(filepath='input.txt', sand_origin=sand_origin)
-    animate_frames(board, framerate=framerate)
+    animate_frames(
+        board,
+        framerate=framerate,
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+    )
 
-def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN):
+def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
     board = solution.obtain_part_two_board(inputfile='input.txt', sand_origin=sand_origin)
-    animate_frames(board)
+    animate_frames(
+        board,
+        framerate=framerate,
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+    )
 
 if __name__ == '__main__':
-    # animate_part_one_example()
-    # animate_part_two_example()
-    animate_part_one_example(framerate=1, time_steps_between_sand_unit_drops=3)
+    # animate_part_one_example(time_steps_between_sand_unit_drops=2)
+    # animate_part_two_example(time_steps_between_sand_unit_drops=2)
+    animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
+    # animate_part_two_input(framerate=100, time_steps_between_sand_unit_drops=2)
 
 """
-TODO
-
+DONE
 1. Make the simulation accept a parameter - number_of_time_steps_between_sand_unit_drops: int or None
 This will greatly speed up the simulation of the big input.  I can store a list of currently falling
 sand units.
+
+TODO
 
 2. Simulate inputs on my landscape 1080p monitor!
 
