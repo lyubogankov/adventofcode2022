@@ -45,10 +45,10 @@ class Sensor:
         return range(self.coords.x - x_len, self.coords.x + x_len + 1)
 
     def is_within_exclusion_zone(self, point: CoordPair) -> bool:
+        # breakpoint()
         if point.x > self.coords.x + self.radius or point.x < self.coords.x - self.radius:
             return False
-        x_range = self.points_within_exclusion_zone_row(point.y) == []
-        return point.x in x_range
+        return point.x in self.points_within_exclusion_zone_row(point.y)
         
 def parse_input_file_into_sensors_and_beacons(inputfile): # -> List[Sensor]:
     sensors = []
