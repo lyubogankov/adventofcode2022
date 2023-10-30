@@ -79,3 +79,13 @@ if __name__ == '__main__':
     ## part two ending state
     # board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
     # print(board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))
+
+"""
+TODO
+use asciinema to record the screen-visualized output!!
+    https://github.com/asciinema/asciinema
+
+then I can put this in the readme :)
+
+Maybe I can use this? https://pypi.org/project/asciimatics/
+"""
