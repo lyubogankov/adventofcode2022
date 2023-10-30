@@ -3,15 +3,9 @@ import math
 import solution
 from solution import Sensor, CoordPair
 
-def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[]):
+def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[], highlight_y=None):
     # finding boundary of coordinate grid
-    smallest_x = smallest_y = math.inf
-    largest_x = largest_y = -math.inf
-    for s in sensors:
-        smallest_x = min(smallest_x, s.coords.x, s.nearest_beacon_coords.x, s.coords.x - s.radius if s.coords in show_excl_sensor_coords else  math.inf)
-        smallest_y = min(smallest_y, s.coords.y, s.nearest_beacon_coords.y, s.coords.y - s.radius if s.coords in show_excl_sensor_coords else  math.inf)
-        largest_x  = max(largest_x,  s.coords.x, s.nearest_beacon_coords.x, s.coords.x + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
-        largest_y  = max(largest_y,  s.coords.y, s.nearest_beacon_coords.y, s.coords.y + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
+    smallest_x, smallest_y, largest_x, largest_y = solution.calculate_map_bounds(sensors, show_excl_sensor_coords)
     # create output string
     mapstr = ""
     for y in range(smallest_y, largest_y + 1):
@@ -29,6 +23,8 @@ def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[]):
                     break
             else:
                 mapstr += '.'
+        if y == highlight_y:
+            mapstr += ' ***'
         if y != largest_y:
             mapstr += '\n'
     return mapstr
@@ -46,4 +42,4 @@ if __name__ == '__main__':
     ## visualizing all sensors' exclusion areas
     sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile='example.txt')
     sensor_coords = [s.coords for s in sensors]
-    print(visualize_sensor_beacon_map(sensors, sensor_coords))
+    print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_y=10))

@@ -24,5 +24,10 @@ class TestDay15(unittest.TestCase):
         )
         self.assertEqual(expected, exclusion_printout)
 
+    def test_part_one_row_exclusion_count(self):
+        sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)
+        count = solution.count_excluded_points_within_row(sensors, y=10)
+        self.assertEqual(count, 26)
+
 if __name__ == '__main__':
     unittest.main()

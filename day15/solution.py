@@ -19,6 +19,7 @@ Each sensor can first calculate the manhattan distance to the closest beacon.
 I also want to generate an image with all of the exclusion zones - maybe they make a cool shape!
 Give them different / random colors and each with some opacity!
 """
+import math
 import re
 from collections import namedtuple
 
@@ -59,3 +60,30 @@ def parse_input_file_into_sensors_and_beacons(inputfile): # -> List[Sensor]:
         sx, sy, bx, by = map(int, pattern.search(line).groups())
         sensors.append(Sensor(coords=CoordPair(sx, sy), nearest_beacon_coords=CoordPair(bx, by)))
     return sensors
+
+def calculate_map_bounds(sensors, show_excl_sensor_coords=[]):
+    smallest_x = smallest_y = math.inf
+    largest_x = largest_y = -math.inf
+    for s in sensors:
+        smallest_x = min(smallest_x, s.coords.x, s.nearest_beacon_coords.x, s.coords.x - s.radius if s.coords in show_excl_sensor_coords else  math.inf)
+        smallest_y = min(smallest_y, s.coords.y, s.nearest_beacon_coords.y, s.coords.y - s.radius if s.coords in show_excl_sensor_coords else  math.inf)
+        largest_x  = max(largest_x,  s.coords.x, s.nearest_beacon_coords.x, s.coords.x + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
+        largest_y  = max(largest_y,  s.coords.y, s.nearest_beacon_coords.y, s.coords.y + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
+    return smallest_x, smallest_y, largest_x, largest_y
+
+# part one question
+def count_excluded_points_within_row(sensors, y: int) -> int:
+    smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=[s.coords for s in sensors])
+    # if target row is outside of all exclusion bounds, no point in counting anything
+    if y > largest_y or y < smallest_y:
+        return 0
+    # now, iterate over the row and count number of points within any sensor's exclusion zone
+    count = 0
+    for x in range(smallest_x, largest_x + 1):
+        current = CoordPair(x, y)
+        is_beacon = any(s.nearest_beacon_coords == current for s in sensors)
+        for s in sensors:
+            if s.is_within_exclusion_zone(current) and not is_beacon:
+                count += 1
+                break
+    return count
