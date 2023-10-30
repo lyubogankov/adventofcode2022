@@ -73,7 +73,9 @@ def calculate_map_bounds(sensors, show_excl_sensor_coords=[]):
 
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
-    smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=[s.coords for s in sensors])
+    sensor_coords = set(s.coords for s in sensors)
+    beacon_coords = set(s.nearest_beacon_coords for s in sensors)
+    smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=sensor_coords)
     # if target row is outside of all exclusion bounds, no point in counting anything
     if y > largest_y or y < smallest_y:
         return 0
@@ -81,9 +83,12 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
     count = 0
     for x in range(smallest_x, largest_x + 1):
         current = CoordPair(x, y)
-        is_beacon = any(s.nearest_beacon_coords == current for s in sensors)
         for s in sensors:
-            if s.is_within_exclusion_zone(current) and not is_beacon:
+            if s.is_within_exclusion_zone(current) and current not in beacon_coords and current not in sensor_coords:
                 count += 1
                 break
     return count
+
+if __name__ == '__main__':
+    sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
+    print('part one:', count_excluded_points_within_row(sensors, y=2000000))
