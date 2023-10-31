@@ -37,19 +37,15 @@ class Sensor:
         self.coords = coords
         self.nearest_beacon_coords = nearest_beacon_coords
         self.radius = abs(coords.x - nearest_beacon_coords.x) + abs(coords.y - nearest_beacon_coords.y)
-
-    def points_within_exclusion_zone_row(self, y):  # -> range:
-        if y > self.coords.y + self.radius or y < self.coords.y - self.radius:
-            return []
-        y_len = abs(self.coords.y - y)
-        x_len = self.radius - y_len
-        return range(self.coords.x - x_len, self.coords.x + x_len + 1)
+        self.exclusion_zone = {}
+        for y in range(self.coords.y - self.radius, self.coords.y + self.radius + 1):
+            x_len = self.radius - abs(self.coords.y - y)
+            self.exclusion_zone[y] = range(self.coords.x - x_len, self.coords.x + x_len + 1)
 
     def is_within_exclusion_zone(self, point: CoordPair) -> bool:
-        # breakpoint()
         if point.x > self.coords.x + self.radius or point.x < self.coords.x - self.radius:
             return False
-        return point.x in self.points_within_exclusion_zone_row(point.y)
+        return point.x in self.exclusion_zone.get(point.y, [])
         
 def parse_input_file_into_sensors_and_beacons(inputfile): # -> List[Sensor]:
     sensors = []
@@ -71,24 +67,90 @@ def calculate_map_bounds(sensors, show_excl_sensor_coords=[]):
         largest_y  = max(largest_y,  s.coords.y, s.nearest_beacon_coords.y, s.coords.y + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
     return smallest_x, smallest_y, largest_x, largest_y
 
+"""
+r1 = range(start=0, stop=3, step=1) -> [0, 1, 2]
+r2 = range(start=1, stop=4, step=1) -> [1, 2, 3]
+
+case 1: partial overlap, r2 past r1 (or vice versa)
+xxxx+
+ xxxxx+
+
+ xxxxx+
+xxxx+
+
+case 3: no intersection
+x+
+    x+
+
+case 4: complete overlap (r1 subset_eq r2, or vice versa)
+xxxxxxxx+
+  xx+
+
+  xx+
+xxxxxxxx+
+"""
+
+def attempt_range_unification(r1, r2):
+    """Assuming all ranges have step=1"""
+    # unify
+    if r1.start <= r2.stop <= r1.stop \
+            or r2.start <= r1.stop <= r2.stop:
+        return range(min(r1.start, r2.start), max(r1.end, r2.end)), None
+    # no unification possible
+    return r1, r2
+
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
     sensor_coords = set(s.coords for s in sensors)
-    beacon_coords = set(s.nearest_beacon_coords for s in sensors)
+    # beacon_coords = set(s.nearest_beacon_coords for s in sensors)
+    
     smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=sensor_coords)
     # if target row is outside of all exclusion bounds, no point in counting anything
     if y > largest_y or y < smallest_y:
+        print('ruh roh y out of bounds')
         return 0
+    
     # now, iterate over the row and count number of points within any sensor's exclusion zone
-    count = 0
-    for x in range(smallest_x, largest_x + 1):
-        current = CoordPair(x, y)
-        for s in sensors:
-            if s.is_within_exclusion_zone(current) and current not in beacon_coords and current not in sensor_coords:
-                count += 1
+    # count = 0
+    # for x in range(smallest_x, largest_x + 1):
+    #     current = CoordPair(x, y)
+    #     for s in sensors:
+    #         if s.is_within_exclusion_zone(current) and current not in beacon_coords and current not in sensor_coords:
+    #             count += 1
+    #             break
+    # return count
+    
+    ranges = []
+    for s in sensors:
+        print(f'looking at sensor {s.coords}')
+        # exclude sensors whose exclusion area doesn't include our current row of interest
+        if not s.coords.y - s.radius <= y <= s.coords.y + s.radius:
+            print('    skipping sensor')
+            continue
+        row_exclusion_range = s.exclusion_zone[y]
+        print(f'    row exclusion range: {row_exclusion_range}')
+        print( '    now looping over currently captured ranges...')
+
+        current_iteration_ranges = []
+        for r in ranges:
+            print(f'        range: {r}')
+            r1, r2 = attempt_range_unification(r, row_exclusion_range)
+            print(f'        unification worked?  {r1}  vs  {r2}')
+            current_iteration_ranges.append(r1)
+            # unification succeeded!  otherwise continue
+            if r2 is None:
                 break
-    return count
+        else:
+            current_iteration_ranges.append(row_exclusion_range)
+        ranges = current_iteration_ranges
+    return sum(len(r) for r in ranges)
 
 if __name__ == '__main__':
-    sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
-    print('part one:', count_excluded_points_within_row(sensors, y=2000000))
+    # sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
+    # print('part one:', count_excluded_points_within_row(sensors, y=2000000))
+
+    import cProfile
+    cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input_edited.txt'), y=10)", 'sim_stats')
+    import pstats
+    p = pstats.Stats('sim_stats')
+    p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()

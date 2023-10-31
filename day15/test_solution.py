@@ -24,6 +24,9 @@ class TestDay15(unittest.TestCase):
         )
         self.assertEqual(expected, exclusion_printout)
 
+    def test_range_unification(self):
+        self.assertEqual(range(10), solution.attempt_range_unification(r1=range(6), r2=range(5, 10))[0])
+
     def test_part_one_row_exclusion_count(self):
         sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)
         count = solution.count_excluded_points_within_row(sensors, y=10)
