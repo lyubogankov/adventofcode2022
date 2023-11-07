@@ -17,7 +17,7 @@ def screenshot(screenshotter, screenshotparams, sim_iteration):
         'height' : screenshotparams.height,
         'mon'    : screenshotparams.monitor
     })
-    saveimg = f'/home/lyubo/script/advent_of_code/2022/media/{screenshotparams.savefolder}/{screenshotparams.framefolder}/frame_{sim_iteration}.png'
+    saveimg = f'/home/lyubo/script/advent_of_code/2022/media/{screenshotparams.savefolder}/{screenshotparams.framefolder}/frame_{sim_iteration:<5}.png'
     mss.tools.to_png(frame.rgb, frame.size, output=saveimg)
     time.sleep(0.1)
     # move the mouse to keep the computer from going to sleep
