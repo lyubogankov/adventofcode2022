@@ -11,16 +11,12 @@ def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[], highlight_y
     for y in range(smallest_y, largest_y + 1):
         for x in range(smallest_x, largest_x + 1):
             current = CoordPair(x, y)
-            for s in sensors:
-                if current == s.coords:
-                    mapstr += 'S'
-                    break
-                elif current == s.nearest_beacon_coords:
-                    mapstr += 'B'
-                    break
-                elif s.coords in show_excl_sensor_coords and s.is_within_exclusion_zone(current):
-                    mapstr += '#'
-                    break
+            if any(current == s.coords for s in sensors):
+                mapstr += 'S'
+            elif any(current == s.nearest_beacon_coords for s in sensors):
+                mapstr += 'B'
+            elif any(s.coords in show_excl_sensor_coords and s.is_within_exclusion_zone(current) for s in sensors):
+                mapstr += '#'
             else:
                 mapstr += '.'
         if y == highlight_y:

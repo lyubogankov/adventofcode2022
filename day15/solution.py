@@ -93,11 +93,11 @@ xxxxxxxx+
 def attempt_range_unification(r1, r2):
     """Assuming all ranges have step=1"""
     # unify
-    if r1.start <= r2.stop <= r1.stop \
-            or r2.start <= r1.stop <= r2.stop:
-        return range(min(r1.start, r2.start), max(r1.end, r2.end)), None
+    if r1.start in r2 or (r1.stop - r1.step) in r2 \
+            or r2.start in r1 or (r2.stop - r2.step) in r1:
+        return range(min(r1.start, r2.start), max(r1.stop, r2.stop))
     # no unification possible
-    return r1, r2
+    return None
 
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
@@ -122,20 +122,21 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
     
     ranges = []
     for s in sensors:
-        print(f'looking at sensor {s.coords}')
+        # print(f'looking at sensor {s.coords}')
+        
         # exclude sensors whose exclusion area doesn't include our current row of interest
         if not s.coords.y - s.radius <= y <= s.coords.y + s.radius:
-            print('    skipping sensor')
+            # print('    skipping sensor')
             continue
         row_exclusion_range = s.exclusion_zone[y]
-        print(f'    row exclusion range: {row_exclusion_range}')
-        print( '    now looping over currently captured ranges...')
+        # print(f'    row exclusion range: {row_exclusion_range}')
+        # print( '    now looping over currently captured ranges...')
 
         current_iteration_ranges = []
         for r in ranges:
             print(f'        range: {r}')
             r1, r2 = attempt_range_unification(r, row_exclusion_range)
-            print(f'        unification worked?  {r1}  vs  {r2}')
+            # print(f'        unification worked?  {r1}  vs  {r2}')
             current_iteration_ranges.append(r1)
             # unification succeeded!  otherwise continue
             if r2 is None:
