@@ -16,6 +16,7 @@ import math
 import sys
 
 sys.path.append(r'C:\Users\lg\Documents\code\adventofcode2022')
+sys.path.append(r'/home/lyubo/script/advent_of_code/2022')
 from common.point import BoundingBox, Point_2D as Point #noqa: E402
 
 # pairwise = itertools.pairwise

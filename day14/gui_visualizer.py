@@ -40,7 +40,7 @@ def calculate_screen_width_height_tilesize(board, boundingbox):
 
     return boundingbox.width()*tile_size, boundingbox.height()*tile_size, tile_size    
 
-def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=60, time_steps_between_sand_unit_drops=None):
+def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=60, time_steps_between_sand_unit_drops=None, save_folder=None):
     """
     `viewbounds` overrides use of `board.rock_bounding_box`
     """
@@ -85,6 +85,8 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
 
     running = True
     simulation_running = True
+    if save_folder:
+        framecounter = 0
 
     while running:
         # checking for quit
@@ -92,12 +94,13 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
             if event.type == pygame.QUIT:
                 running = False
 
-        # framerate up/down
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            framerate += 1
-        if keys[pygame.K_s]:
-            framerate -= 1
+        # framerate up/down, but only if it's running for the user to see (as opposed to saving images to hard drive)
+        if not save_folder:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_w]:
+                framerate += 1
+            if keys[pygame.K_s]:
+                framerate -= 1
 
         ### rendering!
         # for now, keeping it simple - clearing screen per frame
@@ -131,49 +134,66 @@ def animate_frames(board: Board, viewbounds: BoundingBox = None, framerate: int=
             else:
                 draw_square('red', fallingsand.x, fallingsand.y)
 
+        # save image to folder, if specified
+        if save_folder and simulation_running:
+            pygame.image.save(screen, f'{save_folder}/screenshot{framecounter:05}.png')
+            framecounter += 1
+
         ### display to window
         pygame.display.flip()
         dt = clock.tick(framerate) / 1000        
 
-def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None):
+def animate_part_one_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None, save_folder=None):
     board = solution.create_board(filepath='example.txt', sand_origin=sand_origin)
     animate_frames(
         board,
         viewbounds=BoundingBox(board.rock_bounding_box.topleft, board.rock_bounding_box.bottomright + Point(0, 2)),
         framerate=framerate,
-        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops,
+        save_folder=save_folder
     )
 
-def animate_part_two_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None):
+def animate_part_two_example(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=15, time_steps_between_sand_unit_drops=None, save_folder=None):
     board = solution.obtain_part_two_board(inputfile='example.txt', sand_origin=sand_origin)
     animate_frames(
         board,
         viewbounds=BoundingBox(Point(488, 0), Point(512, 11)),
         framerate=framerate,
-        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops,
+        save_folder=save_folder
     )
 
-def animate_part_one_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
+def animate_part_one_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None, save_folder=None):
     board = solution.create_board(filepath='input.txt', sand_origin=sand_origin)
     animate_frames(
         board,
         framerate=framerate,
-        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops,
+        save_folder=save_folder
     )
 
-def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None):
+def animate_part_two_input(sand_origin=solution.PUZZLE_SAND_ORIGIN, framerate=60, time_steps_between_sand_unit_drops=None, save_folder=None):
     board = solution.obtain_part_two_board(inputfile='input.txt', sand_origin=sand_origin)
     animate_frames(
         board,
         framerate=framerate,
-        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops
+        time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops,
+        save_folder=save_folder
     )
 
 if __name__ == '__main__':
+    ## simulation, for viewing
     # animate_part_one_example(time_steps_between_sand_unit_drops=None)
     # animate_part_two_example(time_steps_between_sand_unit_drops=2)
-    # animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
-    animate_part_two_input(framerate=60, time_steps_between_sand_unit_drops=2)
+    animate_part_one_input(framerate=60, time_steps_between_sand_unit_drops=2)
+    # animate_part_two_input(framerate=60, time_steps_between_sand_unit_drops=2)
+
+    ## simulation, for saving screenshots to hard drive for GIF-making
+    # animate_part_one_example(time_steps_between_sand_unit_drops=None, save_folder='/home/lyubo/script/advent_of_code/2022/media/day14/example_gui_p1')
+    # animate_part_one_example(time_steps_between_sand_unit_drops=2, save_folder='/home/lyubo/script/advent_of_code/2022/media/day14/example_gui_p1_multigrain')
+    # animate_part_two_example(time_steps_between_sand_unit_drops=2, save_folder='/home/lyubo/script/advent_of_code/2022/media/day14/example_gui_p2_multigrain')
+    # animate_part_one_input(time_steps_between_sand_unit_drops=2, save_folder='/home/lyubo/script/advent_of_code/2022/media/day14/input_gui_p1_multigrain')
+    # animate_part_two_input(time_steps_between_sand_unit_drops=2, save_folder='/home/lyubo/script/advent_of_code/2022/media/day14/input_gui_p2_multigrain')
 
 """
 DONE
