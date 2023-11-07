@@ -19,6 +19,7 @@ Each sensor can first calculate the manhattan distance to the closest beacon.
 I also want to generate an image with all of the exclusion zones - maybe they make a cool shape!
 Give them different / random colors and each with some opacity!
 """
+import copy
 import math
 import re
 from collections import namedtuple
@@ -67,29 +68,6 @@ def calculate_map_bounds(sensors, show_excl_sensor_coords=[]):
         largest_y  = max(largest_y,  s.coords.y, s.nearest_beacon_coords.y, s.coords.y + s.radius if s.coords in show_excl_sensor_coords else -math.inf)
     return smallest_x, smallest_y, largest_x, largest_y
 
-"""
-r1 = range(start=0, stop=3, step=1) -> [0, 1, 2]
-r2 = range(start=1, stop=4, step=1) -> [1, 2, 3]
-
-case 1: partial overlap, r2 past r1 (or vice versa)
-xxxx+
- xxxxx+
-
- xxxxx+
-xxxx+
-
-case 3: no intersection
-x+
-    x+
-
-case 4: complete overlap (r1 subset_eq r2, or vice versa)
-xxxxxxxx+
-  xx+
-
-  xx+
-xxxxxxxx+
-"""
-
 def attempt_range_unification(r1, r2):
     """Assuming all ranges have step=1"""
     # unify
@@ -99,51 +77,48 @@ def attempt_range_unification(r1, r2):
     # no unification possible
     return None
 
+def reduce_to_min_number_of_ranges(ranges):
+    """This function takes a collection of N ranges and attempts to consolidate the ranges.
+    
+    A collection of up to N ranges will be returned (N meaning no unification was possible).
+    """
+
+    # try all unique combinations of range pairs from the input collection
+    # and note which can be combined.
+    unification_mapping = {}
+    merged_indices = set()
+    for a, r1 in enumerate(ranges):
+        for b, r2 in enumerate(ranges[i+1:]):
+            # write down whether the combo of r1, r2 was unified (either unified range or None)
+            unification_mapping[frozenset(a, b)] = attempt_range_unification(r1, r2)
+            # if so, we know that both of these indices were unified
+            if unification_mapping[frozenset(a, b)]:
+                merged_indices.add(a)
+                merged_indices.add(b)
+
+    # now we know which indices are unmergable
+    unmerged_indices = [i not in merged_indices for i in range(len(ranges))]
+
+    # the rest are merged.  our task is now to try to unify them based on our mapping table.
+
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
-    sensor_coords = set(s.coords for s in sensors)
-    # beacon_coords = set(s.nearest_beacon_coords for s in sensors)
-    
+    sensor_coords = set(s.coords for s in sensors)    
     smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=sensor_coords)
     # if target row is outside of all exclusion bounds, no point in counting anything
     if y > largest_y or y < smallest_y:
-        print('ruh roh y out of bounds')
         return 0
-    
-    # now, iterate over the row and count number of points within any sensor's exclusion zone
-    # count = 0
-    # for x in range(smallest_x, largest_x + 1):
-    #     current = CoordPair(x, y)
-    #     for s in sensors:
-    #         if s.is_within_exclusion_zone(current) and current not in beacon_coords and current not in sensor_coords:
-    #             count += 1
-    #             break
-    # return count
-    
-    ranges = []
-    for s in sensors:
-        # print(f'looking at sensor {s.coords}')
-        
+    # obtain list of ranges from sensors whose excl. range contains row (y) of interest
+    valid_sensor_excl_ranges = []
+    for s in sensors:        
         # exclude sensors whose exclusion area doesn't include our current row of interest
         if not s.coords.y - s.radius <= y <= s.coords.y + s.radius:
-            # print('    skipping sensor')
             continue
+        # since this sensor's exclusion zone contains the desired row, look up the range of excluded x-values
         row_exclusion_range = s.exclusion_zone[y]
-        # print(f'    row exclusion range: {row_exclusion_range}')
-        # print( '    now looping over currently captured ranges...')
-
-        current_iteration_ranges = []
-        for r in ranges:
-            print(f'        range: {r}')
-            r1, r2 = attempt_range_unification(r, row_exclusion_range)
-            # print(f'        unification worked?  {r1}  vs  {r2}')
-            current_iteration_ranges.append(r1)
-            # unification succeeded!  otherwise continue
-            if r2 is None:
-                break
-        else:
-            current_iteration_ranges.append(row_exclusion_range)
-        ranges = current_iteration_ranges
+        valid_sensor_excl_ranges.append(row_exclusion_range)
+    # now, unify all of these ranges
+    ranges = reduce_to_min_number_of_ranges(valid_sensor_excl_ranges)
     return sum(len(r) for r in ranges)
 
 if __name__ == '__main__':
