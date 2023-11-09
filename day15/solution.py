@@ -38,15 +38,19 @@ class Sensor:
         self.coords = coords
         self.nearest_beacon_coords = nearest_beacon_coords
         self.radius = abs(coords.x - nearest_beacon_coords.x) + abs(coords.y - nearest_beacon_coords.y)
-        self.exclusion_zone = {}
-        for y in range(self.coords.y - self.radius, self.coords.y + self.radius + 1):
+        # previously stored y -> xrange mapping in a dict... but this involved looping over ALL points.
+        def excluded_x_range(y):
             x_len = self.radius - abs(self.coords.y - y)
-            self.exclusion_zone[y] = range(self.coords.x - x_len, self.coords.x + x_len + 1)
+            return range(self.coords.x - x_len, self.coords.x + x_len + 1)
+        self.excluded_x_range = excluded_x_range
 
     def is_within_exclusion_zone(self, point: CoordPair) -> bool:
         if point.x > self.coords.x + self.radius or point.x < self.coords.x - self.radius:
             return False
-        return point.x in self.exclusion_zone.get(point.y, [])
+        return point.x in self.excluded_x_range(point.y)
+
+    def __repr__(self):
+        return f'Sensor(coords={self.coords}, nearest_beacon_coords={self.nearest_beacon_coords})'
         
 def parse_input_file_into_sensors_and_beacons(inputfile): # -> List[Sensor]:
     sensors = []
@@ -81,18 +85,6 @@ def reduce_to_min_number_of_ranges(ranges):
     """This function takes a collection of N ranges and attempts to consolidate the ranges.
     
     A collection of up to N ranges will be returned (N meaning no unification was possible).
-
-    Potential alg for going from mapping table -> consolidated runs
-    0. we don't currently have any "runs".
-    1. pop an element from the merged set.
-    2. for every element still in merged set, ask:
-          - is frozenset(popped, current) in the mapping
-          - are the two indices merged?
-          * if Y for both, then the next popped element will be the current one
-              * additionally, if we are currently part of a "run", merge the current index w the current run
-              * if we are not part of a "run" start a new "run" with the unified (popped, current)
-
-    the ranges returned will be those of the unmerged indices + the combined "runs"
     """
 
     # try all unique combinations of range pairs from the input collection
@@ -144,7 +136,7 @@ def reduce_to_min_number_of_ranges(ranges):
 
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
-    sensor_coords = set(s.coords for s in sensors)    
+    sensor_coords = set(s.coords for s in sensors)
     smallest_x, smallest_y, largest_x, largest_y = calculate_map_bounds(sensors, show_excl_sensor_coords=sensor_coords)
     # if target row is outside of all exclusion bounds, no point in counting anything
     if y > largest_y or y < smallest_y:
@@ -156,21 +148,23 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
         if not s.coords.y - s.radius <= y <= s.coords.y + s.radius:
             continue
         # since this sensor's exclusion zone contains the desired row, look up the range of excluded x-values
-        row_exclusion_range = s.exclusion_zone[y]
+        row_exclusion_range = s.excluded_x_range(y)
         valid_sensor_excl_ranges.append(row_exclusion_range)
     # now, unify all of these ranges
     ranges = reduce_to_min_number_of_ranges(valid_sensor_excl_ranges)
-    return sum(len(r) for r in ranges)
+    # exclude sensors and beacons in row
+    num_sensors_in_row = sum(s.coords.y == y for s in sensors)
+    beacon_coords = set(s.nearest_beacon_coords for s in sensors)  # more than one sensor can point to the same beacon!
+    num_beacons_in_row = sum(bcoords.y == y for bcoords in beacon_coords)
+    # finally, return the count!
+    return sum(len(r) for r in ranges) - num_beacons_in_row - num_sensors_in_row
 
 if __name__ == '__main__':
-    # sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
-    # print('part one:', count_excluded_points_within_row(sensors, y=2000000))
+    sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
+    print('part one:', count_excluded_points_within_row(sensors, y=2000000))
 
     # import cProfile
     # cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input_edited.txt'), y=10)", 'sim_stats')
     # import pstats
     # p = pstats.Stats('sim_stats')
     # p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()
-
-    ### debugging range_collection_reduction()
-    pass
