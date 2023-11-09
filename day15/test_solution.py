@@ -1,4 +1,5 @@
 # std library
+import itertools
 import unittest
 # local
 import solution
@@ -92,20 +93,35 @@ B........###................
         r5 = range(13, 19)   #             ......
         # case 1: some of the ranges can be collapsed, but not all can
         with self.subTest(i="partial_reduction"):
-            self.assertEqual(
-                {range(0, 15), r3},
-                set(solution.reduce_to_min_number_of_ranges([r1, r2, r3]))
-            )
-            self.assertEqual(
-                {range(0, 15), range(17, 25)},
-                set(solution.reduce_to_min_number_of_ranges([r1, r2, r3, r4]))
-            )
+            for permutation in itertools.permutations([r1, r2, r3]):
+                self.assertEqual(
+                    {range(0, 15), r3},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
+            for permutation in itertools.permutations([r1, r2, r3, r4]):
+                self.assertEqual(
+                    {range(0, 15), range(17, 25)},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
+            for permutation in itertools.permutations([r1, r3, r4, r5]):
+                self.assertEqual(
+                    {r1, range(13, 25)},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
         # case 2: none of the ranges can be collapsed
         with self.subTest(i="no_reduction"):
-            self.assertEqual(
-                {r1, r3, r5},
-                set(solution.reduce_to_min_number_of_ranges([r1, r3, r5]))
-            )
+            for permutation in itertools.permutations([r1, r3, r5]):
+                self.assertEqual(
+                    {r1, r3, r5},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
+        # case 3: all of the ranges can be collapsed
+        with self.subTest(i="complete_reduction"):
+            for permutation in itertools.permutations([r1, r2, r3, r4, r5]):
+                self.assertEqual(
+                    {range(0, 25)},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
 
     # def test_part_one_row_exclusion_count(self):
     #     sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)

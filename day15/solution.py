@@ -81,6 +81,18 @@ def reduce_to_min_number_of_ranges(ranges):
     """This function takes a collection of N ranges and attempts to consolidate the ranges.
     
     A collection of up to N ranges will be returned (N meaning no unification was possible).
+
+    Potential alg for going from mapping table -> consolidated runs
+    0. we don't currently have any "runs".
+    1. pop an element from the merged set.
+    2. for every element still in merged set, ask:
+          - is frozenset(popped, current) in the mapping
+          - are the two indices merged?
+          * if Y for both, then the next popped element will be the current one
+              * additionally, if we are currently part of a "run", merge the current index w the current run
+              * if we are not part of a "run" start a new "run" with the unified (popped, current)
+
+    the ranges returned will be those of the unmerged indices + the combined "runs"
     """
 
     # try all unique combinations of range pairs from the input collection
@@ -88,18 +100,47 @@ def reduce_to_min_number_of_ranges(ranges):
     unification_mapping = {}
     merged_indices = set()
     for a, r1 in enumerate(ranges):
-        for b, r2 in enumerate(ranges[i+1:]):
+        bstart = a + 1
+        for _b, r2 in enumerate(ranges[bstart:]):
+            b = _b + bstart
             # write down whether the combo of r1, r2 was unified (either unified range or None)
-            unification_mapping[frozenset(a, b)] = attempt_range_unification(r1, r2)
+            unification_mapping[frozenset((a, b))] = attempt_range_unification(r1, r2)
             # if so, we know that both of these indices were unified
-            if unification_mapping[frozenset(a, b)]:
+            if unification_mapping[frozenset((a, b))]:
                 merged_indices.add(a)
                 merged_indices.add(b)
 
+    # if we can't merge anything, return the ranges as-is
+    if not merged_indices:
+        return ranges
+
     # now we know which indices are unmergable
-    unmerged_indices = [i not in merged_indices for i in range(len(ranges))]
+    unmerged_indices = [i for i in range(len(ranges)) if i not in merged_indices]
+    output_ranges = [ranges[i] for i in unmerged_indices]  # initialize with ranges that we know are unmerged
 
     # the rest are merged.  our task is now to try to unify them based on our mapping table.
+    next_idx_stack = []
+    while merged_indices:
+        # obtain next idx to consider
+        if not next_idx_stack:
+            current_idx = merged_indices.pop()
+            # append the current idx range to the output list -- it's merged with at least one other range
+            output_ranges.append(ranges[current_idx])
+        else:
+            current_idx = next_idx_stack.pop()
+        # look at all remaining combos between current / merged to see which are merged
+        for remaining_idx in merged_indices:
+            # if the current index and one of the remaining indices can be merged:
+            # - log the merged range to the output list
+            # - note the index to be explored!
+            if unified_range := unification_mapping[frozenset((current_idx, remaining_idx))]:
+                output_ranges[-1] = attempt_range_unification(output_ranges[-1], unified_range)
+                next_idx_stack.append(remaining_idx)
+        # make sure that all indices within the next_idx_stack are no longer present in merged_indices set
+        for idx in next_idx_stack:
+            if idx in merged_indices:
+                merged_indices.remove(idx)
+    return output_ranges
 
 # part one question
 def count_excluded_points_within_row(sensors, y: int) -> int:
@@ -125,8 +166,11 @@ if __name__ == '__main__':
     # sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
     # print('part one:', count_excluded_points_within_row(sensors, y=2000000))
 
-    import cProfile
-    cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input_edited.txt'), y=10)", 'sim_stats')
-    import pstats
-    p = pstats.Stats('sim_stats')
-    p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()
+    # import cProfile
+    # cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input_edited.txt'), y=10)", 'sim_stats')
+    # import pstats
+    # p = pstats.Stats('sim_stats')
+    # p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()
+
+    ### debugging range_collection_reduction()
+    pass
