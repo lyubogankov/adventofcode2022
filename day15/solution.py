@@ -78,7 +78,7 @@ class BoundingBox:
                 y=topl.y + (botr.y - topl.y)/2
             )
         )
-        self.radius = abs(s_topl.x - s_botr.x) / 2
+        self.radius = abs(s_topl.y - s_botr.y) / 2
 
     def edge_contains(self, point: CoordPair, square_coords=True):
         # diamond excl ranges / square boundingbox - check perimeter based on topl, botr

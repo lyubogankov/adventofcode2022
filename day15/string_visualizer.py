@@ -81,13 +81,13 @@ if __name__ == '__main__':
 
     # print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_x=[0, 20], highlight_y=[0, 20], square_coords=True))
     
-    print(
-        visualize_sensor_beacon_map(
-            sensors, sensor_coords, 
-            highlight_x=[0, 20], highlight_y=[0, 20], 
-            boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))   
-        )
-    )
+    # print(
+    #     visualize_sensor_beacon_map(
+    #         sensors, sensor_coords, 
+    #         highlight_x=[0, 20], highlight_y=[0, 20], 
+    #         boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))   
+    #     )
+    # )
 
     print(
         visualize_sensor_beacon_map(
