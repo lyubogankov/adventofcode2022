@@ -33,8 +33,65 @@ from collections import namedtuple
 #
 CoordPair = namedtuple('CoordPair', field_names=['x', 'y'])
 
+def diamond_to_square_coords(coordpair):
+    return CoordPair(
+        x = coordpair.x - coordpair.y,
+        y = coordpair.x + coordpair.y
+    )
+def diamond_to_square(center: CoordPair, radius: int):
+    """Returns representation of square: (topl point, botr point)"""
+    d_top   = CoordPair(center.x, center.y - radius)  # -y
+    d_bot   = CoordPair(center.x, center.y + radius)  # +y
+    # d_left  = CoordPair(center.x - radius, center.y)  # -x
+    # d_right = CoordPair(center.x + radius, center.y)  # +x
+    p1 = diamond_to_square_coords(d_top)
+    p2 = diamond_to_square_coords(d_bot)
+    smallest_x, largest_x = int(min(p1.x, p2.x)), int(max(p1.x, p2.x))
+    smallest_y, largest_y = int(min(p1.y, p2.y)), int(max(p1.y, p2.y))
+    topl = CoordPair(smallest_x, smallest_y)
+    botr = CoordPair(largest_x, largest_y)
+    return topl, botr
+
+def square_to_diamond_coords(coordpair):
+    return CoordPair(
+        x = coordpair.y + coordpair.x,
+        y = coordpair.y - coordpair.x
+    )
+def square_to_diamond(topl: CoordPair, botr: CoordPair):
+    """Returns representation of diamond: (center point, radius)"""
+    d_top = square_to_diamond_coords(topl)
+    d_bot = square_to_diamond_coords(botr)
+    radius = (d_bot.y - d_top.y)/2
+    return CoordPair(d_top.x, d_top.y + radius), radius
+
+class BoundingBox:
+    def __init__(self, topl, botr):
+        # square coords boundingbox /  diamond-excl range coords
+        self.topl = topl
+        self.botr = botr
+        # diamond coords boundingbox / square-excl range coords
+        s_topl = diamond_to_square_coords(topl)
+        s_botr = diamond_to_square_coords(botr)
+        self.center = diamond_to_square_coords(
+            CoordPair(
+                x=topl.x + (botr.x - topl.x)/2,
+                y=topl.y + (botr.y - topl.y)/2
+            )
+        )
+        self.radius = abs(s_topl.x - s_botr.x) / 2
+
+    def edge_contains(self, point: CoordPair, square_coords=True):
+        # diamond excl ranges / square boundingbox - check perimeter based on topl, botr
+        if not square_coords:
+            return ((point.x == self.topl.x or point.x == self.botr.x) and self.topl.y <= point.y <= self.botr.y) \
+                or ((point.y == self.topl.y or point.y == self.botr.y) and self.topl.x <= point.x <= self.botr.x) 
+        # square excl ranges / diamond boundingbox - check perimeter based on manhattan dist
+        return abs(self.center.x - point.x) + abs(self.center.y - point.y) == self.radius
+
+
 class Sensor:
     def __init__(self, coords: CoordPair, nearest_beacon_coords: CoordPair):
+        # diamond coord system
         self.coords = coords
         self.nearest_beacon_coords = nearest_beacon_coords
         self.radius = abs(coords.x - nearest_beacon_coords.x) + abs(coords.y - nearest_beacon_coords.y)
@@ -42,9 +99,20 @@ class Sensor:
         def excluded_x_range(y):
             x_len = self.radius - abs(self.coords.y - y)
             return range(self.coords.x - x_len, self.coords.x + x_len + 1)
+        def excluded_y_range(x):
+            y_len = self.radius - abs(self.coords.x - x)
+            return range(self.coords.y - y_len, self.coords.y + y_len + 1)
         self.excluded_x_range = excluded_x_range
+        self.excluded_y_range = excluded_y_range
+        # square coord system -- topl / botr aren't actually guaranteed to preserve relational comparisons
+        self.s_topl, self.s_botr = diamond_to_square(self.coords, self.radius)
+        self.s_coords = diamond_to_square_coords(self.coords)
+        self.s_nearest_beacon_coords = diamond_to_square_coords(self.nearest_beacon_coords)
 
-    def is_within_exclusion_zone(self, point: CoordPair) -> bool:
+    def is_within_exclusion_zone(self, point: CoordPair, square_coords=False) -> bool:
+        if square_coords:
+            return self.s_topl.x <= point.x <= self.s_botr.x and self.s_topl.y <= point.y <= self.s_botr.y
+        # otherwise, diamond coords (default)
         if point.x > self.coords.x + self.radius or point.x < self.coords.x - self.radius:
             return False
         return point.x in self.excluded_x_range(point.y)
@@ -73,7 +141,7 @@ def calculate_map_bounds(sensors, show_excl_sensor_coords=[]):
     return smallest_x, smallest_y, largest_x, largest_y
 
 def attempt_range_unification(r1, r2):
-    """Assuming all ranges have step=1"""
+    """Assuming all ranges have step=1.  1D function, therefore independent of 2D coord system."""
     # unify
     if r1.start in r2 or (r1.stop - r1.step) in r2 \
             or r2.start in r1 or (r2.stop - r2.step) in r1:
@@ -85,6 +153,8 @@ def reduce_to_min_number_of_ranges(ranges):
     """This function takes a collection of N ranges and attempts to consolidate the ranges.
     
     A collection of up to N ranges will be returned (N meaning no unification was possible).
+
+    1D function, therefore independent of 2D coord system.
     """
 
     # try all unique combinations of range pairs from the input collection
@@ -148,8 +218,7 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
         if not s.coords.y - s.radius <= y <= s.coords.y + s.radius:
             continue
         # since this sensor's exclusion zone contains the desired row, look up the range of excluded x-values
-        row_exclusion_range = s.excluded_x_range(y)
-        valid_sensor_excl_ranges.append(row_exclusion_range)
+        valid_sensor_excl_ranges.append(s.excluded_x_range(y))
     # now, unify all of these ranges
     ranges = reduce_to_min_number_of_ranges(valid_sensor_excl_ranges)
     # exclude sensors and beacons in row
@@ -159,12 +228,81 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
     # finally, return the count!
     return sum(len(r) for r in ranges) - num_beacons_in_row - num_sensors_in_row
 
+"""
+Most naiive approach: O(x*y*s) -> big for puzzle input. 4_000_000^2 * 29
+- loop over all x, y points (O n^2)
+- for each x, y point, loop over all sensors:
+    if the x, y point is in none of the sensors' excl ranges, it is the point of interest.
+
+```python
+def p2(sensors, xrange, yrange)
+    for x in xrange:
+        for y in yrange:
+            if any((x, y) == s.coords or (x, y) == s.nearest_beacon_coords for s in sensors):
+                continue
+            if all(x not in s.excluded_x_range(y) for s in sensors):
+                return (x, y)
+```
+
+Sliiiightly better approach, based off part 1 work -> O(min(x, y) * s^2)
+- loop over y, so O(y); for each y
+    - consider all sensors, so O(s)
+    - reduce to minimum number of ranges, which is O(s^2)?
+
+```python
+def p2(sensors, xrange, yrange):
+    for y in yrange:
+        unified_excl_ranges = reduce_to_min_number_of_ranges([s.excluded_x_range(y) for s in sensors])
+        if len(unified_excl_ranges) == 1:
+            unified_excl_ranges.sort(key=lambda r: r.start)
+            x = unified_excl_ranges[0].stop
+            return (x, y)
+```
+
+Part 2 brainstorming.
+
+According to profiling, p1 completed w 1767 function calls, spread out primarily over builtins.
+According to `time` (linux utility), program took:
+    real	0m0.034s
+    user	0m0.030s
+    sys	    0m0.004s
+
+So, if I use the "naiive" approach and minimally change my code from part 1 to iterate over every
+single row from 0 -> 4.000.000, it would take 0.034s * 4.000.000 = 37 hours to complete.
+
+What made part one fast was removing all iteration - calculating x-exclusion-range from y coord only when
+needed (with a function), and calculating intersections between ranges instead of iterating over x coords.
+
+What information do I have?
+- per-sensor coords + nearest beacon
++ this allows me to calculate each sensor's exclusion radius (manhattan coords)
++ this allows me to calculate each sensor's exclusion zone (for all possible x, y coords)
+
+* also, the puzzle is set up so that there is ONE x, y pair that is not within an exclusion zone.
+
+What I'd like is a way to eliminate coords to search based on each sensor's exclusion boundary.
+
+Before I do that, I want to make a visualization of the space.
+Not sure if that'll help or not as I need to solve the problem generally...
+
+
+2 thoughts:
+- If I can come up with a very fast way to determine whether a row/col is "full" (start, stop) are fully contained within the exclusion range, then looping might not be a bad solution.
+- However, that's v similar to question for P1 and my solution isn't super fast.
+    So, option 2 is to avoid iterating (either totally, or at least over the full range.)
+"""
+
+
 if __name__ == '__main__':
     sensors = parse_input_file_into_sensors_and_beacons(inputfile='input.txt')
-    print('part one:', count_excluded_points_within_row(sensors, y=2000000))
+    # print('part one:', count_excluded_points_within_row(sensors, y=2000000))
+
+    sensors.sort(key=lambda s: s.radius, reverse=True)
+    for s in sensors:
+        print(f'radius: {s.radius:>7}        {s}')
 
     # import cProfile
-    # cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input_edited.txt'), y=10)", 'sim_stats')
+    # cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input.txt'), y=2000000)", 'sim_stats')
     # import pstats
     # p = pstats.Stats('sim_stats')
     # p.strip_dirs().sort_stats(pstats.SortKey.TIME).print_stats()

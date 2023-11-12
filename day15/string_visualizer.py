@@ -1,24 +1,59 @@
 import math
 
 import solution
-from solution import Sensor, CoordPair
+from solution import Sensor, CoordPair, BoundingBox
 
-def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[], highlight_x=None, highlight_y=None):
+BLACK = '\033[30m'
+RED = '\033[31m'
+GREEN = '\033[32m'
+YELLOW = '\033[33m'
+BLUE = '\033[34m'
+MAGENTA = '\033[35m'
+CYAN = '\033[36m'
+WHITE = '\033[37m'
+RESET = '\033[0m'
+
+def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[], highlight_x=[], highlight_y=[], boundingbox: BoundingBox=None, square_coords=False):
     # finding boundary of coordinate grid
     smallest_x, smallest_y, largest_x, largest_y = solution.calculate_map_bounds(sensors, show_excl_sensor_coords)
+    # if we want to visualize the map in square-coords, need to perform conversions here.
+    if square_coords:
+        # The map bounding box is itself in diamond coords, but is a square.
+        # Need to calculate the smallest diamond that fits the diamond-coords map bounding box.
+        bounding_diamond_center = CoordPair(
+            x = smallest_x + (largest_x - smallest_x)/2,
+            y = smallest_y + (largest_y - smallest_y)/2
+        )
+        bounding_diamond_radius = max(abs(largest_x - smallest_x), abs(largest_y - smallest_y))
+        # now, convert to equivalent square bounding box and expand to map limits
+        (smallest_x, smallest_y), (largest_x, largest_y) = \
+            solution.diamond_to_square(bounding_diamond_center, bounding_diamond_radius)
+        # ensure the list of sensor coords is in the square coord system
+        show_excl_sensor_coords = [solution.diamond_to_square_coords(c) for c in show_excl_sensor_coords]
+        # the highlighting of rows/cols doesn't make sense since we've rotated by 45deg
+        highlight_y = []
+        highlight_x = []
     # create output string
     mapstr = ""
     for y in range(smallest_y, largest_y + 1):
         for x in range(smallest_x, largest_x + 1):
             current = CoordPair(x, y)
-            if any(current == s.coords for s in sensors):
+            # color the next character if it's part of the boundingbox edge
+            color = RED if boundingbox and boundingbox.edge_contains(current, square_coords) else None
+            if color:
+                mapstr += color
+            # decide on the next character
+            if any(current == eval(f"s.{'s_' if square_coords else ''}coords") for s in sensors):
                 mapstr += 'S'
-            elif any(current == s.nearest_beacon_coords for s in sensors):
+            elif any(current == eval(f"s.{'s_' if square_coords else ''}nearest_beacon_coords") for s in sensors):
                 mapstr += 'B'
-            elif any(s.coords in show_excl_sensor_coords and s.is_within_exclusion_zone(current) for s in sensors):
+            elif any(eval(f"s.{'s_' if square_coords else ''}coords") in show_excl_sensor_coords and s.is_within_exclusion_zone(current, square_coords) for s in sensors):
                 mapstr += '#'
             else:
                 mapstr += '.'
+            # if we used a color, reset
+            if color:
+                mapstr += RESET
         if y in highlight_y:
             mapstr += ' ***'
         if y != largest_y:
@@ -43,4 +78,21 @@ if __name__ == '__main__':
     ## visualizing all sensors' exclusion areas
     sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile='example.txt')
     sensor_coords = [s.coords for s in sensors]
-    print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_x=[0, 20], highlight_y=[0, 20]))
+
+    # print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_x=[0, 20], highlight_y=[0, 20], square_coords=True))
+    
+    print(
+        visualize_sensor_beacon_map(
+            sensors, sensor_coords, 
+            highlight_x=[0, 20], highlight_y=[0, 20], 
+            boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))   
+        )
+    )
+
+    print(
+        visualize_sensor_beacon_map(
+            sensors, sensor_coords,
+            boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)),
+            square_coords=True
+        )
+    )
