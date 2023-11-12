@@ -66,28 +66,27 @@ def visualize_sensor_beacon_map(sensors, show_excl_sensor_coords=[], highlight_x
     return mapstr
 
 if __name__ == '__main__':
-    ## visualizing just the board
-    # print(visualize_sensor_beacon_map(inputfile='example.txt'))
-
-    ## visualizing single sensor's exclusion area
-    # print(visualize_sensor_beacon_map(
-    #     sensors=solution.parse_input_file_into_sensors_and_beacons(inputfile='example.txt'),
-    #     show_excl_sensor_coords=[CoordPair(8, 7)]
-    # ))
+    # # visualizing single sensor's exclusion area
+    print(visualize_sensor_beacon_map(
+        sensors=solution.parse_input_file_into_sensors_and_beacons(inputfile='example.txt'),
+        show_excl_sensor_coords=[CoordPair(8, 7)]
+    ))
+    print()
 
     ## visualizing all sensors' exclusion areas
     sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile='example.txt')
     sensor_coords = [s.coords for s in sensors]
 
-    # print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_x=[0, 20], highlight_y=[0, 20], square_coords=True))
+    # print(visualize_sensor_beacon_map(sensors, sensor_coords, highlight_y=[10])) # , highlight_x=[0, 20], highlight_y=[0, 20], square_coords=True))
     
-    # print(
-    #     visualize_sensor_beacon_map(
-    #         sensors, sensor_coords, 
-    #         highlight_x=[0, 20], highlight_y=[0, 20], 
-    #         boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))   
-    #     )
-    # )
+    print(
+        visualize_sensor_beacon_map(
+            sensors, sensor_coords, 
+            highlight_x=[0, 20], highlight_y=[0, 20], 
+            boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))   
+        )
+    )
+    print()
 
     print(
         visualize_sensor_beacon_map(
@@ -96,3 +95,4 @@ if __name__ == '__main__':
             square_coords=True
         )
     )
+    print()
