@@ -122,6 +122,15 @@ B........###................
                     {range(0, 25)},
                     set(solution.reduce_to_min_number_of_ranges(permutation))
                 )
+        # corner case -- ranges overlap exactly - start/stop
+        ra = range(-23, -8)
+        rb = range(-8, 27)
+        with self.subTest(i="minimal_overlap"):
+            for permutation in itertools.permutations([ra, rb]):
+                self.assertEqual(
+                    {range(-23, 27)},
+                    set(solution.reduce_to_min_number_of_ranges(permutation))
+                )
 
     def test_part_one_row_exclusion_count(self):
         sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)

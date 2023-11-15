@@ -96,3 +96,15 @@ if __name__ == '__main__':
         )
     )
     print()
+
+    # visualizing map related to p2 work
+    sensors_whose_range_intersects_center_y = [s.coords for s in sensors if 20 in s.s_yrange]
+    print(
+        visualize_sensor_beacon_map(
+            sensors,
+            show_excl_sensor_coords=sensors_whose_range_intersects_center_y,
+            boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)),
+            square_coords=True
+        )
+    )
+    print()
