@@ -145,7 +145,8 @@ def attempt_range_unification(r1, r2):
     """Assuming all ranges have step=1.  1D function, therefore independent of 2D coord system."""
     # unify
     if r1.start in r2 or (r1.stop - r1.step) in r2 \
-            or r2.start in r1 or (r2.stop - r2.step) in r1:
+            or r2.start in r1 or (r2.stop - r2.step) in r1 \
+            or r1.stop == r2.start or r1.start == r2.stop:
         return range(min(r1.start, r2.start), max(r1.stop, r2.stop))
     # no unification possible
     return None
