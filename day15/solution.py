@@ -231,34 +231,40 @@ def count_excluded_points_within_row(sensors, y: int) -> int:
     return sum(len(r) for r in ranges) - num_beacons_in_row - num_sensors_in_row
 
 # part two
-def find_single_point_not_within_sensor_exclusion_range(sensors, boundary: BoundingBox) -> CoordPair:
+def find_single_point_not_within_sensor_exclusion_range(sensors, boundary: BoundingBox, printout=False) -> CoordPair:
     # check the middle row
+    boundary_yrange = range(boundary.center.y - boundary.radius, boundary.center.y + boundary.radius + 1)
     boundary_middle_xrange = range(boundary.center.x - boundary.radius, boundary.center.x + boundary.radius + 1)
     middle_row_xranges = []
-    print('boundary middle row y:', boundary.center.y)
-    print('boundary middle row xrange:', boundary_middle_xrange)
+    if printout:
+        print('boundary middle row y:', boundary.center.y)
+        print('boundary middle row xrange:', boundary_middle_xrange)
     for s in sensors:
-        print(f'    sensor: {s.s_coords},    beacon: {s.s_nearest_beacon_coords},    xrange: {s.s_xrange},    yrange: {s.s_yrange}')
+        if printout:
+            print(f'    sensor: {s.s_coords},    beacon: {s.s_nearest_beacon_coords},    xrange: {s.s_xrange},    yrange: {s.s_yrange}')
         # skip sensors whose excl range doesn't overlap with current row's range
         if s.s_topl.x not in boundary_middle_xrange and s.s_botr.x not in boundary_middle_xrange:
-            print('        skipped - not in boundary_middle_xrange')
+            if printout:
+                print('        skipped - not in boundary_middle_xrange')
             continue
         # special cases - ranges of 1 to account for sensors / beacons
         if s.s_coords.y == boundary.center.y:
             x = s.s_coords.x
             middle_row_xranges.append(range(x, x + 1))
-            print('        adding sensor coordinate to middle_row_xranges')
+            if printout:
+                print('        adding sensor coordinate to middle_row_xranges')
         if s.s_nearest_beacon_coords.y == boundary.center.y:
             x = s.s_nearest_beacon_coords.x
             middle_row_xranges.append(range(x, x + 1))
-            print('        adding beacon coordinate to middle_row_xranges')
+            if printout:
+                print('        adding beacon coordinate to middle_row_xranges')
         # typical case: the y-range intersects with the boundary centerline
         if boundary.center.y in s.s_yrange:
             middle_row_xranges.append(s.s_xrange)
-            print("        adding sensor xrange since the sensor's exclusion yrange includes boundary center y")
+            if printout:
+                print("        adding sensor xrange since the sensor's exclusion yrange includes boundary center y")
     
     unified_xranges = reduce_to_min_number_of_ranges(middle_row_xranges)
-    breakpoint()
     for unified_xrange in unified_xranges:
         # the current unified range contains the entire boundary y-row of interest -- doesn't contain sole point
         if boundary_middle_xrange.start in unified_xrange \
@@ -273,11 +279,15 @@ def find_single_point_not_within_sensor_exclusion_range(sensors, boundary: Bound
             return CoordPair(unified_xrange.stop, boundary.center.y)
         else:
             return CoordPair(unified_xrange.start - 1, boundary.center.y)
-    # # look "up"
-    # y_rows_of_interest_looking_up = []
-    # # look "down", from high y -> low y with respect to the center line of the diamond
-    # y_rows_of_interest_looking_down = []
+    # if we get to this code, the middle row did not contain the point we're looking for.
+    # look "up" from middle (bigger y -> smaller y) -- care about rows where sensor ranges end
+    y_rows_of_interest_looking_up = \
+        set([s.s_yrange.start - 1 for s in sensors if boundary_yrange.start <= s.s_yrange.start - 1 <= boundary.center.y])
+    # look "down" from middle (smalelr y -> bigger y) -- care about rows where sensor ranges end
+    y_rows_of_interest_looking_down = \
+        set([s.s_yrange.stop for s in sensors if boundary.center.y <= s.s_yrange.stop <= boundary_yrange.stop])
 
+    breakpoint()
 
 def calculate_tuning_freq(point: CoordPair) -> int:
     return point.x * 4_000_000 + point.y
@@ -361,7 +371,11 @@ if __name__ == '__main__':
     # for s in sensors:
     #     print(f'radius: {s.radius:>7}        {s}')
 
-    find_single_point_not_within_sensor_exclusion_range(sensors, boundary=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)))
+    find_single_point_not_within_sensor_exclusion_range(
+        sensors, 
+        boundary=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)),
+        printout=True
+    )
 
     # import cProfile
     # cProfile.run("count_excluded_points_within_row(sensors=parse_input_file_into_sensors_and_beacons(inputfile='input.txt'), y=2000000)", 'sim_stats')

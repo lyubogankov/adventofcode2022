@@ -108,3 +108,32 @@ if __name__ == '__main__':
         )
     )
     print()
+
+    for y in {5, 7, 11, 12, 13, 15, 17}:
+        sensors_of_interest = [s.coords for s in sensors if s.s_yrange.start - 1 == y]
+        print('-'*100)
+        print('    ', y)
+        print()
+        print(
+            visualize_sensor_beacon_map(
+                sensors,
+                show_excl_sensor_coords=sensors_of_interest,
+                boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)),
+                square_coords=True
+            )
+        )
+        print()
+    for y in {25, 27, 28, 29, 31, 35, 37}:
+        sensors_of_interest = [s.coords for s in sensors if s.s_yrange.stop == y]
+        print('-'*100)
+        print('    ', y)
+        print()
+        print(
+            visualize_sensor_beacon_map(
+                sensors,
+                show_excl_sensor_coords=sensors_of_interest,
+                boundingbox=BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20)),
+                square_coords=True
+            )
+        )
+        print()
