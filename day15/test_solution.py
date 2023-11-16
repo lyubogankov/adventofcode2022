@@ -3,12 +3,14 @@ import itertools
 import unittest
 # local
 import solution
-from solution import CoordPair
+from solution import CoordPair, BoundingBox
 import string_visualizer
 
 class TestDay15(unittest.TestCase):
     EXAMPLE = 'example.txt'
     INPUT   = 'input.txt'
+
+    EXAMPLE_PT2_BOUNDARY = BoundingBox(topl=CoordPair(0, 0), botr=CoordPair(20, 20))
 
     def test_inputfile_parsing(self):
         expected = """....S.......................
@@ -136,6 +138,41 @@ B........###................
         sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)
         count = solution.count_excluded_points_within_row(sensors, y=10)
         self.assertEqual(count, 26)
+
+    def test_coordinate_transforms(self):
+        for x in range(-10, 11):
+            for y in range(-10, 11):
+                with self.subTest(i=f'({x}, {y}) d_to_s(s_to_d())'):
+                    original = CoordPair(x, y)
+                    transformed = solution.diamond_to_square_coords(
+                        solution.square_to_diamond_coords(
+                            original
+                        )
+                    )
+                    self.assertEqual(original, transformed)
+                with self.subTest(i=f'({x}, {y}) s_to_d(d_to_s())'):
+                    original = CoordPair(x, y)
+                    transformed = solution.square_to_diamond_coords(
+                        solution.diamond_to_square_coords(
+                            original
+                        )
+                    )
+                    self.assertEqual(original, transformed)
+
+    def test_sole_point_location(self):
+        sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)
+        self.assertEqual(
+            CoordPair(x=14, y=11),
+            solution.square_to_diamond_coords(
+                solution.find_single_point_not_within_sensor_exclusion_range_squarecoords(
+                    sensors, self.EXAMPLE_PT2_BOUNDARY
+                )
+            )
+        )
+
+    def test_part_two_tuning_freq(self):
+        sensors = solution.parse_input_file_into_sensors_and_beacons(inputfile=self.EXAMPLE)
+        self.assertEqual(56_000_011, solution.part_two(sensors, self.EXAMPLE_PT2_BOUNDARY))
 
 if __name__ == '__main__':
     unittest.main()
