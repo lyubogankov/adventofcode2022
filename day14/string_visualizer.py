@@ -6,6 +6,9 @@ import time
 import solution
 from solution import Board, SandUnit, Point, BoundingBox, PUZZLE_SAND_ORIGIN
 
+sys.path.append('/home/lyubo/script/advent_of_code/2022/common')
+from screenshot import ScreenshotParams, screenshot
+
 if sys.platform == 'win32':
     CLEAR_SCREEN_CMD = 'cls'
 elif sys.platform == 'linux':
@@ -32,7 +35,7 @@ def board_as_string(board: Board, sand_units, viewbounds: BoundingBox, fall_path
             board_str += '\n'
     return board_str
 
-def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3, time_steps_between_sand_unit_drops=None):
+def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3, time_steps_between_sand_unit_drops=None, screenshotparams=None):
     """Animates simulation frames using command prompt stdout!
     
     `board` - representation of board.  Should be initial state for full animation.
@@ -48,6 +51,9 @@ def animate_frames(board: Board, viewbounds: BoundingBox, frame_delay=0.3, time_
             time_steps_between_sand_unit_drops=time_steps_between_sand_unit_drops)):
         os.system(CLEAR_SCREEN_CMD)
         print(frame)
+        time.sleep(0.01)
+        if screenshotparams:
+            screenshot(screenshotparams, sim_iteration=i)
         time.sleep(frame_delay)
 
 def generate_falling_sand_block_path(inputfile: str, viewbounds: BoundingBox, sand_origin: Point = PUZZLE_SAND_ORIGIN):
@@ -63,8 +69,13 @@ def generate_falling_sand_block_path(inputfile: str, viewbounds: BoundingBox, sa
 if __name__ == '__main__':
     
     ## part one command line animation
-    board = solution.create_board(filepath='example.txt')
-    animate_frames(board, viewbounds=BoundingBox(Point(494, 0), Point(503, 9)), time_steps_between_sand_unit_drops=2)
+    # board = solution.create_board(filepath='example.txt')
+    # animate_frames(
+    #     board, 
+    #     viewbounds=BoundingBox(Point(494, 0), Point(503, 9)), 
+    #     time_steps_between_sand_unit_drops=None,
+    #     screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=290, height=570, monitor=1, savefolder='day14', framefolder='example_terminal_p1')
+    # )
 
     ## part one falling sand unit path
     # print(generate_falling_sand_block_path(
@@ -72,11 +83,16 @@ if __name__ == '__main__':
     #     viewbounds=BoundingBox(topleft=Point(x=493, y=0), bottomright=Point(x=503, y=12))
     # ))
 
-    ## part two command line animation
-    # board = solution.obtain_part_two_board(inputfile='example.txt')
-    # animate_frames(board=board, viewbounds=BoundingBox(Point(488, 0), Point(512, 11)), frame_delay=0.005)
+    # part two command line animation
+    board = solution.obtain_part_two_board(inputfile='example.txt')
+    animate_frames(
+        board=board,
+        viewbounds=BoundingBox(Point(488, 0), Point(512, 11)),
+        time_steps_between_sand_unit_drops=2,
+        screenshotparams=ScreenshotParams(topoffset=56, leftoffset=0, width=730, height=680, monitor=1, savefolder='day14', framefolder='example_terminal_p2_multigrain')
+    )
 
-    ## part two ending state
+    # # part two ending state
     # board = solution.obtain_part_two_simulated_board(inputfile='example.txt')
     # print(board_as_string(board, sand_units=[], viewbounds=BoundingBox(Point(488, 0), Point(512, 11))))
 

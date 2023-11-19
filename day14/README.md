@@ -2,25 +2,75 @@
 
 ## [Part one description](https://adventofcode.com/2022/day/14) (adventofcode.com)
 
-**tl;dr**
-
+**tl;dr** Another simulation!  Learned about profiling-driven optimization and `pygame` for creating [animations](#gui---full-puzzle-input-multigrain)!
 
 ## Part One
 
 ### Problem Breakdown
 
+Simulate sand falling from a specified origin onto a 2D slice of cave / rocks.  There are rules provided for how the sand moves during each simulation time step:
+1. If there is nothing immediately below a falling block of sand, it falls down one space (+1 y)
+2. Otherwise, if there is nothing down/left (+y, -x) then it occupies that spot.
+3. Otherwise, if there is nothing down/right (+y, +x) then it occupies that spot.
+4. Finally, if it cannot move it comes to rest.
+
+The simulation stops when there are no more possible positions on the map where sand can come to rest, and instead "falls into the abyss below".
+
+The question that needs to be answered: how many blocks of sand come to rest on the map when it is full?
+
 ### Solution
 
+1. The input file is parsed into an in-program representation, an instance of class `Board` which contains two sets:
+    - One for coords of rocks
+    - Another for coords of settled sand units
+
+    The `Board` is updated as the simulation runs and sand units fall from the source.
+
+2. The simulation is run with discrete time steps.  When necessary, instances of class `SandUnit` are dropped from the `sand_origin` point.  Per the puzzle description, a new sand unit is dropped only when the prior one has come to rest.
+
+3. The simulation runs until the a sand unit is "falling indefinitely".  This is detected by setting up a "bounding box" for the rocks on the `Board` upon input file parsing.  Once a sand unit crosses this bounding box, it is falling indefinitely since there are no rocks below on which it may come to rest.
+
+### Animations
+
+#### Terminal - example input
+
+![](../media/day14/example_terminal_p1.gif)
+
+#### GUI - example input
+
+I tried my hand at using `pygame` for creating a GUI animation, and I'm pleased with the results!  I was able to directly save the simulation frames as images, which was a nicer workflow than having the script take screenshots of the terminal output - no need to specify the screenshot size for cropping, since the GUI script calculates the needed window size automatically!
+
+![](../media/day14/example_gui_p1.gif)
+
+#### GUI - example input, "multigrain"
+
+While I was working on the visualization of the full input, I found out that waiting to drop a new sand unit until after the prior unit was settled didn't make for a very nice viewing experience - it took *forever* watching the simulation to run!
+
+Instead, a more realistic simulation of sand falling from a source is a constant rate of sand falling.  I updated the simulation code to accept a parameter, `time_steps_between_sand_unit_drops`, to allow me to specify the drop period.  The visualizations below use drop period of 2 time steps.
+
+This change allows the simulation to complete in way fewer time steps, though it does mean that there is more than one sand unit "falling indefinitely" once the board fills up!  I color them red to visualize this.
+
+![](../media/day14/example_gui_p1_multigrain.gif)
+
+#### GUI - full puzzle input, "multigrain"
+
+The nice thing about the GUI over terminal is that I can display much more information and fit the entire board on the screen!  Behold:
+
+![](../media/day14/input_gui_p1_multigrain.gif)
 
 ## Part Two
 
 ### Problem Breakdown
 
+New simulation end state - this time, there is an infinitely wide rock floor 2 units below the lowest rock on the board.  The simulation runs until the sand unit source is covered by a sand block, resulting in a longer simulation than for part one.
+
+Goal - count how many sand units fall.
+
 ### Solution
 
 #### initial attempt - too slow!
 
-I tried minimally modifying my solution for Part One , and while this worked for the example the computation time went through the roof for the full input.
+I tried minimally modifying my solution for Part One, and while this worked for the example the computation time went through the roof for the full input.
 
 I didn't have a good sense of where the slowdown in my code was (unlike in prior puzzles), so I tried using the Python standard library's `cProfile` for the first time!  Their [quickstart guide](https://docs.python.org/3/library/profile.html) was straightforward, and I was quickly able to isolate which function was causing the issue.
 
@@ -109,3 +159,22 @@ Rerunning the same profiled setup as before (with origin point 35 units above ty
 This is an overall, profiled speedup of ~13.7x!
 
 With this result, I was confident to re-run the sim for Part Two.  It ran in less than 30s, a much more reasonable amount of time!
+
+### Visualizations
+
+#### GUI - example input (sand unit drop period of 2 time steps)
+
+#### GUI - full puzzle input (sand unit drop period of 2 time steps)
+
+Here's the image of the final board state:
+
+![](../media/day14/input_gui_p2_finalframe.png)
+
+And below's a 16 minute video of the simulation running!  I created it using `ffmpeg`, with the [help of StackOverFlow](https://stackoverflow.com/a/37478183).
+
+I ran the following command:
+
+```
+ffmpeg -framerate 60 -pattern_type glob -i '*/*.png' \
+    -c:v libx264 -pix_fmt yuv420p input_gui_p2_multigrain.mp4
+```
