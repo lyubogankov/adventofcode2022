@@ -312,7 +312,7 @@ def part_two(sensors, boundary: BoundingBox) -> int:
     sole_point = square_to_diamond_coords(
         find_single_point_not_within_sensor_exclusion_range_squarecoords(sensors, boundary)
     )
-    if sole_point:''
+    if sole_point:
         return calculate_tuning_freq(sole_point)
     else:
         raise Exception("Didn't find any points...")
