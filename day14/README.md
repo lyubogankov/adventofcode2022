@@ -164,6 +164,8 @@ With this result, I was confident to re-run the sim for Part Two.  It ran in les
 
 #### GUI - example input (sand unit drop period of 2 time steps)
 
+![](../media/day14/example_gui_p2_multigrain.gif)
+
 #### GUI - full puzzle input (sand unit drop period of 2 time steps)
 
 Here's the image of the final board state:
